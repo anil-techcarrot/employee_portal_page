@@ -158,14 +158,14 @@ class HrEmployeeInherit(models.Model):
     is_expiry_today = fields.Boolean(compute='_compute_is_expiry_today', string="Expiry Today")
 
     # Emergency contact person address fields
-    private_street = fields.Char(string="Private Street", copy=False)
-    private_street2 = fields.Char(string="Private Street2", copy=False)
-    private_city = fields.Char(string="Private City", copy=False)
-    private_state_id = fields.Many2one(
+    e_private_street = fields.Char(string="Private Street", copy=False)
+    e_private_street2 = fields.Char(string="Private Street2", copy=False)
+    e_private_city = fields.Char(string="Private City", copy=False)
+    e_private_state_id = fields.Many2one(
         "res.country.state", string="Private State",
-        domain="[('country_id', '=', private_country_id)]", copy=False)
-    private_zip = fields.Char(string="Private Zip", copy=False)
-    private_country_id = fields.Many2one("res.country", string="Private Country", copy=False)
+        domain="[('country_id', '=', e_private_country_id)]", copy=False)
+    e_private_zip = fields.Char(string="Private Zip", copy=False)
+    e_private_country_id = fields.Many2one("res.country", string="Private Country", copy=False)
     phone_code = fields.Integer(string="Countrycode", related='private_country_id.phone_code', copy=False)
 
     #Bank Details

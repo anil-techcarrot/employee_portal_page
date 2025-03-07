@@ -18,7 +18,7 @@ class ResPartner(models.Model):
     role_id = fields.Many2one('tec.role', string='Role', copy=False)
     secondary_email = fields.Char('Secondary Email', copy=False)
     tec_title = fields.Char('Title', copy=False)
-    customer_code = fields.Char('Customer Code', copy=False, required=True)
+    customer_code = fields.Char('Customer Code', copy=False)
 
     @api.constrains('secondary_email')
     def _check_email_validity(self):
