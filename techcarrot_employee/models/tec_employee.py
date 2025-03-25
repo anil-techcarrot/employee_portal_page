@@ -165,7 +165,7 @@ class HrEmployeeInherit(models.Model):
     is_expiry_today = fields.Boolean(compute='_compute_is_expiry_today', string="Expiry Today")
     # country_code_for_emergency_contact_person_phone_no = fields.Integer(string='Country Code', related='private_country_id.phone_code', copy=False)
     # country_code_for_work_mobile = fields.Selection(selection=_country_code_get, string='Country ISD Code', copy=False)
-    # country_code_for_industry_id = fields.Many2one('res.country', string='Country Code', copy=False)
+    country_code_for_industry_id = fields.Many2one('res.country', string='Country Code', copy=False)
     bank_name = fields.Text('Bank Name', copy=False)
     billable = fields.Selection([
         ('yes', 'Yes'),
