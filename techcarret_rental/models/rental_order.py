@@ -299,17 +299,21 @@ class Rentals(models.Model):
                     if analytic_plan_id:
                         aa_objs = self.env['account.analytic.account'].search([('company_id', '=', sale.company_id.id),('plan_id', '=', analytic_plan_id.id),('name', '=', aa_name)], limit=1)
                         if not aa_objs:
-                            val ={
+                            aa_dict ={aa_objs.id: 100}
+                            aa_objs = self.env['account.analytic.account'].create({
                                 'plan_id': analytic_plan_id.id,
                                 'name': aa_name,
                                 'company_id':sale.company_id.id,
                                 'partner_id': sale.partner_id.id,
-                            }
-                            aa_objs = self.env['account.analytic.account'].create(val)
+                            })
                             if aa_objs:
-                                o_line.analytic_distribution={aa_objs.id: 100}
+                                o_line.analytic_distribution=aa_dict
                         else:
-                            o_line.analytic_distribution={aa_objs.id: 100}
+                            aa_dict ={aa_objs.id: 100}
+                            if o_line.analytic_distribution:
+                                for key, value in o_line.analytic_distribution.items():
+                                    aa_dict.update({key:value})
+                            o_line.analytic_distribution=aa_dict
 
     @api.onchange('invoice_freequency', 'rentalfirst_invoice_date','rental_start_date','rental_return_date','order_line')
     def _onchange_inv_freeqency(self):
