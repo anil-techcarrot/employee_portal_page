@@ -262,6 +262,21 @@ class Rentals(models.Model):
                     order.duration_days = duration.days
                 order.remaining_hours = ceil(duration.seconds / 3600)
 
+    @api.onchange('rental_start_date')
+    def _onchange_finvoice(self):
+        if self.invoice_freequency:
+            if self.invoice_freequency.unit == 'day':
+                next_invoice_date = self.rental_start_date + relativedelta(days=1)
+            elif self.invoice_freequency.unit == 'week':
+                next_invoice_date = self.rental_start_date + relativedelta(weeks=1)
+            elif self.invoice_freequency.unit == 'month':
+                next_invoice_date = self.rental_start_date + relativedelta(months=1)
+            else:
+                next_invoice_date = self.rental_start_date + relativedelta(years=1)
+        else:
+            next_invoice_date = self.rental_start_date
+        self.rentalfirst_invoice_date=next_invoice_date
+
     @api.onchange('r_analytic_plan_id','s_analytic_plan_id','ss_analytic_plan_id')
     def _onchange_set_aa1(self):
         for sale in self:
@@ -278,8 +293,8 @@ class Rentals(models.Model):
             for o_line in sale.order_line:
                 aa_name=''
                 if sale.is_rental_order==True:
-                    if o_line.product_id and sale.partner_id:
-                        aa_name=o_line.product_id.name+'/'+sale.partner_id.name
+                    if o_line.product_id and sale.project_code:
+                        aa_name=o_line.product_id.name+'/'+sale.project_code
                 elif sale.is_tec_subscription==True:
                     # PRJ/CLIENTCODE/LC/Practice/SO no.
                     if sale.partner_id and sale.partner_id.customer_code and sale.practice_id and sale.name:
@@ -335,7 +350,6 @@ class Rentals(models.Model):
                                 order_line.price_unit=product_pricing_id.price
                     else:
                         order_line.price_unit = order_line.product_id.with_company(order_line.company_id.id).lst_price or 0.00
-                month_count=0
                 total_working_days=0
                 self.rental_inv_line_ids=[(6, 0, [])]
                 datetime_min_time = datetime.min.time()
@@ -359,108 +373,79 @@ class Rentals(models.Model):
                     inv_dates=[]
                     for order_line in order.order_line:
                         order_line.product_uom_qty = order.duration_days
-                        invoice_start_date=order.rentalfirst_invoice_date
+                        invoice_start_date=order.rental_start_date.date()
                         last_invoiced_date=order.rentalfirst_invoice_date
                         if order_line.product_id and order_line.product_id.employee_id:
                             #FIND NON-WORKING DAYS
-                            planned_hours=0
-                            delta =timedelta(days=1)
-                            if order.invoice_freequency.unit == 'day':
-                                next_invoice_date = order.rentalfirst_invoice_date + relativedelta(days=+int(order.invoice_freequency.duration))
-                            elif order.invoice_freequency.unit == 'week':
-                                next_invoice_date = order.rentalfirst_invoice_date + relativedelta(weeks=+int(order.invoice_freequency.duration))
-                            elif order.invoice_freequency.unit == 'month':
-                                month_count=month_count+1
-                                next_invoice_date = order.rentalfirst_invoice_date + relativedelta(months=month_count)
-                            else:
-                                next_invoice_date = order.rentalfirst_invoice_date + relativedelta(years=+int(order.invoice_freequency.duration))
-                            while invoice_start_date < next_invoice_date:
-                                invoice_start_date += delta
-                            start_dt = datetime.combine(order.rentalfirst_invoice_date, datetime_min_time)
-                            end_dt = datetime.combine(next_invoice_date, datetime_max_time)
+                            start_dt = datetime.combine(order.rental_start_date.date(), datetime_min_time)
+                            end_dt = datetime.combine(order.rentalfirst_invoice_date, datetime_max_time)
                             if end_dt>order.rental_return_date:
                                 end_dt=datetime.combine(order.rental_return_date, datetime_max_time)
                             if order_line.product_id.employee_id:
+                                #CREATE FIRST MONTH INVOICE
+                                #ALL INVOICE DONE ON MONTHLY
                                 planned_worked = order_line.product_id.employee_id._get_work_days_data_batch(start_dt, end_dt, calendar=order_line.product_id.employee_id.resource_calendar_id) \
                                     [order_line.product_id.employee_id.id]['days']
                                 total_working_days = total_working_days + planned_worked
-                                if order.invoice_freequency.unit in ['day','week','month','year']:
-                                    if planned_worked>0:
-                                        inv_dates.append((0, 0, {'sale_state':order.state,
-                                                                 'planned_days':planned_worked,
-                                                                 'partner_id':order.partner_id.id,
-                                                                 'employee_id': order_line.product_id.employee_id.id,
-                                                                 'rentalnext_invoice_date': self.rentalfirst_invoice_date,
-                                                                 'rentalnext_invoice_date_time':self.rentalfirst_invoice_date,
-                                                                 'is_ready_to_invoice':True
-                                                                 }))
-                                        last_invoiced_date = next_invoice_date
-                                    #FIND NEXT INVOICE DATE
-                                    while next_invoice_date <= order.rental_return_date.date():
-                                        if order.invoice_freequency.unit == 'day':
-                                            upcoming_invoice_date = next_invoice_date + relativedelta(days=+int(order.invoice_freequency.duration))
-                                        elif order.invoice_freequency.unit == 'week':
-                                            upcoming_invoice_date = next_invoice_date + relativedelta(weeks=+int(order.invoice_freequency.duration))
-                                        elif order.invoice_freequency.unit == 'month':
-                                            month_count=month_count+1
-                                            upcoming_invoice_date = order.rentalfirst_invoice_date + relativedelta(months=month_count)
-                                        else:
-                                            upcoming_invoice_date = next_invoice_date + relativedelta(years=+int(order.invoice_freequency.duration))
-                                        delta =timedelta(days=1)
-
-                                        if upcoming_invoice_date >= order.rental_return_date.date():
-                                            start_dt = datetime.combine(next_invoice_date, datetime_min_time)
-                                            end_dt = datetime.combine(order.rental_return_date.date(), datetime_max_time)
-                                            planned_worked = order_line.product_id.employee_id._get_work_days_data_batch(start_dt, end_dt, calendar=order_line.product_id.employee_id.resource_calendar_id) \
-                                                [order_line.product_id.employee_id.id]['days']
-                                        else:
-                                            start_dt = datetime.combine(next_invoice_date, datetime_min_time)
-                                            end_dt = datetime.combine(upcoming_invoice_date, datetime_max_time)
-                                            planned_worked = order_line.product_id.employee_id._get_work_days_data_batch(start_dt, end_dt, calendar=order_line.product_id.employee_id.resource_calendar_id) \
-                                                [order_line.product_id.employee_id.id]['days']
-                                        total_working_days = total_working_days + planned_worked
-                                        next_invoice_date1=next_invoice_date
-                                        while next_invoice_date1 < upcoming_invoice_date:
-                                            next_invoice_date1 += delta
-                                        if next_invoice_date <= order.rental_return_date.date():
-                                            if planned_worked>0:
-                                                inv_dates.append((0, 0, {'sale_state':order.state,
-                                                                     'planned_days':planned_worked,
-                                                                     'partner_id':order.partner_id.id,
-                                                                     'employee_id': order_line.product_id.employee_id.id,
-                                                                     'rentalnext_invoice_date':next_invoice_date,
-                                                                     'rentalnext_invoice_date_time':next_invoice_date
-                                                                     }))
-                                        next_invoice_date = upcoming_invoice_date
-                                    order.duration_days=total_working_days
-                                else:
-                                    raise UserError(_("Hourly invoice not available. Please contact the developer team."))
-                                    next_invoice_date_time = self.rental_start_date
-                                    planned_hours = working_days/8
-                                    if planned_hours>0:
-                                        inv_dates.append((0, 0, {
-                                                             'sale_state':order.state,
-                                                             'planned_days':working_days,
-                                                             'planned_hours':planned_hours,
+                                if planned_worked>0:
+                                    inv_dates.append((0, 0, {'sale_state':order.state,
+                                                             'planned_days':planned_worked,
                                                              'partner_id':order.partner_id.id,
                                                              'employee_id': order_line.product_id.employee_id.id,
-                                                             'rentalnext_invoice_date': self.rental_start_date.date(),
-                                                             'rentalnext_invoice_date_time':self.rental_start_date
+                                                             'rentalnext_invoice_date': self.rentalfirst_invoice_date,
+                                                             'rentalnext_invoice_date_time':self.rentalfirst_invoice_date,
+                                                             'is_ready_to_invoice':True
                                                              }))
-                                    while next_invoice_date_time < self.rental_return_date:
-                                        next_invoice_date_time = date_utils.add(next_invoice_date_time, hours=int(self.invoice_freequency.duration))
-                                        if next_invoice_date_time<=self.rental_return_date:
-                                            if next_invoice_date_time.date() not in holiday_list:
-                                                if planned_hours>0:
-                                                    inv_dates.append((0, 0, {
-                                                        'sale_state':order.state,
-                                                        'planned_days':working_days,
-                                                        'planned_hours':planned_hours,
-                                                        'partner_id':order.partner_id.id,
-                                                        'employee_id': order_line.product_id.employee_id.id,
-                                                        'rentalnext_invoice_date': next_invoice_date_time.date(),
-                                                        'rentalnext_invoice_date_time':next_invoice_date_time
-                                                    }))
+                                next_invoice_date = order.rentalfirst_invoice_date + relativedelta(months=1)
+                                #CREATE BILL FOR UPCOMING MONTHS
+                                month_count = 2
+                                while next_invoice_date <= order.rental_return_date.date():
+                                    upcoming_invoice_date = order.rentalfirst_invoice_date + relativedelta(months=month_count)
+                                    start_dt = next_invoice_date - relativedelta(months=1)
+                                    end_dt = upcoming_invoice_date - relativedelta(months=1)
+                                    if next_invoice_date >= order.rental_return_date.date():
+                                        end_dt = order.rental_return_date.date()
+                                    start_dt = datetime.combine(start_dt, datetime_min_time)
+                                    end_dt = datetime.combine(end_dt, datetime_max_time)
+                                    planned_worked = order_line.product_id.employee_id._get_work_days_data_batch(start_dt, end_dt, calendar=order_line.product_id.employee_id.resource_calendar_id) \
+                                        [order_line.product_id.employee_id.id]['days']
+                                    if planned_worked>0:
+                                        inv_dates.append((0, 0, {'sale_state':order.state,
+                                                             'planned_days':planned_worked,
+                                                             'partner_id':order.partner_id.id,
+                                                             'employee_id': order_line.product_id.employee_id.id,
+                                                             'rentalnext_invoice_date':next_invoice_date,
+                                                             'rentalnext_invoice_date_time':next_invoice_date
+                                                             }))
+                                    month_count = month_count + 1
+                                    next_invoice_date = upcoming_invoice_date
+                                    total_working_days = total_working_days + planned_worked
+                                #CREATE LAST MONTH INVOICE IF WORKED IN PREVIOUS MONTH
+                                upcoming_invoice_date = order.rentalfirst_invoice_date + relativedelta(months=month_count)
+                                start_dt = next_invoice_date - relativedelta(months=1)
+                                end_dt = upcoming_invoice_date - relativedelta(months=1)
+                                #add one more day to get final day in accounting
+                                end_dt = upcoming_invoice_date - relativedelta(days=1)
+                                if next_invoice_date >= order.rental_return_date.date():
+                                    end_dt = order.rental_return_date.date()
+                                start_dt = datetime.combine(start_dt, datetime_min_time)
+                                end_dt = datetime.combine(end_dt, datetime_max_time)
+                                planned_worked = \
+                                order_line.product_id.employee_id._get_work_days_data_batch(start_dt, end_dt,
+                                                                                            calendar=order_line.product_id.employee_id.resource_calendar_id) \
+                                    [order_line.product_id.employee_id.id]['days']
+                                if planned_worked > 0:
+                                    inv_dates.append((0, 0, {'sale_state': order.state,
+                                                             'planned_days': planned_worked,
+                                                             'partner_id': order.partner_id.id,
+                                                             'employee_id': order_line.product_id.employee_id.id,
+                                                             'rentalnext_invoice_date': next_invoice_date,
+                                                             'rentalnext_invoice_date_time': next_invoice_date
+                                                             }))
+                                month_count = month_count + 1
+                                next_invoice_date = upcoming_invoice_date
+                                total_working_days = total_working_days + planned_worked
+                                order.duration_days=total_working_days
                     if inv_dates:
                         self.rental_inv_line_ids=inv_dates
 
@@ -848,8 +833,9 @@ class RentalInvoiceHistory(models.Model):
 
     @api.constrains('worked_days')
     def _check_worked_days(self):
-        if self.worked_days <0 or self.worked_days >31:
-            raise UserError(_('Worked days must be between 1-31 days.'))
+        for line in self:
+            if line.worked_days <0 or line.worked_days >31:
+                raise UserError(_('Worked days must be between 1-31 days.'))
 
     def create_invoice(self):
         for line in self:
