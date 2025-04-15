@@ -435,13 +435,7 @@
                             <field name="rentalnext_invoice_date_time" readonly="parent.state!='draft'" force_save="1" column_invisible="parent.recurring_period_interval not in ['hour']"/>
                             <field name="work_entry_ids" column_invisible="1" widget="many2many_tags" options="{'color_field': 'color'}"/>
                             <field name="planned_days" readonly="1" force_save="1"/>
-                            <field name="worked_days"/>
-                            <field name="planned_hours" readonly="parent.state!='draft'" force_save="1" column_invisible="1"/>
-                            <field name="worked_hours" readonly="parent.state!='draft'" force_save="1" column_invisible="1"/>
-                            <!--<field name="planned_days" column_invisible="parent.recurring_period_interval in ['hour']"/>
-                            <field name="worked_days" column_invisible="parent.recurring_period_interval in ['hour']"/>
-                            <field name="planned_hours" column_invisible="parent.recurring_period_interval not in ['hour']" widget="float_time"/>
-                            <field name="worked_hours" column_invisible="parent.recurring_period_interval not in ['hour']" widget="float_time"/>-->
+                            <field name="worked_days" readonly="inv_ref_id"/>
                             <field name="inv_ref_id" readonly="parent.state!='draft'" force_save="1"/>
                             <field name="state" string="Status" column_invisible="1"/>
                             <field name="invoice_state" column_invisible="1"/>
@@ -492,16 +486,6 @@
         <field name="code">model._cron_create_rental_month_invoices()</field>
         <field name="interval_number">1</field>
         <field name="interval_type">months</field>
-        <field name="active" eval="True"/>
-    </record>
-
-    <record id="rental_invoice_automation_daily_cron" model="ir.cron">
-        <field name="name">Rental invoice daily automation</field>
-        <field name="model_id" ref="model_sale_order"/>
-        <field name="state">code</field>
-        <field name="code">model._cron_create_rental_daily_invoices()</field>
-        <field name="interval_number">1</field>
-        <field name="interval_type">days</field>
         <field name="active" eval="True"/>
     </record>
 

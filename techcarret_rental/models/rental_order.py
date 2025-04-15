@@ -171,7 +171,10 @@ class Rentals(models.Model):
     def _do_create_invoice_schedule(self):
         for order in self:
             for order_line in order.order_line:
-                order_line.product_uom_qty = order.duration_days
+                if order_line.product_uom.name == 'Hours':
+                    order_line.product_uom_qty = order.duration_days * 8
+                else:
+                    order_line.product_uom_qty = order.duration_days
                 if order_line.product_id.product_pricing_ids:
                     for product_pricing_id in order_line.product_id.product_pricing_ids:
                         if order_line.product_uom.name == 'Hours' and product_pricing_id.recurrence_id.unit == 'hour':
@@ -185,7 +188,8 @@ class Rentals(models.Model):
                         elif order_line.product_uom.name == 'Years' and product_pricing_id.recurrence_id.unit == 'year':
                             order_line.price_unit=product_pricing_id.price
                 else:
-                    order_line.price_unit = order_line.product_id.with_company(order_line.company_id.id).lst_price or 0.00
+                    if order_line.price_unit==0.00:
+                        order_line.price_unit = order_line.product_id.with_company(order_line.company_id.id).lst_price or 0.00
             order.do_create_invoice_schedule=True
 
     @api.depends('order_line', 'order_line.recurring_invoice')
@@ -254,8 +258,16 @@ class Rentals(models.Model):
             planned_days=0
             if order.rental_start_date and order.rental_return_date:
                 duration = order.rental_return_date - order.rental_start_date
-                for order_line in order.rental_inv_line_ids:
-                    planned_days =planned_days + order_line.planned_days
+                count=0
+                for order_line in order.order_line:
+                    if count==0:
+                        if order_line.product_id:
+                            if order_line.product_id.employee_id:
+                                if order_line.product_id.employee_id.resource_calendar_id:
+                                    planned_days = order_line.product_id.employee_id._get_work_days_data_batch(order.rental_start_date, order.rental_return_date,
+                                                                                                                 calendar=order_line.product_id.employee_id.resource_calendar_id) \
+                                        [order_line.product_id.employee_id.id]['days']
+                                    count = count +1
                 if planned_days>0:
                     order.duration_days = planned_days
                 else:
@@ -335,7 +347,10 @@ class Rentals(models.Model):
         if self.is_rental_order == True:
             for order in self:
                 for order_line in order.order_line:
-                    order_line.product_uom_qty = order.duration_days
+                    if order_line.product_uom.name == 'Hours':
+                        order_line.product_uom_qty = order.duration_days * 8
+                    else:
+                        order_line.product_uom_qty = order.duration_days
                     if order_line.product_id.product_pricing_ids:
                         for product_pricing_id in order_line.product_id.product_pricing_ids:
                             if order_line.product_uom.name == 'Hours' and product_pricing_id.recurrence_id.unit == 'hour':
@@ -349,7 +364,8 @@ class Rentals(models.Model):
                             elif order_line.product_uom.name == 'Years' and product_pricing_id.recurrence_id.unit == 'year':
                                 order_line.price_unit=product_pricing_id.price
                     else:
-                        order_line.price_unit = order_line.product_id.with_company(order_line.company_id.id).lst_price or 0.00
+                        if order_line.price_unit == 0.00:
+                            order_line.price_unit = order_line.product_id.with_company(order_line.company_id.id).lst_price or 0.00
                 total_working_days=0
                 self.rental_inv_line_ids=[(6, 0, [])]
                 datetime_min_time = datetime.min.time()
@@ -372,7 +388,10 @@ class Rentals(models.Model):
                 if order.rental_start_date and order.rental_return_date and order.rentalfirst_invoice_date:
                     inv_dates=[]
                     for order_line in order.order_line:
-                        order_line.product_uom_qty = order.duration_days
+                        if order_line.product_uom.name == 'Hours':
+                            order_line.product_uom_qty = order.duration_days * 8
+                        else:
+                            order_line.product_uom_qty = order.duration_days
                         invoice_start_date=order.rental_start_date.date()
                         last_invoiced_date=order.rentalfirst_invoice_date
                         if order_line.product_id and order_line.product_id.employee_id:
@@ -388,13 +407,18 @@ class Rentals(models.Model):
                                     [order_line.product_id.employee_id.id]['days']
                                 total_working_days = total_working_days + planned_worked
                                 if planned_worked>0:
+                                    uom = 'days'
+                                    if order_line.product_uom.name=='Hours':
+                                        planned_worked = planned_worked*8
+                                        uom = 'hours'
                                     inv_dates.append((0, 0, {'sale_state':order.state,
                                                              'planned_days':planned_worked,
                                                              'partner_id':order.partner_id.id,
                                                              'employee_id': order_line.product_id.employee_id.id,
                                                              'rentalnext_invoice_date': self.rentalfirst_invoice_date,
                                                              'rentalnext_invoice_date_time':self.rentalfirst_invoice_date,
-                                                             'is_ready_to_invoice':True
+                                                             'is_ready_to_invoice':True,
+                                                             'uom': uom
                                                              }))
                                 next_invoice_date = order.rentalfirst_invoice_date + relativedelta(months=1)
                                 #CREATE BILL FOR UPCOMING MONTHS
@@ -410,12 +434,17 @@ class Rentals(models.Model):
                                     planned_worked = order_line.product_id.employee_id._get_work_days_data_batch(start_dt, end_dt, calendar=order_line.product_id.employee_id.resource_calendar_id) \
                                         [order_line.product_id.employee_id.id]['days']
                                     if planned_worked>0:
+                                        uom = 'days'
+                                        if order_line.product_uom.name == 'Hours':
+                                            planned_worked = planned_worked * 8
+                                            uom = 'hours'
                                         inv_dates.append((0, 0, {'sale_state':order.state,
                                                              'planned_days':planned_worked,
                                                              'partner_id':order.partner_id.id,
                                                              'employee_id': order_line.product_id.employee_id.id,
                                                              'rentalnext_invoice_date':next_invoice_date,
-                                                             'rentalnext_invoice_date_time':next_invoice_date
+                                                             'rentalnext_invoice_date_time':next_invoice_date,
+                                                             'uom': uom
                                                              }))
                                     month_count = month_count + 1
                                     next_invoice_date = upcoming_invoice_date
@@ -435,17 +464,22 @@ class Rentals(models.Model):
                                                                                             calendar=order_line.product_id.employee_id.resource_calendar_id) \
                                     [order_line.product_id.employee_id.id]['days']
                                 if planned_worked > 0:
+                                    uom='days'
+                                    if order_line.product_uom.name=='Hours':
+                                        planned_worked = planned_worked*8
+                                        uom='hours'
                                     inv_dates.append((0, 0, {'sale_state': order.state,
                                                              'planned_days': planned_worked,
                                                              'partner_id': order.partner_id.id,
                                                              'employee_id': order_line.product_id.employee_id.id,
                                                              'rentalnext_invoice_date': next_invoice_date,
-                                                             'rentalnext_invoice_date_time': next_invoice_date
+                                                             'rentalnext_invoice_date_time': next_invoice_date,
+                                                             'uom':uom
                                                              }))
                                 month_count = month_count + 1
                                 next_invoice_date = upcoming_invoice_date
                                 total_working_days = total_working_days + planned_worked
-                                order.duration_days=total_working_days
+                                # order.duration_days=total_working_days
                     if inv_dates:
                         self.rental_inv_line_ids=inv_dates
 
@@ -473,27 +507,33 @@ class Rentals(models.Model):
             rental_start_date = rental_obj.rental_sale_id.rentalfirst_invoice_date
         invoice_line_ids=[]
         for line in rental_obj.rental_sale_id.order_line:
-            distribution = line.env['account.analytic.distribution.model']._get_distribution({
-                "product_id": line.product_id.id,
-                "partner_id": line.order_id.partner_id.id,
-                "company_id": line.company_id.id,
-            })
-            analytic_distribution = distribution or line.analytic_distribution
-            if rental_obj.worked_days>0:
-                inv_line={
-                    'product_id': line.product_id.id,
-                    'name': line.product_id.name,
-                    'quantity': rental_obj.worked_days,
-                    'price_unit': line.price_unit,
-                    'tax_ids': line.tax_id,
-                    'discount': line.discount,
-                    'sale_line_ids': [Command.link(line.id)],
-                    'rental_start_date': rental_start_date,
-                    'rental_return_date': rental_obj.rental_sale_id.rentalnext_invoice_date,
-                }
-                if analytic_distribution:
-                    inv_line.update({'analytic_distribution':analytic_distribution})
-                invoice_line_ids.append((0, 0, inv_line))
+            for rental_line in rental_obj.rental_sale_id.rental_inv_line_ids:
+                if not rental_line.inv_ref_id and rental_line.worked_days>0.00:
+                    if line.product_id.employee_id.id == rental_line.employee_id.id:
+                        distribution = line.env['account.analytic.distribution.model']._get_distribution({
+                            "product_id": line.product_id.id,
+                            "partner_id": line.order_id.partner_id.id,
+                            "company_id": line.company_id.id,
+                        })
+                        analytic_distribution = distribution or line.analytic_distribution
+                        if rental_obj.worked_days>0:
+                            inv_line={
+                                'product_id': line.product_id.id,
+                                'product_uom_id':line.product_uom.id,
+                                'name': line.product_id.name,
+                                'quantity': rental_line.worked_days,
+                                'price_unit': line.price_unit,
+                                'tax_ids': line.tax_id,
+                                'discount': line.discount,
+                                'sale_line_ids': [Command.link(line.id)],
+                                'rental_start_date': rental_start_date,
+                                'rental_return_date': rental_obj.rental_sale_id.rentalnext_invoice_date,
+                            }
+                            if analytic_distribution:
+                                inv_line.update({'analytic_distribution':analytic_distribution})
+                            invoice_line_ids.append((0, 0, inv_line))
+                        # line.qty_delivered = line.qty_delivered + rental_line.worked_days
+                        rental_line.is_ready_to_invoice=False
         if invoice_line_ids:
             inv_obj = self.env['account.move'].create({
                 'move_type': 'out_invoice',
@@ -512,7 +552,11 @@ class Rentals(models.Model):
                 'invoice_line_ids': invoice_line_ids
             })
             if inv_obj:
-                rental_obj.inv_ref_id = inv_obj.id
+                for line in rental_obj.rental_sale_id.order_line:
+                    for rental_line in rental_obj.rental_sale_id.rental_inv_line_ids:
+                        if not rental_line.inv_ref_id and rental_line.worked_days > 0.00:
+                            if line.product_id.employee_id.id == rental_line.employee_id.id:
+                                rental_line.inv_ref_id = inv_obj.id
                 for inv_line in inv_obj.invoice_line_ids:
                     inv_line._compute_name()
                     for so_line in rental_obj.rental_sale_id.order_line:
@@ -582,62 +626,21 @@ class Rentals(models.Model):
                             timesheet_months.append(str_m_y)
                         start_date += delta
                     if rental_obj.employee_id:
-                        work_obj_objs = self.env['employee.workentry'].search([('employee_id', '=', rental_obj.employee_id.id)])
-                        if work_obj_objs:
-                            attendance_duration=0.00
-                            for work_obj_obj in work_obj_objs:
-                                used_m_y=[]
-                                delta =timedelta(days=1)
-                                start_date = work_obj_obj.date_start
-                                end_date = work_obj_obj.date_end
-                                while start_date <= end_date:
-                                    m = start_date.month
-                                    y = start_date.year
-                                    str_m_y = str(m)+'_'+str(y)
-                                    start_date += delta
-                                    if str_m_y in timesheet_months:
-                                        if str_m_y not in used_m_y:
-                                            used_m_y.append(str_m_y)
-                                            attendance_duration=attendance_duration+work_obj_obj.worked_days
-                            rental_obj.work_entry_ids = [(6, 0, work_obj_objs.ids)]
-                            if rental_obj.worked_days==0:
-                                rental_obj.worked_days = attendance_duration
-                            #CREATE RENTAL INVOICE
-                            if rental_obj.worked_days>0:
-                                self.create_rental_invoice(rental_obj)
-                                rental_obj.state = 'done'
-                                rental_obj.is_ready_to_invoice=False
-                                for so_line in rental_obj.rental_sale_id.order_line:
-                                    if so_line.product_id:
-                                        if so_line.product_id.employee_id.id == rental_obj.employee_id.id:
-                                            so_line.qty_delivered = so_line.qty_delivered + rental_obj.worked_days
-                                if future_rental_objs:
-                                    future_rental_objs.is_ready_to_invoice=True
+                        #CREATE RENTAL INVOICE
+                        if rental_obj.worked_days>0:
+                            self.create_rental_invoice(rental_obj)
+                            rental_obj.state = 'done'
+                            rental_obj.is_ready_to_invoice=False
+                            if future_rental_objs:
+                                future_rental_objs.is_ready_to_invoice=True
                 else:
                     #CREATE RENTAL INVOICE
                     self.create_rental_invoice(rental_obj)
                     rental_obj.state = 'done'
                     rental_obj.is_ready_to_invoice=False
-                    for so_line in rental_obj.rental_sale_id.order_line:
-                        if so_line.product_id:
-                            if so_line.product_id.employee_id:
-                                if so_line.product_id.employee_id.id == rental_obj.employee_id.id:
-                                    so_line.qty_delivered = so_line.qty_delivered + rental_obj.worked_days
-                                    # so_line.qty_invoiced = so_line.qty_invoiced + rental_obj.worked_days
                     future_rental_objs = self.env['rental.invoice.history'].search([('rental_sale_id','=',rental_obj.rental_sale_id.id),('id', '=', int(rental_obj.id+1)),('state','in',['draft'])], limit=1)
                     if future_rental_objs:
                         future_rental_objs.is_ready_to_invoice=True
-
-    def _cron_create_rental_daily_invoices(self):
-        rental_objs = self.env['sale.order'].search([('state', '=', 'sale'),('rental_return_date', '<', fields.datetime.now())])
-        for rental_obj in rental_objs:
-            employee_log_ids = self.env['employee.worklog'].search([('rental_id', '=', rental_obj.id)])
-            if employee_log_ids:
-                for o_line in rental_obj.order_line:
-                    for employee_log_id in employee_log_ids:
-                        if o_line.product_id.employee_id:
-                            if o_line.product_id.employee_id.id == employee_log_id.employee_id.id:
-                                employee_log_id.state ='closed'
 
     def action_confirm(self):
         res = super(Rentals, self).action_confirm()
@@ -650,26 +653,6 @@ class Rentals(models.Model):
                     #     raise UserError(_("Employee profile not mapped in product master"))
                 for r_invoice in so_line.rental_inv_line_ids:
                     r_invoice.sale_state='sale'
-                employee_log_ids = self.env['employee.worklog'].search([('rental_id', '=', so_line.id)])
-                if employee_log_ids:
-                    for o_line in so_line.order_line:
-                        for employee_log_id in employee_log_ids:
-                            if employee_log_id.employee_id:
-                                if o_line.product_id.employee_id.id == employee_log_id.employee_id.id:
-                                    employee_log_id.state='active'
-                                    employee_log_id.date_start=so_line.rental_start_date
-                                    employee_log_id.date_end=so_line.rental_return_date
-                else:
-                    for o_line in so_line.order_line:
-                        if o_line.product_id.employee_id:
-                            self.env['employee.worklog'].sudo().create({
-                                'date_start': so_line.rental_start_date,
-                                'date_end': so_line.rental_return_date,
-                                'employee_id':o_line.product_id.employee_id.id,
-                                'partner_id': so_line.partner_id.id,
-                                'rental_id': so_line.id,
-                                'state': 'active',
-                            })
         return res
 
     def action_cancel(self):
@@ -679,9 +662,6 @@ class Rentals(models.Model):
                 for r_invoice in so_line.rental_inv_line_ids:
                     r_invoice.sale_state='cancel'
                     r_invoice.state='cancel'
-                employee_logs = self.env['employee.worklog'].search([('rental_id', '=', so_line.id)])
-                for employee_log in employee_logs:
-                    employee_log.state= 'cancel'
         return res
 
     def action_draft(self):
@@ -780,7 +760,10 @@ class RentalOrdersLine(models.Model):
                 #         if line.state == 'active':
                 #             raise UserError(_("Employee is not available for rental."))
                 if order.order_id.duration_days>0:
-                    order.product_uom_qty = order.order_id.duration_days
+                    if order.product_uom.name == 'Hours':
+                        order.product_uom_qty = order.order_id.duration_days * 8
+                    else:
+                        order.product_uom_qty = order.order_id.duration_days
                 if order.product_id.product_pricing_ids:
                     for product_pricing_id in order.product_id.product_pricing_ids:
                         if order.product_uom.name == 'Hours' and product_pricing_id.recurrence_id.unit == 'hour':
@@ -794,7 +777,7 @@ class RentalOrdersLine(models.Model):
                         elif order.product_uom.name == 'Years' and product_pricing_id.recurrence_id.unit == 'year':
                             order.price_unit=product_pricing_id.price
                 else:
-                    if order.product_id.with_company(order.company_id.id).lst_price>0.00:
+                    if order.price_unit == 0.00:
                         order.price_unit = order.product_id.with_company(order.company_id.id).lst_price
 
 class RentalInvoiceHistory(models.Model):
@@ -824,19 +807,18 @@ class RentalInvoiceHistory(models.Model):
                               ('sale', "Sales Order"),
                               ('cancel', "Cancelled"),], default='draft')
     state = fields.Selection([('draft', 'Draft'), ('done', 'Invoiced'),('confirmed','Confirmed'),('cancel','Cancel')], default='draft')
+    uom = fields.Selection([("hours", "hours"), ("days", "Days")], string="UOM", required=True, default="days")
     work_entry_ids = fields.Many2many('hr.work.entry', string='Work Entries')
-    planned_hours = fields.Float("Planned Hours")
-    worked_hours = fields.Float("Worked Hours")
     planned_days = fields.Integer("Planned QTY")
     worked_days = fields.Integer("Worked QTY")
     company_id = fields.Many2one('res.company', required=True, default=lambda self: self.env.company)
 
-    @api.constrains('worked_days')
-    def _check_worked_days(self):
-        for line in self:
-            if line.worked_days <0 or line.worked_days >31:
-                raise UserError(_('Worked days must be between 1-31 days.'))
-
     def create_invoice(self):
         for line in self:
             line.rental_sale_id._cron_create_rental_month_invoices(line)
+
+    @api.onchange('worked_days')
+    def _onchange_worked_days(self):
+        self.is_ready_to_invoice=False
+        if self.worked_days>0.0:
+            self.is_ready_to_invoice=True

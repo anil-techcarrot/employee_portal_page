@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models, _
+from datetime import date, datetime, timedelta
+
 
 class HrEmployeePrivate(models.Model):
     _inherit = "hr.employee"
 
-    work_log_ids = fields.One2many(
-        comodel_name='employee.worklog',
-        inverse_name='employee_id',
-        string="Work Logs",
-        copy=True, auto_join=True)
     work_entry_ids = fields.One2many(
         comodel_name='employee.workentry',
         inverse_name='employee_id',
@@ -43,31 +40,22 @@ class HrEmployeePrivate(models.Model):
                     #     })
         return employees
 
-class WorkLog(models.Model):
-    _name = "employee.worklog"
-    _description = 'Work Log'
-
-    date_start = fields.Datetime('Date Start')
-    date_end =  fields.Datetime('Date End')
-    partner_id = fields.Many2one('res.partner', 'Customer')
-    employee_id = fields.Many2one(
-        comodel_name='hr.employee',
-        string="Employee Reference",
-        required=True, ondelete='cascade', index=True, copy=False)
-    rental_id = fields.Many2one('sale.order', 'Rental Order')
-    state = fields.Selection([('active', 'In-Progress'), ('cancel', 'Cancel'), ('closed', 'Completed')], default='active', string="Rental State")
-
-
 class WorkEntry(models.Model):
     _name = "employee.workentry"
     _description = 'Work Entry'
 
-    date_start = fields.Date('Date Start')
-    date_end =  fields.Date('Date End')
-    employee_id = fields.Many2one(
-        comodel_name='hr.employee',
-        string="Employee Reference",
-        required=True, ondelete='cascade', index=True, copy=False)
-    worked_days = fields.Integer("Worked Days")
+    def _get_year_selection(self):
+        current_year = datetime.now().year
+        return [(str(i), i) for i in range(1990, current_year + 8)]
+
+    employee_id = fields.Many2one(comodel_name='hr.employee', string="Employee Reference", required=True, ondelete='cascade', index=True, copy=False)
+    month = fields.Integer("Month")
+    year = fields.Selection(selection='_get_year_selection', string='Year')
+    rental_sale_id = fields.Many2one(comodel_name='sale.order', string="Rental Order")
+    percent = fields.Float("Project Contribution(%)")
+    worked_days = fields.Integer("Worked QTY")
+    analytic_account_id = fields.Many2one('account.analytic.account', copy=False,
+                                 domain="['|', ('company_id', '=', False), ('company_id', '=?', company_id)]",
+                                 ondelete='set null')
     import_id = fields.Many2one('import.attendance.line', 'Attendance line')
-    state = fields.Selection([('imported', 'Imported'), ('Invoiced', 'Invoiced')], default='imported', string="State")
+    state = fields.Selection([('imported', 'Imported'), ('invoiced', 'Invoiced')], default='imported', string="State")

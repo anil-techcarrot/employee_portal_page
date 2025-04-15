@@ -6,8 +6,8 @@
 			<field name="model">import.attendance</field>
 			<field name="arch" type="xml">
 				<list string="Import Attendance">
-					<field name="date_start"/>
-					<field name="date_end"/>
+					<field name="month"/>
+					<field name="year"/>
 					<field name="no_employee"/>
 					<field name="state"/>
 				</list>
@@ -20,9 +20,10 @@
 			<field name="arch" type="xml">
 			<form string="Import Attendance">
 				<header>
-					<button name="rollback_data" invisible="state in ('draft')" string="Rollback Import" type="object" class="oe_highlight"/>
-					<button name="import_attendance" invisible="state in ('imported')" string="Import" type="object" class="oe_highlight"/>
-					<field name="state" widget="statusbar" statusbar_visible="draft,imported"/>
+					<button name="rollback_data" invisible="state not in ('imported')" string="Rollback Import" type="object" class="oe_highlight"/>
+					<button name="validate_data" invisible="state not in ('draft')" string="Validate Data" type="object" class="oe_highlight"/>
+					<button name="import_attendance" invisible="state not in ('validate')" string="Import" type="object" class="oe_highlight"/>
+					<field name="state" widget="statusbar" statusbar_visible="draft,validate,imported"/>
 				</header>
 				<sheet>
 					<group>
@@ -33,25 +34,23 @@
 					</group>
 					<group>
 						<group>
-							<field name="date_start" invisible="not file"/>
-							<field name="date_end" invisible="not file"/>
+							<field name="month" invisible="not file" readonly="1" force_save="1"/>
+							<field name="year" invisible="not file" readonly="1" force_save="1"/>
 							<field name="file_type" widget="radio" invisible="1"/>
 							<field name="no_employee" invisible="1"/>
 						</group>
 					</group>
 					<group>
-						<group>
-							<field name="attendance_data_ids" nolabel="1" string="Stock Data" readonly="state in ('imported')">
-								<list editable="top">
-									<field name="sale_id" readonly="1" force_save="1"/>
-									<field name="employee_id"/>
-									<field name="date_start"/>
-									<field name="date_end"/>
-									<field name="worked_days"/>
-									<field name="d_m_y" column_invisible="1"/>
-								</list>
-							</field>
-						</group>
+						<field name="attendance_data_ids" nolabel="1" readonly="1" force_save="1" string="Stock Data">
+							<list editable="top">
+								<!--<field name="month" readonly="1" force_save="1"/>
+								<field name="year" readonly="1" force_save="1"/>-->
+								<field name="sale_id"/>
+								<field name="employee_id"/>
+								<field name="worked_qty"/>
+								<field name="uom"/>
+							</list>
+						</field>
 					</group>
 				</sheet>
 			</form>

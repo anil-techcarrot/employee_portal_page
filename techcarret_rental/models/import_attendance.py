@@ -28,12 +28,16 @@ class ImportAttendance(models.Model):
 	_description = 'Import Attendance'
 	_order = 'id desc'
 
+	def _get_year_selection(self):
+		current_year = datetime.now().year
+		return [(str(i), i) for i in range(1990, current_year + 8)]
+
 	file_type = fields.Selection([('XLS', 'XLS File')],string='File Type', default='XLS')
 	file = fields.Binary(string="Upload File", required=True)
-	date_start = fields.Date('Date Start')
-	date_end =  fields.Date('Date End')
+	month = fields.Integer("Month")
+	year = fields.Selection(selection='_get_year_selection', string='Year')
 	no_employee = fields.Integer('NO. Employees', compute='get_num_employee')
-	state = fields.Selection([("draft", "New"), ("imported", "Imported")], required=True, default="draft")
+	state = fields.Selection([("draft", "New"), ("validate", "Validated"), ("imported", "Imported")], required=True, default="draft")
 	attendance_data_ids = fields.One2many('import.attendance.line', 'import_attendance_id', string='Stock Data')
 
 	def get_eployee(self, emp_code):
@@ -54,46 +58,26 @@ class ImportAttendance(models.Model):
 
 	def import_attendance(self):
 		for line in self.attendance_data_ids:
-			delta =timedelta(days=1)
-			date_start = line.date_start
-			date_end = line.date_end
-			emp_import_attendance_objs = self.env['import.attendance.line'].sudo().search([('sale_id','=',line.sale_id.id),('state','=','imported'),('employee_id', '=', line.employee_id.id)])
-			while date_start <= date_end:
-				d = date_end.day
-				m = date_end.month
-				y = date_end.year
-				str_m_y = str(d)+'_'+str(m)+'_'+str(y)
-				for emp_import_attendance_obj in emp_import_attendance_objs:
-					d_m_y_list = emp_import_attendance_obj.d_m_y.split(",")
-					if str_m_y in d_m_y_list:
-						raise UserError(_('Employee timesheet already imported. Employee %s, %s', line.employee_id.emp_code, date_start))
-				date_start += delta
-			history_objs = self.env['rental.invoice.history'].sudo().search([('sale_state','=','sale'),('state','=','draft'),('employee_id', '=', line.employee_id.id)])
+			history_objs = self.env['rental.invoice.history'].search([('rental_sale_id','=', line.sale_id.id),('state','=','draft'),('employee_id', '=', line.employee_id.id)], limit=1)
 			if history_objs:
-				#Import only if rented
-				self.env['employee.workentry'].create({
-					'employee_id': line.employee_id.id,
-					'date_start': line.date_start,
-					'date_end': line.date_end,
-					'worked_days': line.worked_days,
-					'import_id':line.id
-				})
 				count=0
 				for history_obj in history_objs:
-					if history_obj.rental_sale_id.is_rental_order == True and history_obj.rental_sale_id.state=='sale':
-						m = line.date_end.month
-						y = line.date_end.year
-						str_m_y = str(m)+'_'+str(y)
-						hm =history_obj.rentalnext_invoice_date.month
-						hy =history_obj.rentalnext_invoice_date.year
-						hstr_m_y = str(hm)+'_'+str(hy)
-						if str_m_y == hstr_m_y:
-							# if count==0 and history_obj.worked_days==0:
-							if count==0:
-								history_obj.worked_days = history_obj.worked_days+line.worked_days
-								# line.sale_id = history_obj.rental_sale_id.id
-								line.history_line_id=history_obj.id
-								count=count+1
+					history_obj.worked_days = history_obj.worked_days + line.worked_qty
+					line.history_line_id=history_obj.id
+					history_obj.is_ready_to_invoice=True
+					#MOSES TOLD TO IMPORT DIRECTLY NO NEED TO VALIDATE DATE-15-04-2025
+					# if history_obj.rental_sale_id.is_rental_order == True and history_obj.rental_sale_id.state=='sale':
+					# 	m = line.month
+					# 	y = line.year
+					# 	str_m_y = str(m)+'_'+str(y)
+					# 	hm =history_obj.rentalnext_invoice_date.month
+					# 	hy =history_obj.rentalnext_invoice_date.year
+					# 	hstr_m_y = str(hm)+'_'+str(hy)
+					# 	if str_m_y == hstr_m_y:
+					# 		if count==0:
+					# 			history_obj.worked_days = history_obj.worked_days+line.worked_qty
+					# 			line.history_line_id=history_obj.id
+					# 			count=count+1
 			line.state='imported'
 		self.state = 'imported'
 
@@ -103,7 +87,7 @@ class ImportAttendance(models.Model):
 			if workentry_obj:
 				workentry_obj.unlink()
 			if not line.history_line_id.inv_ref_id:
-				line.history_line_id.worked_days= abs(line.history_line_id.worked_days - line.worked_days)
+				line.history_line_id.worked_days= abs(line.history_line_id.worked_days - line.worked_qty)
 				line.history_line_id=''
 				# line.sale_id=''
 				line.state='draft'
@@ -120,14 +104,37 @@ class ImportAttendance(models.Model):
 						no_employee.append(line.employee_id.id)
 			imp_record.no_employee=len(no_employee)
 
+	def validate_data(self):
+		#Moses told to hold this process
+		# for line in self.attendance_data_ids:
+		# 	attendace_import_objs = self.env['import.attendance.line'].sudo().search([('import_attendance_id', '=', 'self.id'), ('employee_id', '=', line.employee_id), ('sale_id', '=', line.sale_id.id),('is_consolidated', '=', False)])
+		# 	hours=0
+		# 	for attendace_import_obj in attendace_import_objs:
+		# 		attendace_import_obj.is_consolidated=True
+		# 		if attendace_import_obj.uom == 'hours':
+		# 			hours = hours + attendace_import_obj.worked_qty
+		# 		else:
+		# 			#TODO: get avg hours from employee calendar
+		# 			d_hours= attendace_import_obj.worked_qty*8
+		# 			hours = hours + d_hours
+		#
+		# 	# self.env['employee.workentry'].create({
+		# 	# 	'employee_id': line.employee_id.id,
+		# 	# 	'month': line.month,
+		# 	# 	'year': line.year,
+		# 	# 	'worked_qty': line.worked_qty,
+		# 	# 	'import_id': line.id,
+		# 	# 	'rental_sale_id': line.sale_id.id,
+		# 	# 	'percent':2,
+		# 	# 	'analytic_account_id':''
+		# 	# })
+		self.state='validate'
+
 	@api.onchange('file')
-	def get_stock_data(self):
+	def get_attendance(self):
 		values=[]
 		self.attendance_data_ids = [(6, 0, [])]
 		no_employee=[]
-		d_m_y=''
-		# holiday_list=[]
-		# w_working_days=[]
 		if self.file and not self.attendance_data_ids:
 			try:
 				file = tempfile.NamedTemporaryFile(delete= False,suffix=".xlsx")
@@ -135,67 +142,57 @@ class ImportAttendance(models.Model):
 				file.seek(0)
 				workbook = xlrd.open_workbook(file.name)
 				sheet = workbook.sheet_by_index(0)
-			except Exception:
-				raise ValidationError(_("Please Select Valid File Format !"))
+			except Exception as e:
+				raise ValidationError(_('Please Select Valid File Format!. Error %s', e))
+			month=''
+			year=''
 			for row_no in range(sheet.nrows):
 				line = list(map(lambda row:isinstance(row.value, bytes) and row.value.encode('utf-8') or str(row.value), sheet.row(row_no)))
 				if line:
-					if row_no==0:
-						seconds = (float(line[2]) - 25569) * 86400.0
-						date_start =datetime.utcfromtimestamp(seconds).date()
-						seconds = (float(line[5]) - 25569) * 86400.0
-						date_end =datetime.utcfromtimestamp(seconds).date()
-						self.date_start = date_start
-						self.date_end = date_end
-						if self.date_end<=self.date_start:
-							raise UserError('Date end can not be less than the start date')
-						delta = timedelta(days=1)
-						tmp_date_start = date_start
-						tmp_date_end = date_end
-						while tmp_date_start <= tmp_date_end:
-							d = tmp_date_start.day
-							m = tmp_date_start.month
-							y = tmp_date_start.year
-							str_m_y = str(d)+'_'+str(m)+'_'+str(y)
-							tmp_date_start += delta
-							if d_m_y=='':
-								d_m_y = str_m_y
-							else:
-								d_m_y = d_m_y+","+str_m_y
+					if row_no == 0:
+						if '.' in line[1]:
+							month = line[1].split('.')[0]
+							self.month = month
+						else:
+							month = str(line[1])
+							self.month = month
+						if '.' in line[3]:
+							year = line[3].split('.')[0]
+							self.year = year
+						else:
+							year=str(line[3])
+							self.year = year
 					if row_no>=2:
 						if '.' in line[1]:
 							project_code = line[1].split('.')[0]
 						else:
 							project_code = str(line[1])
-						if '.' in line[2]:
-							emp_code = line[2].split('.')[0]
+						if '.' in line[0]:
+							emp_code = line[0].split('.')[0]
 						else:
-							emp_code = str(line[2])
+							emp_code = str(line[0])
+						if line[3] == 'Hours':
+							uom='hours'
+						else:
+							uom = 'days'
 						employee_obj = self.get_eployee(emp_code)
 						if employee_obj.id:
 							no_employee.append(employee_obj.id)
 						so_obj = self.get_project(project_code)
-						delta = timedelta(days=1)
-						tmp_date_start = date_start
-						tmp_date_end = date_end
-						emp_import_attendance_objs = self.env['import.attendance.line'].sudo().search([('sale_id','=',so_obj.id),('state','=','imported'),('employee_id', '=', employee_obj.id)])
-						for emp_import_attendance_obj in emp_import_attendance_objs:
-							while tmp_date_start <= tmp_date_end:
-								d = tmp_date_start.day
-								m = tmp_date_start.month
-								y = tmp_date_start.year
-								str_m_y = str(d)+'_'+str(m)+'_'+str(y)
-								d_m_y_list = emp_import_attendance_obj.d_m_y.split(",")
-								if str_m_y in d_m_y_list:
-									raise UserError(_('Employee timesheet already imported. Employee %s, %s', employee_obj.emp_code, tmp_date_start))
-								tmp_date_start += delta
+						emp_attendace_objs = self.env['import.attendance.line'].search([
+							('employee_id', '=', employee_obj.id),
+							('month', '=', int(month)),
+							('state', '=', 'imported'),
+							('year', '=', int(year))])
+						if emp_attendace_objs:
+							raise UserError(_('Employee timesheet already imported. Employee %s', employee_obj.emp_code))
 						values.append((0, 0, {
-									'date_start': date_start,
-									'date_end': date_end,
+									'month': int(month),
+									'year': year,
 									'employee_id': employee_obj.id,
-									'worked_days': int(float(line[3])),
-									'd_m_y':d_m_y,
-									'sale_id':so_obj.id
+									'worked_qty': int(float(line[2])),
+									'sale_id':so_obj.id,
+									'uom':uom
 									}))
 			if values:
 				self.attendance_data_ids= values
@@ -212,18 +209,19 @@ class ImportStockLine(models.Model):
 	_name = 'import.attendance.line'
 	_description = 'Import Stock Line'
 
+	def _get_year_selection(self):
+		current_year = datetime.now().year
+		return [(str(i), i) for i in range(1990, current_year + 8)]
+
 	import_attendance_id = fields.Many2one("import.attendance", 'Stock Data', required=True, ondelete='cascade', index=True, copy=False)
-	date_start = fields.Date('Date Start')
-	date_end =  fields.Date('Date End')
 	employee_id = fields.Many2one('hr.employee', string="Employee")
-	worked_days = fields.Integer("Days Worked")
-	d_m_y = fields.Char("Date-Month-Year")
+	worked_qty = fields.Integer("Worked QTY")
+	month = fields.Integer("Month")
+	year = fields.Selection(selection='_get_year_selection', string='Year')
 	state = fields.Selection([("draft", "New"), ("imported", "Imported")], required=True, default="draft")
+	uom = fields.Selection([("hours", "hours"), ("days", "Days")], string="UOM", required=True, default="days")
 	sale_id = fields.Many2one('sale.order', 'Rental Ref#', copy=False)
 	history_line_id = fields.Many2one('rental.invoice.history', copy=False)
+	is_consolidated = fields.Boolean('Is Consolidated', defualt=False)
 
-	@api.constrains('worked_days')
-	def _check_worked_days(self):
-		if self.worked_days <0 or self.worked_days >31:
-			raise UserError(_('Worked days must be between 1-31 days.'))
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:
