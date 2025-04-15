@@ -172,7 +172,7 @@ class Rentals(models.Model):
         for order in self:
             for order_line in order.order_line:
                 if order_line.product_uom.name == 'Hours':
-                    order_line.product_uom_qty = order.duration_days
+                    order_line.product_uom_qty = order.duration_days * 8
                 else:
                     order_line.product_uom_qty = order.duration_days
                 if order_line.product_id.product_pricing_ids:
@@ -348,7 +348,7 @@ class Rentals(models.Model):
             for order in self:
                 for order_line in order.order_line:
                     if order_line.product_uom.name == 'Hours':
-                        order_line.product_uom_qty = order.duration_days
+                        order_line.product_uom_qty = order.duration_days * 8
                     else:
                         order_line.product_uom_qty = order.duration_days
                     if order_line.product_id.product_pricing_ids:
@@ -389,7 +389,7 @@ class Rentals(models.Model):
                     inv_dates=[]
                     for order_line in order.order_line:
                         if order_line.product_uom.name == 'Hours':
-                            order_line.product_uom_qty = order.duration_days
+                            order_line.product_uom_qty = order.duration_days * 8
                         else:
                             order_line.product_uom_qty = order.duration_days
                         invoice_start_date=order.rental_start_date.date()
@@ -761,7 +761,7 @@ class RentalOrdersLine(models.Model):
                 #             raise UserError(_("Employee is not available for rental."))
                 if order.order_id.duration_days>0:
                     if order.product_uom.name == 'Hours':
-                        order.product_uom_qty = order.order_id.duration_days
+                        order.product_uom_qty = order.order_id.duration_days * 8
                     else:
                         order.product_uom_qty = order.order_id.duration_days
                 if order.product_id.product_pricing_ids:
