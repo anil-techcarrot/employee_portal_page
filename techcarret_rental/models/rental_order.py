@@ -288,13 +288,14 @@ class Rentals(models.Model):
                         else:
                             days=order_line.planned_days/8
                             planned_days = planned_days + days
-                if planned_days>0:
-                    order.duration_days = planned_days
-                else:
-                    if remaining_hours>12:
-                        order.duration_days = duration.days + 1
+                if order.is_rental_order == True:
+                    if planned_days>0:
+                        order.duration_days = planned_days
                     else:
-                        order.duration_days = duration.days
+                        if remaining_hours>12:
+                            order.duration_days = duration.days + 1
+                        else:
+                            order.duration_days = duration.days
                 order.remaining_hours = 0
 
     @api.onchange('rental_start_date')
