@@ -320,6 +320,11 @@ class Rentals(models.Model):
     def _onchange_set_aa(self):
         for sale in self:
             for o_line in sale.order_line:
+                user_tz = self.env.user.tz or self.env.context.get('tz')
+                user_pytz = pytz.timezone(user_tz) if user_tz else pytz.utc
+                now_dt =o_line.order_id.rental_start_date.astimezone(user_pytz).replace(tzinfo=None)
+                now_dt = now_dt + relativedelta(hours=10)
+                o_line.start_date =  now_dt
                 aa_name=''
                 if sale.is_rental_order==True:
                     if o_line.product_id and sale.project_code:
@@ -738,6 +743,8 @@ class RentalOrdersLine(models.Model):
         default=0.0,
         digits='Product Unit of Measure',
         store=True, readonly=False, copy=False)
+    start_date = fields.Datetime()
+    return_date = fields.Datetime()
 
     # @api.depends(
     #     'qty_delivered_method',
@@ -806,6 +813,8 @@ class RentalOrdersLine(models.Model):
     @api.onchange('product_id')
     def _onchange_rent_product(self):
         for order in self:
+            order.start_date = order.order_id.rental_start_date
+            order.return_date = order.order_id.rental_return_date
             if order.order_id.is_rental_order == True:
                 # if order.product_id and not order.product_id.employee_id:
                 #     raise UserError(_("Employee profile not mapped in product master"))
