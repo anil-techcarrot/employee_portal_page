@@ -209,12 +209,8 @@ class Rentals(models.Model):
     @api.depends('order_line', 'order_line.recurring_invoice')
     def _compute_has_recurring_line(self):
         recurring_product_orders = self.order_line.filtered(lambda l: l.product_id.recurring_invoice).order_id
-        if self.is_tec_subscription == True:
-            recurring_product_orders.has_recurring_line = True
-            (self - recurring_product_orders).has_recurring_line = False
-        else:
-            recurring_product_orders.has_recurring_line = False
-            (self - recurring_product_orders).has_recurring_line = False
+        recurring_product_orders.has_recurring_line = True
+        (self - recurring_product_orders).has_recurring_line = False
 
     @api.model_create_multi
     def create(self, vals_list):
