@@ -62,33 +62,26 @@ class ImportAttendance(models.Model):
 
 	def import_attendance(self):
 		for line in self.attendance_data_ids:
-			so_inv_line_objs = self.env['rental.invoice.history'].search([('rental_sale_id','=', line.sale_id.id),('state','=','draft'),('employee_id', '=', line.employee_id.id)], limit=1)
+			m = line.month
+			y = line.year
+			so_inv_line_objs = self.env['rental.invoice.history'].search([('rental_sale_id','=', line.sale_id.id),('state','=','draft'),('employee_id', '=', line.employee_id.id)])
 			if so_inv_line_objs:
-				count=0
 				for so_inv_line_obj in so_inv_line_objs:
-					if so_inv_line_obj.uom == line.uom:
-						worked_qty = line.worked_qty
-					else:
-						if so_inv_line_obj.uom == 'days' and line.uom=='hours':
-							worked_qty = line.worked_qty/8
+					hm = so_inv_line_obj.rentalnext_invoice_date.month
+					hy = so_inv_line_obj.rentalnext_invoice_date.year
+					if hm<m and so_inv_line_obj.worked_days==0:
+						so_inv_line_obj.state = 'done'
+					if m == hm and y == str(hy):
+						if so_inv_line_obj.uom == line.uom:
+							worked_qty = line.worked_qty
 						else:
-							worked_qty = line.worked_qty * 8
-					so_inv_line_obj.worked_days = so_inv_line_obj.worked_days + worked_qty
-					line.history_line_id=so_inv_line_obj.id
-					so_inv_line_obj.is_ready_to_invoice=True
-					#MOSES TOLD TO IMPORT DIRECTLY NO NEED TO VALIDATE DATE-15-04-2025
-					# if history_obj.rental_sale_id.is_rental_order == True and history_obj.rental_sale_id.state=='sale':
-					# 	m = line.month
-					# 	y = line.year
-					# 	str_m_y = str(m)+'_'+str(y)
-					# 	hm =history_obj.rentalnext_invoice_date.month
-					# 	hy =history_obj.rentalnext_invoice_date.year
-					# 	hstr_m_y = str(hm)+'_'+str(hy)
-					# 	if str_m_y == hstr_m_y:
-					# 		if count==0:
-					# 			history_obj.worked_days = history_obj.worked_days+line.worked_qty
-					# 			line.history_line_id=history_obj.id
-					# 			count=count+1
+							if so_inv_line_obj.uom == 'days' and line.uom=='hours':
+								worked_qty = line.worked_qty/8
+							else:
+								worked_qty = line.worked_qty * 8
+						so_inv_line_obj.worked_days = so_inv_line_obj.worked_days + worked_qty
+						line.history_line_id=so_inv_line_obj.id
+						so_inv_line_obj.is_ready_to_invoice=True
 			line.state='imported'
 		self.state = 'imported'
 
@@ -98,9 +91,14 @@ class ImportAttendance(models.Model):
 			if workentry_obj:
 				workentry_obj.unlink()
 			if not line.history_line_id.inv_ref_id:
-				line.history_line_id.worked_days= abs(line.history_line_id.worked_days - line.worked_qty)
+				so_inv_line_objs = self.env['rental.invoice.history'].search([('rental_sale_id','=', line.sale_id.id),('id', '<', line.history_line_id.id)])
+				if so_inv_line_objs:
+					for so_inv_line_obj in so_inv_line_objs:
+						if so_inv_line_obj.worked_days ==0:
+							so_inv_line_obj.state = 'draft'
+				line.history_line_id.worked_days= 0
+				line.history_line_id.state='draft'
 				line.history_line_id=''
-				# line.sale_id=''
 				line.state='draft'
 			else:
 				raise ValidationError(_("Can not roll back the invoiced data!"))

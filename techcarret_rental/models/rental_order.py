@@ -273,12 +273,21 @@ class Rentals(models.Model):
             if order.rental_start_date and order.rental_return_date:
                 duration = order.rental_return_date - order.rental_start_date
                 remaining_hours = ceil(duration.seconds / 3600)
+                employee = ''
+                count = 0
                 for order_line in order.rental_inv_line_ids:
-                    if order_line.uom == 'days':
-                        planned_days = planned_days + order_line.planned_days
-                    else:
-                        days=order_line.planned_days/8
-                        planned_days = planned_days + days
+                    if count==0:
+                            if order_line.employee_id:
+                                if order_line.employee_id.resource_calendar_id:
+                                    employee = order_line.employee_id.id
+                                    count = count + 1
+                for order_line in order.rental_inv_line_ids:
+                    if employee == order_line.employee_id.id:
+                        if order_line.uom == 'days':
+                            planned_days = planned_days + order_line.planned_days
+                        else:
+                            days=order_line.planned_days/8
+                            planned_days = planned_days + days
                 if planned_days>0:
                     order.duration_days = planned_days
                 else:
@@ -386,6 +395,7 @@ class Rentals(models.Model):
                         if order_line.price_unit == 0.00:
                             order_line.price_unit = order_line.product_id.with_company(order_line.company_id.id).lst_price or 0.00
                 total_working_days=0
+                no_working_days=0
                 self.rental_inv_line_ids=[(6, 0, [])]
                 datetime_min_time = datetime.min.time()
                 datetime_max_time = datetime.min.time()
@@ -399,18 +409,15 @@ class Rentals(models.Model):
                     order.recurring_period_interval = 'month'
                 elif order.invoice_freequency.unit == 'year':
                     order.recurring_period_interval = 'year'
-                #GET ALL PUBLIC HOLIDAYS
-                holiday_list=[]
-                public_holiday_objs = self.env['resource.calendar.leaves'].search([('resource_id', '=', False)])
-                for public_holiday_obj in public_holiday_objs:
-                    holiday_list.append(public_holiday_obj.date_from.date())
                 if order.rental_start_date and order.rental_return_date and order.rentalfirst_invoice_date:
                     inv_dates=[]
+                    emp_id=''
                     for order_line in order.order_line:
-                        # if order_line.product_uom.name == 'Hours':
-                        #     order_line.product_uom_qty = order.duration_days * 8
-                        # else:
-                        #     order_line.product_uom_qty = order.duration_days
+                        if order_line.product_id:
+                            if order_line.product_id.employee_id:
+                                if order_line.product_id.employee_id.resource_calendar_id:
+                                    emp_id=order_line.product_id.employee_id.id
+                    for order_line in order.order_line:
                         invoice_start_date=order.rental_start_date.date()
                         last_invoiced_date=order.rentalfirst_invoice_date
                         if order_line.product_id and order_line.product_id.employee_id:
@@ -439,6 +446,10 @@ class Rentals(models.Model):
                                                              'is_ready_to_invoice':True,
                                                              'uom': uom
                                                              }))
+                                    if emp_id == order_line.product_id.employee_id.id:
+                                        if order_line.product_uom.name == 'Hours':
+                                            planned_worked = planned_worked/8
+                                        no_working_days = no_working_days + planned_worked
                                 next_invoice_date = order.rentalfirst_invoice_date + relativedelta(months=1)
                                 #CREATE BILL FOR UPCOMING MONTHS
                                 month_count = 2
@@ -468,6 +479,10 @@ class Rentals(models.Model):
                                     month_count = month_count + 1
                                     next_invoice_date = upcoming_invoice_date
                                     total_working_days = total_working_days + planned_worked
+                                    if emp_id == order_line.product_id.employee_id.id:
+                                        if order_line.product_uom.name == 'Hours':
+                                            planned_worked = planned_worked/8
+                                        no_working_days = no_working_days + planned_worked
                                 #CREATE LAST MONTH INVOICE IF WORKED IN PREVIOUS MONTH
                                 upcoming_invoice_date = order.rentalfirst_invoice_date + relativedelta(months=month_count)
                                 start_dt = next_invoice_date - relativedelta(months=1)
@@ -495,12 +510,21 @@ class Rentals(models.Model):
                                                              'rentalnext_invoice_date_time': next_invoice_date,
                                                              'uom':uom
                                                              }))
+                                    if emp_id == order_line.product_id.employee_id.id:
+                                        if order_line.product_uom.name == 'Hours':
+                                            planned_worked = planned_worked/8
+                                        no_working_days = no_working_days + planned_worked
                                 month_count = month_count + 1
                                 next_invoice_date = upcoming_invoice_date
                                 total_working_days = total_working_days + planned_worked
-                                # order.duration_days=total_working_days
                     if inv_dates:
-                        self.rental_inv_line_ids=inv_dates
+                        order.duration_days = no_working_days
+                        order.rental_inv_line_ids=inv_dates
+                        for order_line in order.order_line:
+                            if order_line.product_uom.name == 'Hours':
+                                order_line.product_uom_qty = order.duration_days * 8
+                            else:
+                                order_line.product_uom_qty = order.duration_days
 
     def _confirmation_error_message(self):
         """ Return whether order can be confirmed or not if not then returm error message. """
