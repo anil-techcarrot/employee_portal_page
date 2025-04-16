@@ -434,7 +434,7 @@ class Rentals(models.Model):
                                     if order_line.product_uom.name=='Hours':
                                         planned_worked = planned_worked*8
                                         uom = 'hours'
-                                    dummy_start_dt = start_dt + relativedelta(days=1)
+                                    dummy_start_dt = start_dt + relativedelta(days=5)
                                     inv_dates.append((0, 0, {'sale_state':order.state,
                                                              'planned_days':planned_worked,
                                                              'partner_id':order.partner_id.id,
@@ -467,6 +467,7 @@ class Rentals(models.Model):
                                         if order_line.product_uom.name == 'Hours':
                                             planned_worked = planned_worked * 8
                                             uom = 'hours'
+                                        dummy_start_dt = start_dt + relativedelta(days=5)
                                         inv_dates.append((0, 0, {'sale_state':order.state,
                                                              'planned_days':planned_worked,
                                                              'partner_id':order.partner_id.id,
@@ -474,7 +475,7 @@ class Rentals(models.Model):
                                                              'rentalnext_invoice_date':next_invoice_date,
                                                              'rentalnext_invoice_date_time':next_invoice_date,
                                                              'uom': uom,
-                                                             'rental_month': str(start_dt.month)
+                                                             'rental_month': str(dummy_start_dt.month)
                                                              }))
                                     month_count = month_count + 1
                                     next_invoice_date = upcoming_invoice_date
@@ -488,9 +489,10 @@ class Rentals(models.Model):
                                 start_dt = next_invoice_date - relativedelta(months=1)
                                 end_dt = upcoming_invoice_date - relativedelta(months=1)
                                 #add one more day to get final day in accounting
-                                end_dt = upcoming_invoice_date - relativedelta(days=1)
+                                # end_dt = upcoming_invoice_date - relativedelta(days=1)
                                 if next_invoice_date >= order.rental_return_date.date():
-                                    end_dt = order.rental_return_date.date()+relativedelta(days=1)
+                                    # end_dt = order.rental_return_date.date()+relativedelta(days=1)
+                                    end_dt = order.rental_return_date.date()
                                 start_dt = datetime.combine(start_dt, datetime_min_time)
                                 end_dt = datetime.combine(end_dt, datetime_max_time)
                                 planned_worked = \
@@ -502,6 +504,7 @@ class Rentals(models.Model):
                                     if order_line.product_uom.name=='Hours':
                                         planned_worked = planned_worked*8
                                         uom='hours'
+                                    dummy_start_dt = start_dt + relativedelta(days=5)
                                     inv_dates.append((0, 0, {'sale_state': order.state,
                                                              'planned_days': planned_worked,
                                                              'partner_id': order.partner_id.id,
@@ -509,7 +512,7 @@ class Rentals(models.Model):
                                                              'rentalnext_invoice_date': next_invoice_date,
                                                              'rentalnext_invoice_date_time': next_invoice_date,
                                                              'uom':uom,
-                                                             'rental_month': str(start_dt.month)
+                                                             'rental_month': str(dummy_start_dt.month)
                                                              }))
                                     if emp_id == order_line.product_id.employee_id.id:
                                         if order_line.product_uom.name == 'Hours':
@@ -545,9 +548,12 @@ class Rentals(models.Model):
 
     def create_rental_invoice(self, rental_obj):
         invoice_line_ids=[]
+        invoice_date=''
         for line in rental_obj.rental_sale_id.order_line:
             for rental_line in rental_obj.rental_sale_id.rental_inv_line_ids:
-                if not rental_line.inv_ref_id and rental_line.worked_days>0.00:
+                if not invoice_date and rental_line.is_ready_to_invoice==True and rental_line.worked_days>0:
+                    invoice_date = rental_line.rentalnext_invoice_date
+                if not rental_line.inv_ref_id and rental_line.worked_days>0:
                     if line.product_id.employee_id.id == rental_line.employee_id.id:
                         old_rental_objs = self.env['rental.invoice.history'].search(
                             [('rental_sale_id', '=', rental_obj.rental_sale_id.id),('employee_id', '=', rental_line.employee_id.id),
@@ -593,7 +599,7 @@ class Rentals(models.Model):
             inv_obj = self.env['account.move'].create({
                 'move_type': 'out_invoice',
                 'partner_id': rental_obj.rental_sale_id.partner_id.id,
-                'invoice_date': fields.date.today(),
+                'invoice_date': invoice_date or fields.date.today(),
                 'ref': rental_obj.rental_sale_id.name or '',
                 'narration': rental_obj.rental_sale_id.note,
                 'source_id': rental_obj.rental_sale_id.source_id.id,
