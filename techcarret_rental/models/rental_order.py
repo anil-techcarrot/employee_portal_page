@@ -437,6 +437,7 @@ class Rentals(models.Model):
                                     if order_line.product_uom.name=='Hours':
                                         planned_worked = planned_worked*8
                                         uom = 'hours'
+                                    dummy_start_dt = start_dt + relativedelta(days=1)
                                     inv_dates.append((0, 0, {'sale_state':order.state,
                                                              'planned_days':planned_worked,
                                                              'partner_id':order.partner_id.id,
@@ -444,7 +445,8 @@ class Rentals(models.Model):
                                                              'rentalnext_invoice_date': self.rentalfirst_invoice_date,
                                                              'rentalnext_invoice_date_time':self.rentalfirst_invoice_date,
                                                              'is_ready_to_invoice':True,
-                                                             'uom': uom
+                                                             'uom': uom,
+                                                             'rental_month':str(dummy_start_dt.month)
                                                              }))
                                     if emp_id == order_line.product_id.employee_id.id:
                                         if order_line.product_uom.name == 'Hours':
@@ -474,7 +476,8 @@ class Rentals(models.Model):
                                                              'employee_id': order_line.product_id.employee_id.id,
                                                              'rentalnext_invoice_date':next_invoice_date,
                                                              'rentalnext_invoice_date_time':next_invoice_date,
-                                                             'uom': uom
+                                                             'uom': uom,
+                                                             'rental_month': str(start_dt.month)
                                                              }))
                                     month_count = month_count + 1
                                     next_invoice_date = upcoming_invoice_date
@@ -508,7 +511,8 @@ class Rentals(models.Model):
                                                              'employee_id': order_line.product_id.employee_id.id,
                                                              'rentalnext_invoice_date': next_invoice_date,
                                                              'rentalnext_invoice_date_time': next_invoice_date,
-                                                             'uom':uom
+                                                             'uom':uom,
+                                                             'rental_month': str(start_dt.month)
                                                              }))
                                     if emp_id == order_line.product_id.employee_id.id:
                                         if order_line.product_uom.name == 'Hours':
@@ -877,6 +881,20 @@ class RentalInvoiceHistory(models.Model):
                               ('cancel', "Cancelled"),], default='draft')
     state = fields.Selection([('draft', 'Draft'), ('done', 'Invoiced'),('confirmed','Confirmed'),('cancel','Cancel')], default='draft')
     uom = fields.Selection([("hours", "Hours"), ("days", "Days")], string="UOM", required=True, default="days")
+    rental_month = fields.Selection([
+        ("1", "January"),
+        ("2", "February"),
+        ("3", "March"),
+        ("4", "April"),
+        ("5", "May"),
+        ("6", "June"),
+        ("7", "July"),
+        ("8", "August"),
+        ("9", "September"),
+        ("10", "October"),
+        ("11", "November"),
+        ("12", "December"),
+    ], string="Rental Month", default="1")
     work_entry_ids = fields.Many2many('hr.work.entry', string='Work Entries')
     planned_days = fields.Integer("Planned QTY")
     worked_days = fields.Integer("Worked QTY")

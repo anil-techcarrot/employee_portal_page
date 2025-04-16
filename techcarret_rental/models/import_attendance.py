@@ -67,11 +67,12 @@ class ImportAttendance(models.Model):
 			so_inv_line_objs = self.env['rental.invoice.history'].search([('rental_sale_id','=', line.sale_id.id),('state','=','draft'),('employee_id', '=', line.employee_id.id)])
 			if so_inv_line_objs:
 				for so_inv_line_obj in so_inv_line_objs:
-					hm = so_inv_line_obj.rentalnext_invoice_date.month
+					# hm = so_inv_line_obj.rentalnext_invoice_date.month
+					hm = so_inv_line_obj.rental_month
 					hy = so_inv_line_obj.rentalnext_invoice_date.year
-					if hm<m and so_inv_line_obj.worked_days==0:
+					if hm<str(m) and so_inv_line_obj.worked_days==0:
 						so_inv_line_obj.state = 'done'
-					if m == hm and y == str(hy):
+					if str(m) == hm and y == str(hy):
 						if so_inv_line_obj.uom == line.uom:
 							worked_qty = line.worked_qty
 						else:
@@ -124,6 +125,20 @@ class ImportAttendance(models.Model):
 			])
 			if emp_attendace_objs:
 				raise UserError(_('Employee timesheet already imported. Employee %s', line.employee_id.emp_code))
+
+		for line in self.attendance_data_ids:
+			m = line.month
+			y = line.year
+			so_inv_line_objs = self.env['rental.invoice.history'].search([('rental_sale_id','=', line.sale_id.id),('state','=','draft'),('employee_id', '=', line.employee_id.id)])
+			if so_inv_line_objs:
+				is_data_available=False
+				for so_inv_line_obj in so_inv_line_objs:
+					hm = so_inv_line_obj.rental_month
+					hy = so_inv_line_obj.rentalnext_invoice_date.year
+					if str(m) == hm and y == str(hy):
+						is_data_available = True
+				if is_data_available == False:
+					raise UserError(_('Rental not available. Project %s Employee %s',  line.sale_id.project_code, line.employee_id.emp_code))
 
 			# attendace_import_objs = self.env['import.attendance.line'].sudo().search([('import_attendance_id', '=', 'self.id'), ('employee_id', '=', line.employee_id), ('sale_id', '=', line.sale_id.id),('is_consolidated', '=', False)])
 		# 	hours=0
