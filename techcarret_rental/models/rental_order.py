@@ -550,11 +550,6 @@ class Rentals(models.Model):
                 return inv_obj
 
     def _cron_create_rental_month_invoices(self, rental_invoice=''):
-        #SET NUMBER FOR EXISTING CUSTOMERS
-        partner_objs = self.env['res.partner'].search([])
-        for partner_obj in partner_objs:
-            partner_obj.customer_code = self.env['ir.sequence'].next_by_code('res.partner')
-
         """ Generate invoice """
         if rental_invoice:
             rental_objs = rental_invoice
