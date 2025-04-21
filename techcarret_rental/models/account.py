@@ -46,11 +46,20 @@ class AccountMove(models.Model):
                 so_obj = self.env['sale.order'].search([('name', '=', invoice_origin)], limit=1)
                 if so_obj:
                     if so_obj.is_rental_order == True:
-                        move.journal_id = move.company_id.rental_journal_id.id
-                    elif so_obj.is_subscription == True:
-                        move.journal_id = move.company_id.subscription_journal_id.id
+                        if not so_obj.journal_id:
+                            move.journal_id = move.company_id.rental_journal_id.id
+                        else:
+                            move.journal_id = so_obj.journal_id.id
+                    elif so_obj.is_subscription == True and not so_obj.journal_id:
+                        if not so_obj.journal_id:
+                            move.journal_id = move.company_id.subscription_journal_id.id
+                        else:
+                            move.journal_id = so_obj.journal_id.id
                     else:
-                        move.journal_id = move.company_id.sales_journal_id.id
+                        if not so_obj.journal_id:
+                            move.journal_id = move.company_id.sales_journal_id.id
+                        else:
+                            move.journal_id = so_obj.journal_id.id
                 else:
                     move.journal_id = move._search_default_journal()
             else:

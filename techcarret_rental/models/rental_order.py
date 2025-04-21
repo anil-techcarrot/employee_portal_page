@@ -64,6 +64,15 @@ class Rentals(models.Model):
         now_dt = now_dt - relativedelta(hours=5)
         now_dt = now_dt - relativedelta(minutes=30)
         defaults['rental_return_date'] =now_dt
+        if 'is_rental_order' in defaults:
+            if defaults.get('is_rental_order') == True:
+                defaults['journal_id'] = company.rental_journal_id.id
+        if 'is_tec_subscription' in defaults:
+            if defaults.get('is_tec_subscription') == True:
+                defaults['journal_id'] = company.subscription_journal_id.id
+        if 'is_rental_order' in defaults and 'is_tec_subscription' in defaults:
+            if defaults.get('is_tec_subscription') == False and defaults.get('is_rental_order') == False:
+                defaults['journal_id'] = company.sales_journal_id.id
         return defaults
 
     def _default_freequency(self):
@@ -219,12 +228,16 @@ class Rentals(models.Model):
 
     @api.onchange('rental_start_date')
     def _onchange_finvoice(self):
+        user_tz = self.env.user.tz or self.env.context.get('tz')
+        user_pytz = pytz.timezone(user_tz) if user_tz else pytz.utc
+        now_dt = self.rental_start_date.astimezone(user_pytz).replace(tzinfo=None)
+        now_dt = now_dt.replace(hour=00, minute=00, second=1)
         if self.invoice_freequency:
-            rental_start_date = self.rental_start_date + relativedelta(hours=7)
-            next_invoice_date = rental_start_date + relativedelta(months=1)
+            next_invoice_date = now_dt + relativedelta(months=1)
         else:
             next_invoice_date = self.rental_start_date
-        self.rentalfirst_invoice_date=next_invoice_date
+        # self.rental_start_date=now_dt
+        self.rentalfirst_invoice_date = next_invoice_date
 
     @api.onchange('r_analytic_plan_id','s_analytic_plan_id','ss_analytic_plan_id')
     def _onchange_set_aa1(self):
@@ -721,37 +734,15 @@ class RentalOrdersLine(models.Model):
     def _get_rental_order_line_description(self):
         tz = self._get_tz()
         if self.order_id.is_rental_order == True:
-            start_date = self.order_id.rental_start_date
+            start_date = self.order_id.rental_start_date + relativedelta(hours=2)
             return_date = self.order_id.rental_return_date
-            user_tz = self.env.user.tz or self.env.context.get('tz')
-            user_pytz = pytz.timezone(user_tz) if user_tz else pytz.utc
-            now_dt = start_date.astimezone(user_pytz).replace(tzinfo=None)
-            now_dt = now_dt + relativedelta(hours=10)
-            self.start_date = now_dt
-            start_date = now_dt
-            if self.order_id.recurring_period_interval in ['month','week','year']:
-                s_date = datetime.strptime(str(start_date), "%Y-%m-%d %H:%M:%S").date()
-                r_date = datetime.strptime(str(return_date), "%Y-%m-%d %H:%M:%S").date()
-                s_date = s_date.strftime("%d-%m-%Y")
-                r_date = r_date.strftime("%d-%m-%Y")
-                return _(
-                    "\n%(from_date)s to %(to_date)s", from_date=s_date, to_date=r_date
-                )
-            else:
-                start_date = self.order_id.rental_start_date
-                return_date = self.order_id.rental_return_date
-                env = self.with_context(use_babel=True).env
-                if start_date and return_date \
-                        and start_date.replace(tzinfo=UTC).astimezone(timezone(tz)).date() \
-                        == return_date.replace(tzinfo=UTC).astimezone(timezone(tz)).date():
-                    # If return day is the same as pickup day, don't display return_date Y/M/D in description.
-                    return_date_part = format_time(env, return_date, tz=tz, time_format=False)
-                else:
-                    return_date_part = format_datetime(env, return_date, tz=tz, dt_format=False)
-                start_date_part = format_datetime(env, start_date, tz=tz, dt_format=False)
-                return _(
-                    "\n%(from_date)s to %(to_date)s", from_date=start_date_part, to_date=return_date_part
-                )
+            start_date = start_date.replace(tzinfo=UTC).astimezone(timezone(tz)).date()
+            return_date = return_date.replace(tzinfo=UTC).astimezone(timezone(tz)).date()
+            s_date = start_date.strftime("%m-%d-%Y")
+            r_date = return_date.strftime("%m-%d-%Y")
+            return _(
+                "\n%(from_date)s to %(to_date)s", from_date=s_date, to_date=r_date
+            )
         else:
             start_date = self.order_id.rental_start_date
             return_date = self.order_id.rental_return_date
