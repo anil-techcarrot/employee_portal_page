@@ -300,6 +300,9 @@
                        groups="analytic.group_analytic_accounting"
                        options="{'product_field': 'product_id', 'business_domain': 'sale_order', 'amount_field': 'price_subtotal'}"/>
             </xpath>
+            <xpath expr="//button[@name='action_preview_sale_order']" position='attributes'>
+                <attribute name="invisible">True</attribute>
+            </xpath>
             <xpath expr="//field[@name='client_order_ref']" position='replace'>
                 <field name="client_order_ref" required="0" invisible="1"/>
             </xpath>

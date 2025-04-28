@@ -12,6 +12,7 @@ from odoo.tools import format_datetime, format_time, date_utils
 from pytz import timezone, UTC
 from odoo.exceptions import UserError
 from odoo.tools import format_list
+import base64
 
 class TecprojectType(models.Model):
     _name = 'tecproject.type'
@@ -722,6 +723,23 @@ class Rentals(models.Model):
     #         'plan_id': project_plan.id,
     #         'partner_id': self.partner_id.id,
     #     }
+
+    # def action_quotation_send(self):
+    #     res = super().action_quotation_send()
+    #
+    #     for order in self:
+    #         # Generate the report as PDF
+    #         pdf_content, _ = self.env.ref('techcarret_rental.action_generate_techcarrot_sale_report')._render_qweb_pdf([order.id])
+    #
+    #         # Create the attachment
+    #         attachment = self.env['ir.attachment'].create({
+    #             'name': f'Custom_Sale_Order_{order.name}.pdf',
+    #             'type': 'binary',
+    #             'datas': base64.b64encode(pdf_content),
+    #             'res_model': 'sale.order',
+    #             'res_id': order.id,
+    #             'mimetype': 'application/pdf'
+    #         })
 
 
 class RentalOrdersLine(models.Model):
