@@ -625,20 +625,20 @@ class Rentals(models.Model):
                     old_rental_objs = self.env['rental.invoice.history'].search([('rental_sale_id','=',rental_obj.rental_sale_id.id),('id', '=', int(rental_obj.id-1)),('state','in',['confirmed','done'])], limit=1)
                     future_rental_objs = self.env['rental.invoice.history'].search([('rental_sale_id','=',rental_obj.rental_sale_id.id),('id', '=', int(rental_obj.id+1)),('state','in',['draft'])], limit=1)
                     if old_rental_objs:
-                        start_date=(old_rental_objs.rentalnext_invoice_date).strftime('%Y-%m-%d 00:00:00')
+                        start_date=(old_rental_objs.rentalnext_invoice_date).strftime('%d-%m-%Y 00:00:00')
                         if future_rental_objs:
-                            end_date=datetime.strftime(future_rental_objs.rentalnext_invoice_date - timedelta(days=1), "%Y-%m-%d 23:59:59")
+                            end_date=datetime.strftime(future_rental_objs.rentalnext_invoice_date - timedelta(days=1), "%d-%m-%Y 23:59:59")
                         else:
-                            end_date=datetime.strftime(rental_obj.rental_sale_id.rental_return_date, "%Y-%m-%d 23:59:59")
+                            end_date=datetime.strftime(rental_obj.rental_sale_id.rental_return_date, "%d-%m-%Y 23:59:59")
                     else:
-                        start_date=(rental_obj.rental_sale_id.rental_start_date).strftime('%Y-%m-%d 00:00:00')
+                        start_date=(rental_obj.rental_sale_id.rental_start_date).strftime('%d-%m-%Y 00:00:00')
                         if future_rental_objs:
-                            end_date=datetime.strftime(future_rental_objs.rentalnext_invoice_date - timedelta(days=1), "%Y-%m-%d 23:59:59")
+                            end_date=datetime.strftime(future_rental_objs.rentalnext_invoice_date - timedelta(days=1), "%d-%m-%Y 23:59:59")
                         else:
-                            end_date=datetime.strftime(rental_obj.rental_sale_id.rental_return_date, "%Y-%m-%d 23:59:59")
+                            end_date=datetime.strftime(rental_obj.rental_sale_id.rental_return_date, "%d-%m-%Y 23:59:59")
                     delta =timedelta(days=1)
-                    start_date = datetime.strptime(start_date, '%Y-%m-%d %H:%M:%S')
-                    end_date = datetime.strptime(end_date, '%Y-%m-%d %H:%M:%S')
+                    start_date = datetime.strptime(start_date, '%d-%m-%Y %H:%M:%S')
+                    end_date = datetime.strptime(end_date, '%d-%m-%Y %H:%M:%S')
                     while start_date <= end_date:
                         m = start_date.month
                         y = start_date.year
@@ -793,8 +793,8 @@ class RentalOrdersLine(models.Model):
             return_date = self.order_id.rental_return_date
             start_date = start_date.replace(tzinfo=UTC).astimezone(timezone(tz)).date()
             return_date = return_date.replace(tzinfo=UTC).astimezone(timezone(tz)).date()
-            s_date = start_date.strftime("%m-%d-%Y")
-            r_date = return_date.strftime("%m-%d-%Y")
+            s_date = start_date.strftime("%d-%m-%Y")
+            r_date = return_date.strftime("%d-%m-%Y")
             return _(
                 "\n%(from_date)s to %(to_date)s", from_date=s_date, to_date=r_date
             )
