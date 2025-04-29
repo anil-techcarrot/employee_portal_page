@@ -2,6 +2,7 @@
 from odoo import api, fields, models, _
 from datetime import date, datetime, timedelta
 from odoo.exceptions import UserError
+from odoo.tools import get_lang, SQL
 
 
 class AccountMove(models.Model):
@@ -88,8 +89,8 @@ class AccountMoveLine(models.Model):
                     values.append(product.description_sale)
                 if line.rental_start_date and line.rental_return_date:
                     retrun_datetime = line.rental_return_date - timedelta(days=1)
-                    s_date = datetime.strptime(str(line.rental_start_date), "%d-%m-%Y %H:%M:%S").date()
-                    r_date = datetime.strptime(str(retrun_datetime), "%d-%m-%Y %H:%M:%S").date()
+                    s_date = line.rental_start_date.strftime(get_lang(self.env).date_format)
+                    r_date = retrun_datetime.strftime(get_lang(self.env).date_format)
                     s_date = str(s_date) +' TO '+str(r_date)
                     values.append(s_date)
             elif line.journal_id.type == 'purchase':
