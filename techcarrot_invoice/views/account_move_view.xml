@@ -14,6 +14,10 @@
             <xpath expr="//button[@name='preview_invoice']" position="attributes">
                 <attribute name="invisible">True</attribute>
             </xpath>
+            <xpath expr="//page[@id='aml_tab']/field/list/field[@name='partner_id']" position="after">
+                <field name="project_id"></field>
+                <field name="domain_project_ids" widget="many2many_tags" column_invisible="1"></field>
+            </xpath>
         </field>
     </record>
 

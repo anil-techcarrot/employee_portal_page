@@ -32,3 +32,17 @@ class AccountMoveSend(models.AbstractModel):
         # + self._get_invoice_extra_attachments_data(move) \
         # + self._get_mail_template_attachments_data(mail_template)
         return self._get_placeholder_mail_attachments_data(move, extra_edis=extra_edis)
+
+
+class AccountMoveLine(models.Model):
+    _inherit = "account.move.line"
+
+    project_id = fields.Many2one('project.project', 'Project', domain="[('id', 'in', domain_project_ids)]",)
+    domain_project_ids = fields.Many2many('project.project', compute='_compute_project_ids')
+
+    @api.depends('account_id')
+    def _compute_project_ids(self):
+        for rec in self:
+            domain = [('stage_id.name', 'not in', ['To Do', 'Cancelled'])]
+            domain_project_ids = self.env['project.project'].search(domain)
+            rec.domain_project_ids = domain_project_ids.ids

@@ -28,8 +28,9 @@
     'assets': {
         'web.assets_backend': [
             # 'techcarret_rental/static/src/css/widget.css',
-            'techcarret_rental/static/src/xml/one2many_delete_templates.xml',
-            'techcarret_rental/static/src/js/list_renderer.js',
+            # 'techcarret_rental/static/src/xml/one2many_delete_templates.xml',
+            # 'techcarret_rental/static/src/xml/hide_view_button.xml',
+            # 'techcarret_rental/static/src/js/list_renderer.js',
         ],
     },
     'auto_install': False,

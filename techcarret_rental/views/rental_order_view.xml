@@ -105,7 +105,7 @@
                         invisible="subscription_state != '4_paused'"/>
             </button>
             <button id="create_invoice" position="attributes">
-                <attribute name="invisible">(not is_subscription and invoice_status != 'to invoice') or (is_subscription and (state != 'sale' or (next_invoice_date &gt; current_date and invoice_status != 'to invoice')))</attribute>
+                <attribute name="invisible">is_rental_order or (not is_subscription and invoice_status != 'to invoice') or (is_subscription and (state != 'sale' or (next_invoice_date &gt; current_date and invoice_status != 'to invoice')))</attribute>
             </button>
             <button id="create_invoice" position="after">
                 <button id="create_invoice_sub" name="%(sale.action_view_sale_advance_payment_inv)d" string="Create Invoice"
@@ -333,7 +333,7 @@
         <field name="inherit_id" ref="project.edit_project"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='partner_id']" position='before'>
-                <field name="project_code"/>
+                <field name="project_code" required="1"/>
             </xpath>
         </field>
     </record>
@@ -471,6 +471,8 @@
                             <field name="state" string="Status" column_invisible="1"/>
                             <field name="invoice_state" column_invisible="1"/>
                             <field name="is_ready_to_invoice" column_invisible="1"/>
+                            <field name="rental_start_date" column_invisible="True" optional="hide" force_save="1"/>
+                            <field name="rental_return_date" column_invisible="True" optional="hide" force_save="1"/>
                             <button type="object" invisible="worked_days==0 or is_ready_to_invoice !=True or sale_state !='sale' or state != 'draft' or is_selected != True" name="create_invoice" string="Create Invoice" class="btn-primary"/>
                             <button type="object" invisible="worked_days==0 or is_ready_to_invoice==True or sale_state !='sale' or state != 'draft' or is_selected != True" name="create_invoice" string="Create Invoice" class="btn-secondary"/>
                         </list>

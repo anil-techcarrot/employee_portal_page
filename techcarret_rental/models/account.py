@@ -66,6 +66,28 @@ class AccountMove(models.Model):
             else:
                 move.journal_id = move._search_default_journal()
 
+    # def action_post(self):
+    #     res = super(AccountMove, self).action_post()
+    #     if self.name and '/' in self.name:
+    #         self.name = self.name.replace('/','-')
+    #     return res
+
+    def action_view_source_sale_orders(self):
+        self.ensure_one()
+        source_orders = self.line_ids.sale_line_ids.order_id
+        result = self.env['ir.actions.act_window']._for_xml_id('sale.action_orders')
+        if len(source_orders) > 1:
+            result['domain'] = [('id', 'in', source_orders.ids)]
+        elif len(source_orders) == 1:
+            if source_orders.is_rental_order:
+                result['views'] = [(self.env.ref('sale_renting.rental_order_primary_form_view', False).id, 'form')]
+            else:
+                result['views'] = [(self.env.ref('sale.view_order_form', False).id, 'form')]
+            result['res_id'] = source_orders.id
+        else:
+            result = {'type': 'ir.actions.act_window_close'}
+        return result
+
 
 class AccountMoveLine(models.Model):
     _inherit = "account.move.line"
@@ -88,7 +110,7 @@ class AccountMoveLine(models.Model):
                 if product.description_sale:
                     values.append(product.description_sale)
                 if line.rental_start_date and line.rental_return_date:
-                    retrun_datetime = line.rental_return_date - timedelta(days=1)
+                    retrun_datetime = line.rental_return_date
                     s_date = line.rental_start_date.strftime(get_lang(self.env).date_format)
                     r_date = retrun_datetime.strftime(get_lang(self.env).date_format)
                     s_date = str(s_date) +' TO '+str(r_date)
