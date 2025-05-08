@@ -35,7 +35,7 @@
         <field name="inherit_id" ref="hr_contract.hr_hr_employee_view_form3"/>
         <field name="arch" type="xml">
             <xpath expr="//button[@name='action_open_contract']" position="attributes">
-                <attribute name="invisible">employee_type not in ['employee', 'student', 'trainee', 'permanent']</attribute>
+                <attribute name="invisible">employee_type not in ['employee', 'student', 'trainee', 'permanent', 'temporary']</attribute>
             </xpath>
         </field>
     </record>

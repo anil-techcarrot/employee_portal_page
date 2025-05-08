@@ -339,7 +339,9 @@ class HrEmployeeInherit(models.Model):
                 # Get the country calling code for each region
                 country_code = phonenumbers.country_code_for_region(region_code)
                 if country_code:
-                    country_calling_codes.append((f"+{country_code}", f"+{country_code}"))
+                    str_country_code = (f"+{country_code}", f"+{country_code}")
+                    if str_country_code not in country_calling_codes:
+                        country_calling_codes.append(str_country_code)
             except Exception as e:
                 # In case of any issues, just skip that region
                 continue
