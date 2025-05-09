@@ -84,6 +84,11 @@ class AccountMoveLine(models.Model):
             self.discount_fixed, precision_rounding=currency.rounding
         ) or float_is_zero(self.price_unit, precision_rounding=currency.rounding):
             return 0.0
+        subtotal = self.quantity * self.price_unit
+        if self.discount_fixed>subtotal:
+            self.discount_fixed=0.00
+            self.discount=0.00
+            return 0.00
         discount = ((self.quantity * self.price_unit) - (
                 (self.quantity * self.price_unit) - self.discount_fixed)) / (
                            self.quantity * self.price_unit) * 100 or 0.0

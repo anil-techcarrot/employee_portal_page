@@ -91,12 +91,12 @@ class SaleOrderLine(models.Model):
         self.ensure_one()
         if not self.discount_fixed:
             return 0.0
+        subtotal = self.product_uom_qty * self.price_unit
+        if self.discount_fixed>subtotal:
+            self.discount_fixed=0.00
+            self.discount=0.00
+            return 0.00
         discount = ((self.product_uom_qty * self.price_unit) - (
                     (self.product_uom_qty * self.price_unit) - self.discount_fixed)) / (
                            self.product_uom_qty * self.price_unit) * 100 or 0.0
         return discount
-        # return (
-        #     (self.price_unit != 0)
-        #     and ((self.discount_fixed) / self.price_unit) * 100
-        #     or 0.00
-        # )

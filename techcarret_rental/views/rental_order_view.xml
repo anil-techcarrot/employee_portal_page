@@ -464,7 +464,7 @@
                             <field name="rentalnext_invoice_date" readonly="parent.state!='draft'" force_save="1" column_invisible="parent.recurring_period_interval in ['hour']"/>
                             <field name="rentalnext_invoice_date_time" readonly="parent.state!='draft'" force_save="1" column_invisible="parent.recurring_period_interval not in ['hour']"/>
                             <field name="work_entry_ids" column_invisible="1" widget="many2many_tags" options="{'color_field': 'color'}"/>
-                            <field name="planned_days" readonly="1" force_save="1"/>
+                            <field name="planned_days" required="1" force_save="1"/>
                             <field name="worked_days" readonly="inv_ref_id"/>
                             <field name="uom" readonly="1" force_save="1"/>
                             <field name="inv_ref_id" readonly="parent.state!='draft'" force_save="1"/>
