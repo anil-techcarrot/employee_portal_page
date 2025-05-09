@@ -13,6 +13,7 @@ from odoo.tools import get_lang, SQL
 from odoo.exceptions import ValidationError
 from datetime import datetime
 # from dateutil import relativedelta
+import base64
 
 
 class TecprojectType(models.Model):
@@ -636,6 +637,7 @@ class Rentals(models.Model):
                                 'sale_line_ids': [Command.link(line.id)],
                                 'rental_start_date': rental_line.rental_start_date,
                                 'rental_return_date': rental_line.rental_return_date,
+                                'discount_fixed': line.discount_fixed
                             }
                             if analytic_distribution:
                                 inv_line.update({'analytic_distribution':analytic_distribution})
@@ -811,22 +813,28 @@ class Rentals(models.Model):
     #         'partner_id': self.partner_id.id,
     #     }
 
-    # def action_quotation_send(self):
-    #     res = super().action_quotation_send()
-    #
-    #     for order in self:
-    #         # Generate the report as PDF
-    #         pdf_content, _ = self.env.ref('techcarret_rental.action_generate_techcarrot_sale_report')._render_qweb_pdf([order.id])
-    #
-    #         # Create the attachment
-    #         attachment = self.env['ir.attachment'].create({
-    #             'name': f'Custom_Sale_Order_{order.name}.pdf',
-    #             'type': 'binary',
-    #             'datas': base64.b64encode(pdf_content),
-    #             'res_model': 'sale.order',
-    #             'res_id': order.id,
-    #             'mimetype': 'application/pdf'
-    #         })
+    def action_quotation_send(self):
+        res = super(Rentals, self).action_quotation_send()
+        for order in self:
+            pdf_content = \
+            self.env['ir.actions.report']._render('techcarret_rental.action_generate_techcarrot_sale_report', self.ids)[0]
+            pdf_base64 = base64.b64encode(pdf_content).decode('utf-8')
+            name = ''
+            if self.state in ['draft', 'sent']:
+                name = 'Quotation'
+            if self.state == 'sale':
+                name = 'Sale Order'
+            attachment = self.env['ir.attachment'].create({
+                'name': name + ' - ' + self.name,
+                'type': 'binary',
+                'datas': pdf_base64,
+                'res_model': 'sale.order',
+                'res_id': self.id,
+                'mimetype': 'application/pdf'
+            })
+            if res.get('context'):
+                res['context'].setdefault('default_attachment_ids', []).append(attachment.id)
+        return res
 
 
 class RentalOrdersLine(models.Model):
@@ -847,6 +855,31 @@ class RentalOrdersLine(models.Model):
     #     print('SWIRTTRTTRRRRRRRRRRRRR_______________',self)
     #     self.manually_edited = False
     #     return res
+
+    @api.depends('product_id', 'product_uom', 'product_uom_qty')
+    def _compute_discount(self):
+        discount_enabled = self.env['product.pricelist.item']._is_discount_feature_enabled()
+        for line in self:
+            if not line.product_id or line.display_type:
+                line.discount = 0.0
+            if not (line.order_id.pricelist_id and discount_enabled):
+                continue
+            # line.discount = 0.0
+            if not line.pricelist_item_id._show_discount():
+                # No pricelist rule was found for the product
+                # therefore, the pricelist didn't apply any discount/change
+                # to the existing sales price.
+                continue
+            line = line.with_company(line.company_id)
+            pricelist_price = line._get_pricelist_price()
+            base_price = line._get_pricelist_price_before_discount()
+
+            if base_price != 0:  # Avoid division by zero
+                discount = (base_price - pricelist_price) / base_price * 100
+                if (discount > 0 and base_price > 0) or (discount < 0 and base_price < 0):
+                    # only show negative discounts if price is negative
+                    # otherwise it's a surcharge which shouldn't be shown to the customer
+                    line.discount = discount
 
     @api.onchange('product_uom_qty')
     def _onchange_product_uom_qty(self):

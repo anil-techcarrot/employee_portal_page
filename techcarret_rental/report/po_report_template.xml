@@ -63,8 +63,15 @@
                                             <tr>
                                                 <td width="60%">Date</td>
                                                 <td width="5%">:</td>
-                                                <t t-set="parsed_date" t-value="o.date_approve.date()"/>
-                                                <td width="35%"><span t-esc="parsed_date.strftime('%d %b %Y')"></span></td>
+                                                <t t-if="o.date_approve">
+                                                    <t t-set="parsed_date" t-value="o.date_approve.date()"/>
+                                                    <td width="35%"><span t-esc="parsed_date.strftime('%d %b %Y')"></span></td>
+                                                </t>
+                                                <t t-else="">
+                                                    <t t-set="order_parsed_date" t-value="o.date_order.date()"/>
+                                                    <td width="35%"><span t-esc="order_parsed_date.strftime('%d %b %Y')"></span></td>
+                                                </t>
+
                                             </tr>
                                             <tr>
                                                 <td >Payment Terms</td>
@@ -87,7 +94,7 @@
                                     <tr style="background-color:#404040;border:none;">
                                         <th name="th_description" width="6%" class="text-center" style="color: white;border:none;"><span >#</span></th>
                                         <th name="th_description" width="25%" style="color: white;border:none;"><span>Item &amp; Description</span></th>
-                                        <th name="th_quantity" width="9%"  class="text-center" style="color: white;border:none;"><span>Qty</span></th>
+                                        <th name="th_quantity" width="9%"  class="text-end" style="color: white;border:none;"><span>Qty</span></th>
                                         <th name="th_quantity" width="9%" class="text-end" style="color: white;border:none;"><span>Rate</span></th>
                                         <th name="th_quantity" width="10%" class="text-end" style="color: white;border:none;"><span>Tax %</span></th>
                                         <th name="th_quantity" width="11%" class="text-end" style="color: white;border:none;"><span>Tax</span></th>
