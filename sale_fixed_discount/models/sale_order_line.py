@@ -100,3 +100,8 @@ class SaleOrderLine(models.Model):
                     (self.product_uom_qty * self.price_unit) - self.discount_fixed)) / (
                            self.product_uom_qty * self.price_unit) * 100 or 0.0
         return discount
+
+    def _prepare_invoice_line(self, **optional_values):
+        res = super()._prepare_invoice_line(**optional_values)
+        res.update({"discount_fixed": self.discount_fixed})
+        return res
