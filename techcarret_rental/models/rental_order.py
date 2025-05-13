@@ -292,7 +292,6 @@ class Rentals(models.Model):
                                         aa_dict.update({key:value})
                                 o_line.analytic_distribution=aa_dict
 
-
     @api.onchange('rental_start_date','rental_return_date')
     def _onchange_rental_dates(self):
         if self.is_rental_order == True:
@@ -1164,6 +1163,7 @@ class ProjectProject(models.Model):
     _inherit = 'project.project'
 
     allow_billable = fields.Boolean("Billable", default=True)
+    project_code = fields.Char('Project Code', copy=False, required=True)
 
     def unlinkaa(self):
         # Delete the empty related analytic account
@@ -1174,17 +1174,30 @@ class ProjectProject(models.Model):
         analytic_accounts_to_delete.unlink()
         return True
 
+    @api.model
+    def create(self, vals):
+        if 'name' in vals and self.search([('name', '=', vals['name'])]):
+            raise ValidationError(_('Name must be unique.'))
+        if 'project_code' in vals and self.search([('project_code', '=', vals['project_code'])]):
+            raise ValidationError(_('Project code must be unique.'))
+        return super().create(vals)
+
     def write(self, vals):
+        if 'name' in vals:
+            for record in self:
+                existing = self.search([('name', '=', vals['name']), ('id', '!=', record.id)])
+                if existing:
+                    raise ValidationError(_('Name must be unique.'))
+        if 'project_code' in vals:
+            for record in self:
+                existing = self.search([('project_code', '=', vals['project_code']), ('id', '!=', record.id)])
+                if existing:
+                    raise ValidationError(_('Project code must be unique.'))
         res = super(ProjectProject, self).write(vals) if vals else True
         for line in self:
             line.unlinkaa()
         return res
 
-    # _sql_constraints = [
-    #     ('name_uniq', 'unique (name)', 'Project must be unique.')
-    # ]
-
-    project_code = fields.Char('Project Code', copy=False)
     #
     # @api.constrains('sale_line_id')
     # def _check_sale_line_type(self):
