@@ -51,14 +51,26 @@ class ImportAttendance(models.Model):
 		else:
 			raise UserError(_('Employee master not found. Employee ID: %s', emp_code))
 
-	def get_project(self, code):
-		so_obj = self.env['sale.order'].sudo().search([('is_rental_order','=',True),('project_code', '=', str(code))], limit=1)
-		if so_obj:
-			if so_obj.state != 'sale':
-				raise UserError(_('Rental not confirmed. Project code: %s', code))
-			return so_obj
+	def get_project(self, code, employee):
+		project_obj = self.env['project.project'].sudo().search([('project_code', '=', str(code))], limit=1)
+		if project_obj:
+			so_objs = self.env['sale.order'].sudo().search([('is_rental_order','=',True),('project_id', '=', project_obj.id)])
+			if so_objs:
+				is_so_available = False
+				for so_obj in so_objs:
+					if so_obj.state != 'sale':
+						continue
+					for line in so_obj.order_line:
+						employee_id = getattr(line.product_id.employee_id, 'id', None)
+						if employee_id == employee.id:
+							is_so_available = True
+							return so_obj
+				if is_so_available == False:
+					raise UserError(_('Employee code not found in this project: %s', code))
+			else:
+				raise UserError(_('Project not assigned to any of rental order: %s', code))
 		else:
-			raise UserError(_('Rental project code not found. Project code: %s', code))
+			raise UserError(_('Project code not found: %s', code))
 
 	def import_attendance(self):
 		for line in self.attendance_data_ids:
@@ -211,7 +223,7 @@ class ImportAttendance(models.Model):
 						employee_obj = self.get_eployee(emp_code)
 						if employee_obj.id:
 							no_employee.append(employee_obj.id)
-						so_obj = self.get_project(project_code)
+						so_obj = self.get_project(project_code, employee_obj)
 						emp_attendace_objs = self.env['import.attendance.line'].search([
 							('employee_id', '=', employee_obj.id),
 							('month', '=', int(month)),
