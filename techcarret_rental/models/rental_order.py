@@ -1038,20 +1038,20 @@ class ProjectProject(models.Model):
         analytic_accounts_to_delete.unlink()
         return True
 
-    @api.model
+    @api.model_create_multi
     def create(self, vals):
-        if 'name' in vals and self.search([('name', '=', vals['name'])]):
-            raise ValidationError(_('Name must be unique.'))
+        # if 'name' in vals and self.search([('name', '=', vals['name'])]):
+        #     raise ValidationError(_('Name must be unique.'))
         if 'project_code' in vals and self.search([('project_code', '=', vals['project_code'])]):
             raise ValidationError(_('Project code must be unique.'))
         return super().create(vals)
 
     def write(self, vals):
-        if 'name' in vals:
-            for record in self:
-                existing = self.search([('name', '=', vals['name']), ('id', '!=', record.id)])
-                if existing:
-                    raise ValidationError(_('Name must be unique.'))
+        # if 'name' in vals:
+        #     for record in self:
+        #         existing = self.search([('name', '=', vals['name']), ('id', '!=', record.id)])
+        #         if existing:
+        #             raise ValidationError(_('Name must be unique.'))
         if 'project_code' in vals:
             for record in self:
                 existing = self.search([('project_code', '=', vals['project_code']), ('id', '!=', record.id)])
@@ -1062,25 +1062,6 @@ class ProjectProject(models.Model):
             line.unlinkaa()
         return res
 
-    # _sql_constraints = [
-    #     ('name_uniq', 'unique (name)', 'Project must be unique.')
-    # ]
-
-    project_code = fields.Char('Project Code', copy=False)
-
-    _sql_constraints = [('unique_project_name_techcarret', 'unique (name)', 'Name must be unique.')]
-
-
-    def create(self, vals):
-        project_id = self.search([('name', '=', vals['name'])])
-        if project_id:
-            raise ValidationError("Project name must be unique.")
-        res = super(ProjectProject, self).create(vals)
-        return res
-
-
-
-    #
     # @api.constrains('sale_line_id')
     # def _check_sale_line_type(self):
     #     for project in self.filtered(lambda project: project.sale_line_id):
@@ -1091,4 +1072,3 @@ class ProjectProject(models.Model):
             # if project.sale_line_id.is_expense:
             #     raise ValidationError(
             #         _("You cannot link a billable project to a sales order item that comes from an expense or a vendor bill."))
-
