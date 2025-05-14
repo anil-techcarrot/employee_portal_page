@@ -398,21 +398,21 @@ class Rentals(models.Model):
                                             next_inv_date = next_inv_date + relativedelta(months=1)
                                     elif next_inv_date <= range_end.date() and next_inv_date >= range_start.date():
                                         next_inv_date = next_inv_date + relativedelta(months=1)
+                                    # else:
+                                    next_range_start = range_start.date() + relativedelta(months=1)
+                                    month_days = calendar.monthrange(current.year, current.month)[1]
+                                    if first_inv_day in [28, 29, 30, 31]:
+                                        if month_days == 28:
+                                            next_inv_date = next_inv_date.replace(day=28)
+                                        elif month_days == 29:
+                                            next_inv_date = next_inv_date.replace(day=29)
+                                        elif month_days == 30:
+                                            next_inv_date = next_inv_date.replace(day=30)
+                                        elif month_days == 31:
+                                            next_inv_date = next_inv_date.replace(day=31)
                                     else:
-                                        next_range_start = range_start.date() + relativedelta(months=1)
-                                        month_days = calendar.monthrange(next_range_start.year, next_range_start.month)[1]
-                                        if first_inv_day in [28, 29, 30, 31]:
-                                            if month_days == 28:
-                                                next_inv_date = next_inv_date.replace(day=28)
-                                            elif month_days == 29:
-                                                next_inv_date = next_inv_date.replace(day=29)
-                                            elif month_days == 30:
-                                                next_inv_date = next_inv_date.replace(day=30)
-                                            elif month_days == 31:
-                                                next_inv_date = next_inv_date.replace(day=31)
-                                        else:
-                                            next_inv_date = next_inv_date.replace(day=first_inv_day)
-                                        next_inv_date = next_inv_date + relativedelta(months=1)
+                                        next_inv_date = next_inv_date.replace(day=first_inv_day)
+                                    # next_inv_date = next_inv_date + relativedelta(months=1)
                                     so_line_worked_days = so_line_worked_days + planned_worked
                             order.duration_days = so_line_worked_days
                     if inv_dates:
