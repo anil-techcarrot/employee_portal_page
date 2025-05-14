@@ -28,6 +28,13 @@ class AccountMove(models.Model):
             or m.journal_id.currency_id and m.currency_id != m.journal_id.currency_id
         ))
 
+    @api.onchange('journal_id')
+    def _onchange_journal_account_id(self):
+        for move in self:
+            for move_line in move.invoice_line_ids:
+                if move_line.product_id:
+                    move_line.account_id = move.journal_id.default_account_id.id
+
     @api.depends('move_type', 'origin_payment_id', 'statement_line_id')
     def _compute_journal_id(self):
         for move in self.filtered(lambda r: r.journal_id.type not in r._get_valid_journal_types()):
