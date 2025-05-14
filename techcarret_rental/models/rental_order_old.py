@@ -339,12 +339,160 @@ class Rentals(models.Model):
                     order.recurring_period_interval = 'year'
                 if order.rental_start_date and order.rental_return_date and order.rentalfirst_invoice_date:
                     inv_dates=[]
-                    for line in order.order_line:
-                        if line.product_id and line.product_id.employee_id:
-                            current = order.rental_start_date
-                            next_inv_date = order.rentalfirst_invoice_date
-                            so_line_worked_days = 0
+                    for order_line in order.order_line:
+                        if order_line.product_id and order_line.product_id.employee_id:
                             first_inv_day = order.rentalfirst_invoice_date.day
+                            rental_start_date = order.rental_start_date+ relativedelta(hours=7)
+                            temp_month = str(rental_start_date.month) + str(rental_start_date.year)
+                            temp_month2 = str(order.rentalfirst_invoice_date.month) + str(order.rentalfirst_invoice_date.year)
+                            temp_month3 = str(order.rental_return_date.month) + str(order.rental_return_date.year)
+                            if temp_month != temp_month3:
+                                invoice_on_first_month=False
+                                compute_for_month=False
+                                if temp_month == temp_month2:
+                                    invoice_on_first_month=True
+                                    start_date = datetime.combine(rental_start_date.date(), datetime_max_time).date()
+                                else:
+                                    if order.rentalfirst_invoice_date.day>15:
+                                        start_date = datetime.combine(rental_start_date.date(),datetime_max_time).date()
+                                        compute_for_month=True
+                                    else:
+                                        start_date = datetime.combine(rental_start_date.date()+ relativedelta(months=1), datetime_max_time).date()
+                                if order_line.product_id.employee_id:
+                                    month_count = 1
+                                    rental_end = order.rental_return_date.date()
+                                    if order_line.product_uom.name == 'Months':
+                                        if compute_for_month==False:
+                                            rental_end = order.rental_return_date.date()+relativedelta(months=1)
+                                    elif order_line.product_uom.name in ['Days', 'Hours']:
+                                        if first_inv_day not in [28, 29, 30, 31]:
+                                            rental_end = order.rental_return_date.date() + relativedelta(months=1)
+                                    while start_date <= rental_end:
+                                        upcoming_invoice_date = rental_start_date.date() + relativedelta(months=month_count)
+                                        start_dt = start_date
+                                        end_dt = upcoming_invoice_date
+                                        if start_date >= order.rental_return_date.date():
+                                            end_dt = order.rental_return_date.date()
+                                        start_dt = datetime.combine(start_dt, datetime_min_time)
+                                        end_dt = datetime.combine(end_dt, datetime_max_time)
+                                        planned_worked=0
+                                        if start_dt != end_dt:
+                                            tmp_start_dt = start_dt - relativedelta(months=1)
+                                            tmp_end_dt = end_dt - relativedelta(months=1)
+                                            planned_worked = order_line.product_id.employee_id._get_work_days_data_batch(tmp_start_dt, tmp_end_dt, calendar=order_line.product_id.employee_id.resource_calendar_id) \
+                                                [order_line.product_id.employee_id.id]['days']
+                                            #FINAL MONTH COMPUTE INVOICE SCHEDULE
+                                            if order_line.product_uom.name == 'Months':
+                                                if invoice_on_first_month == False:
+                                                    planned_worked=1
+                                            if order_line.product_uom.name == 'Days':
+                                                if end_dt < start_dt:
+                                                    tmp_end_dt = datetime.combine(order.rental_return_date, datetime_max_time)
+                                                    planned_worked = \
+                                                    order_line.product_id.employee_id._get_work_days_data_batch(
+                                                        tmp_start_dt, tmp_end_dt,
+                                                        calendar=order_line.product_id.employee_id.resource_calendar_id) \
+                                                        [order_line.product_id.employee_id.id]['days']
+                                            if order_line.product_uom.name == 'Hours':
+                                                if start_date <= rental_end:
+                                                    planned_worked = 1
+                                        if planned_worked>0:
+                                            uom = 'days'
+                                            if order_line.product_uom.name == 'Hours':
+                                                planned_worked = planned_worked * 8
+                                                uom = 'hours'
+                                            if order_line.product_uom.name == 'Months':
+                                                planned_worked = 1
+                                                uom = 'months'
+                                            temp_start_date = start_dt
+                                            if start_date<=order.rentalfirst_invoice_date:
+                                                temp_start_date = (order.rentalfirst_invoice_date+ relativedelta(hours=7))
+                                            month_days = calendar.monthrange(temp_start_date.year, temp_start_date.month)[1]
+                                            if first_inv_day in [28, 29, 30, 31]:
+                                                if month_days == 28:
+                                                    temp_start_date = temp_start_date.replace(day=28)
+                                                elif month_days == 29:
+                                                    temp_start_date = temp_start_date.replace(day=29)
+                                                elif month_days == 30:
+                                                    temp_start_date = temp_start_date.replace(day=30)
+                                                elif month_days == 31:
+                                                    temp_start_date = temp_start_date.replace(day=31)
+                                            else:
+                                                temp_start_date = temp_start_date.replace(day=first_inv_day)
+
+                                            if invoice_on_first_month==True:
+                                                rental_month = str(temp_start_date.month)
+                                            elif compute_for_month==True:
+                                                rental_month = str(temp_start_date.month)
+                                                if start_date < order.rentalfirst_invoice_date:
+                                                    rental_month = str((start_date).month)
+                                            else:
+                                                if temp_start_date.date() <= order.rentalfirst_invoice_date:
+                                                    rental_month = str((start_date - relativedelta(months=1)).month)
+                                                else:
+                                                    rental_month = str((start_date - relativedelta(months=1)).month)
+                                            inv_dates.append((0, 0, {
+                                                                 'sale_state':order.state,
+                                                                 'planned_days':planned_worked,
+                                                                 'partner_id':order.partner_id.id,
+                                                                 'employee_id': order_line.product_id.employee_id.id,
+                                                                 'rentalnext_invoice_date':temp_start_date.date(),
+                                                                 'rentalnext_invoice_date_time':temp_start_date.date(),
+                                                                 'uom': uom,
+                                                                 'rental_month': rental_month,
+                                                                 'so_line_id': order_line.id
+                                                                 }))
+                                        month_count = month_count + 1
+                                        start_date = upcoming_invoice_date
+                                        total_working_days = total_working_days + planned_worked
+                                        no_working_days = no_working_days + planned_worked
+                            else:
+                                print('ELSEEEEEEEEEEEEEEE')
+                                uom = 'days'
+                                if order_line.product_uom.name == 'Hours':
+                                    uom = 'hours'
+                                if order_line.product_uom.name == 'Months':
+                                    uom = 'months'
+                                rental_start_date = datetime.combine(order.rental_start_date.date(), datetime_min_time)
+                                rental_return_date = datetime.combine(order.rental_return_date.date(), datetime_max_time)
+                                planned_worked = \
+                                    order_line.product_id.employee_id._get_work_days_data_batch(rental_start_date,
+                                                                                                rental_return_date,
+                                                                                                calendar=order_line.product_id.employee_id.resource_calendar_id) \
+                                        [order_line.product_id.employee_id.id]['days']
+                                first_inv_day = order.rentalfirst_invoice_date.day
+                                if first_inv_day in [28, 29, 30, 31]:
+                                    rental_month = str(order.rentalfirst_invoice_date.month)
+                                else:
+                                    rentalfirst_invoice_date = order.rentalfirst_invoice_date+ relativedelta(hours=7)
+                                    rentalfirst_invoice_date = rentalfirst_invoice_date - relativedelta(months=1)
+                                    rental_month = str(rentalfirst_invoice_date.month)
+
+                                if order_line.product_uom.name == 'Hours':
+                                    planned_worked = planned_worked/ 8
+                                elif order_line.product_uom.name == 'Months':
+                                    difference = relativedelta(rental_return_date, rental_start_date)
+                                    actualMonths = difference.months + (rental_return_date.day - rental_start_date.day) / 30
+                                    planned_worked = actualMonths
+
+                                inv_dates.append((0, 0, {
+                                    'sale_state': order.state,
+                                    'planned_days': planned_worked,
+                                    'partner_id': order.partner_id.id,
+                                    'employee_id': order_line.product_id.employee_id.id,
+                                    'rentalnext_invoice_date': order.rentalfirst_invoice_date,
+                                    'rentalnext_invoice_date_time': order.rentalfirst_invoice_date,
+                                    'uom': uom,
+                                    'rental_month': rental_month,
+                                    'so_line_id': order_line.id
+                                }))
+                    if inv_dates:
+                        order.rental_inv_line_ids=inv_dates
+                    if order.order_line and order.rental_inv_line_ids:
+                        count = 0
+                        for so_line in order.order_line:
+                            current = order.rental_start_date
+                            length = len(order.rental_inv_line_ids)
                             while current <= order.rental_return_date:
                                 month_start = current.replace(day=1)
                                 next_month = month_start + relativedelta(months=1)
@@ -352,89 +500,84 @@ class Rentals(models.Model):
                                 range_start = current
                                 range_end = min(month_end, order.rental_return_date)
                                 current = range_end + timedelta(days=1)
-                                planned_worked = 0
-                                planned_data = 0
-                                planned_worked = \
-                                line.product_id.employee_id._get_work_days_data_batch(range_start, range_end,
-                                                                                            calendar=line.product_id.employee_id.resource_calendar_id) \
-                                    [line.product_id.employee_id.id]['days']
+                                if count < length:
+                                    start_date = range_start.date()
+                                    end_date = range_end.date()
+                                    order.rental_inv_line_ids[count].rental_start_date = start_date
+                                    order.rental_inv_line_ids[count].rental_return_date = end_date
+                                count = count + 1
 
-                                if planned_worked > 0:
-                                    uom = 'days'
-                                    if line.product_uom.name == 'Days':
-                                        planned_data = planned_worked
-                                        uom = 'days'
-                                    if line.product_uom.name == 'Hours':
-                                        planned_data = planned_worked * 8
-                                        uom = 'hours'
-                                    if line.product_uom.name == 'Months':
-                                        tz = self.env.user.tz
-                                        m_start = range_start
-                                        r_end = range_end.astimezone(timezone(tz)).date()
-                                        difference = relativedelta(r_end, m_start)
-                                        actualMonths = difference.months + (r_end.day - m_start.day) / 30
-                                        planned_data = actualMonths
-                                        uom = 'months'
-                                    rental_month = str((range_start).month)
-                                    inv_dates.append((0, 0, {
-                                        'sale_state': order.state,
-                                        'planned_days': planned_data,
-                                        'partner_id': order.partner_id.id,
-                                        'employee_id': line.product_id.employee_id.id,
-                                        'rentalnext_invoice_date': next_inv_date,
-                                        'rentalnext_invoice_date_time': next_inv_date,
-                                        'uom': uom,
-                                        'rental_month': rental_month,
-                                        'so_line_id': line.id,
-                                        'rental_start_date': range_start,
-                                        'rental_return_date': range_end
-                                    }))
+                        for r_line in order.rental_inv_line_ids:
+                            if r_line.rental_start_date:
+                                range_start = datetime.combine(r_line.rental_start_date.date(), datetime_min_time)
+                                range_end = datetime.combine(r_line.rental_return_date.date(), datetime_max_time)
+                                if order_line.product_id:
+                                    planned_worked = \
+                                        order_line.product_id.employee_id._get_work_days_data_batch(range_start,
+                                                                                                    range_end,
+                                                                                                    calendar=order_line.product_id.employee_id.resource_calendar_id) \
+                                            [order_line.product_id.employee_id.id]['days']
+                                    if r_line.uom == 'hours':
+                                        planned_worked = planned_worked * 8
+                                    if r_line.uom == 'months':
+                                        planned_worked = 1
+                                    r_line.planned_days = planned_worked
 
-                                    next_month_range_end = range_end.date() + relativedelta(months=1)
-                                    if next_inv_date > range_end.date():
-                                        if first_inv_day in [28, 29, 30, 31]:
-                                            next_inv_date = next_inv_date
-                                        elif next_month_range_end >= next_inv_date:
-                                            next_inv_date = next_inv_date + relativedelta(months=1)
-                                    elif next_inv_date <= range_end.date() and next_inv_date >= range_start.date():
-                                        next_inv_date = next_inv_date + relativedelta(months=1)
-                                    else:
-                                        next_range_start = range_start.date() + relativedelta(months=1)
-                                        month_days = calendar.monthrange(next_range_start.year, next_range_start.month)[1]
-                                        if first_inv_day in [28, 29, 30, 31]:
-                                            if month_days == 28:
-                                                next_inv_date = next_inv_date.replace(day=28)
-                                            elif month_days == 29:
-                                                next_inv_date = next_inv_date.replace(day=29)
-                                            elif month_days == 30:
-                                                next_inv_date = next_inv_date.replace(day=30)
-                                            elif month_days == 31:
-                                                next_inv_date = next_inv_date.replace(day=31)
-                                        else:
-                                            next_inv_date = next_inv_date.replace(day=first_inv_day)
-                                        next_inv_date = next_inv_date + relativedelta(months=1)
-                                    so_line_worked_days = so_line_worked_days + planned_worked
-                            order.duration_days = so_line_worked_days
-                    if inv_dates:
-                        order.rental_inv_line_ids = inv_dates
-                    employee = False
-                    for sl_line in order.order_line:
-                        if sl_line.manually_edited == True:
-                            sl_line.product_uom_qty = sl_line.product_uom_qty
-                        else:
-                            if sl_line.product_uom.name == 'Hours':
-                                sl_line.product_uom_qty = order.duration_days * 8
-                            if sl_line.product_uom.name == 'Days':
-                                sl_line.product_uom_qty = order.duration_days
-                            if sl_line.product_uom.name == 'Months':
-                                if not employee:
-                                    month_employee = order.rental_inv_line_ids.filtered(lambda so_inv: so_inv.uom == 'months')
-                                    employee = month_employee[0].employee_id
-                                month_planned_data = 0
-                                for rental_inv in order.rental_inv_line_ids:
-                                    if employee == rental_inv.employee_id:
-                                        month_planned_data = rental_inv.planned_days + month_planned_data
-                                sl_line.product_uom_qty = month_planned_data
+                    planned_days = 0
+                    employee = ''
+                    for invline in order.rental_inv_line_ids:
+                        if employee == '':
+                            if invline.employee_id.resource_calendar_id:
+                                employee = invline.employee_id.id
+                    actual_planned_worked = 0
+                    for invline in order.rental_inv_line_ids:
+                        if employee == invline.employee_id.id:
+                            # planned_days = planned_days + invline.planned_days
+                            range_start = datetime.combine(invline.rental_start_date.date(), datetime_min_time)
+                            range_end = datetime.combine(invline.rental_return_date.date(), datetime_max_time)
+                            if order_line.product_id:
+                                actual_planned_worked = \
+                                    order_line.product_id.employee_id._get_work_days_data_batch(range_start,
+                                                                                                range_end,
+                                                                                                calendar=order_line.product_id.employee_id.resource_calendar_id) \
+                                        [order_line.product_id.employee_id.id]['days']
+                            planned_days = actual_planned_worked + planned_days
+                    if order.is_rental_order == True:
+                        if planned_days > 0:
+                            order.duration_days = planned_days
+                    if order.ids:
+                        for order_line in order.order_line:
+                            if order_line.product_uom.name == 'Hours' and order_line.manually_edited == False:
+                                order_line.product_uom_qty = order.duration_days * 8
+                            elif order_line.product_uom.name == 'Days' and order_line.manually_edited == False:
+                                order_line.product_uom_qty = order.duration_days
+                            elif order_line.product_uom.name == 'Months' and order_line.manually_edited == False:
+                                tz = self.env.user.tz
+                                m_start = order.rental_start_date + relativedelta(hours=7)
+                                r_end = order.rental_return_date.astimezone(timezone(tz)).date()
+                                difference = relativedelta(r_end, m_start)
+                                actualMonths = difference.months + (r_end.day - m_start.day) / 30
+                                order_line.product_uom_qty = actualMonths
+                            elif order_line.manually_edited == True:
+                                order_line.product_uom_qty = order_line.product_uom_qty
+                            else:
+                                order_line.product_uom_qty = order.duration_days
+                    else:
+                        for order_line in order.order_line:
+                            if order_line.manually_edited == True:
+                                order_line.product_uom_qty = order_line.product_uom_qty
+                            else:
+                                if order_line.product_uom.name == 'Hours':
+                                    order_line.product_uom_qty = order.duration_days * 8
+                                if order_line.product_uom.name == 'Days':
+                                    order_line.product_uom_qty = order.duration_days
+                                if order_line.product_uom.name == 'Months':
+                                    tz = self.env.user.tz
+                                    m_start = order.rental_start_date + relativedelta(hours=7)
+                                    r_end = order.rental_return_date.astimezone(timezone(tz)).date()
+                                    difference = relativedelta(r_end, m_start)
+                                    actualMonths = difference.months + (r_end.day - m_start.day) / 30
+                                    order_line.product_uom_qty = actualMonths
 
 
     def _confirmation_error_message(self):
@@ -999,7 +1142,7 @@ class RentalInvoiceHistory(models.Model):
         ("12", "December"),
     ], string="Rental Month", default="1")
     work_entry_ids = fields.Many2many('hr.work.entry', string='Work Entries')
-    planned_days = fields.Float("Planned QTY")
+    planned_days = fields.Integer("Planned QTY")
     worked_days = fields.Float("Worked QTY")
     company_id = fields.Many2one('res.company', required=True, default=lambda self: self.env.company)
     is_selected = fields.Boolean("Select")

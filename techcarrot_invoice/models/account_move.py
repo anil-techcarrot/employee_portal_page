@@ -46,3 +46,16 @@ class AccountMoveLine(models.Model):
             domain = [('stage_id.name', 'not in', ['To Do', 'Cancelled'])]
             domain_project_ids = self.env['project.project'].search(domain)
             rec.domain_project_ids = domain_project_ids.ids
+
+    def _check_qty_whole_fraction(self):
+        qty = self.quantity
+        frac_qty = str(self.quantity).split('.')[1]
+        frac_qty = int(frac_qty)
+        if frac_qty == 0:
+            qty = "{:,.2f}".format(self.quantity)
+        else:
+            digits = f"{self.quantity:.6f}"
+            if '.' in digits:
+                qty = digits.rstrip('0').rstrip('.')
+        return qty
+

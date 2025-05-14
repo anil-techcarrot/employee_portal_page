@@ -29,7 +29,10 @@
                                     <img t-if="o.company_id.logo" class="o_company_logo_small" t-att-src="image_data_uri(o.company_id.logo)" alt="Logo"/>
                                 </div>
                                 <div class="no-border" style="font-size:24px;"><b><t t-esc="o.company_id.name"/></b></div>
-                                <div t-field="o.company_id.partner_id" t-options='{"widget": "contact", "fields": ["address"], "no_marker": True}'/>
+                                <div class="no-border" ><t t-esc="o.company_id.street"/>, <t t-esc="o.company_id.street2"/></div>
+                                <div class="no-border" ><t t-esc="o.company_id.city"/></div>
+                                <div class="no-border" ><t t-esc="o.company_id.zip"/></div>
+                                <div class="no-border" ><t t-esc="o.company_id.state_id.name"/>, <t t-esc="o.company_id.country_id.name"/></div>
                                 <div class="no-border" ><t t-esc="o.company_id.vat"/></div>
                             </div>
                             <div class="col-6 text-end" name="div_billing_address" >

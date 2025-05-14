@@ -2,4 +2,3 @@
 from . import account_move
 from . import res_bank_account
 from . import sale_order
-# from . import wizard
