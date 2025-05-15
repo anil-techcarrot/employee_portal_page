@@ -132,7 +132,7 @@ class AccountMoveLine(models.Model):
                     retrun_datetime = line.rental_return_date
                     s_date = line.rental_start_date.strftime(get_lang(self.env).date_format)
                     r_date = retrun_datetime.strftime(get_lang(self.env).date_format)
-                    s_date = str(final_desc) + ' ' + str(s_date) +' TO '+str(r_date)
+                    s_date = str(final_desc) + ' \n' + str(s_date) +' TO '+str(r_date)
                     values.append(s_date)
             elif line.journal_id.type == 'purchase':
                 values.append(product.display_name)

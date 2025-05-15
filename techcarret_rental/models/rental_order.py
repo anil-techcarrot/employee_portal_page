@@ -362,21 +362,14 @@ class Rentals(models.Model):
                                 next_month = month_start + relativedelta(months=1)
                                 month_end = next_month - timedelta(days=1)
                                 range_start = current
-                                range_end = min(month_end, order.rental_return_date)
-                                current = range_end + timedelta(days=1)
+                                range_end_actual = min(month_end, order.rental_return_date)
+                                range_end = range_end_actual + timedelta(days=1)
+                                current = range_end
                                 planned_worked = 0
                                 planned_data = 0
-                                start_date = datetime.strptime("01/02/2025", "%d/%m/%Y")
-                                end_date = datetime.strptime("28/02/2025", "%d/%m/%Y")
-                                if start_date.date() == range_start.date() and end_date.date() == range_end.date():
-                                    planned_worked = \
-                                    line.product_id.employee_id._get_work_days_data_batch(range_start, range_end, calendar=line.product_id.employee_id.resource_calendar_id) \
-                                                            [line.product_id.employee_id.id]['days']
-                                    planned_worked = planned_worked + 1
-                                else:
-                                    planned_worked = \
-                                    line.product_id.employee_id._get_work_days_data_batch(range_start, range_end, calendar=line.product_id.employee_id.resource_calendar_id) \
-                                                            [line.product_id.employee_id.id]['days']
+                                planned_worked = \
+                                line.product_id.employee_id._get_work_days_data_batch(range_start, range_end, calendar=line.product_id.employee_id.resource_calendar_id) \
+                                                        [line.product_id.employee_id.id]['days']
                                 if planned_worked > 0:
                                     uom = 'days'
                                     if line.product_uom.name == 'Days':
@@ -388,7 +381,7 @@ class Rentals(models.Model):
                                     if line.product_uom.name == 'Months':
                                         tz = self.env.user.tz
                                         m_start = range_start
-                                        r_end = range_end.astimezone(timezone(tz)).date()
+                                        r_end = range_end_actual.astimezone(timezone(tz)).date()
                                         difference = relativedelta(r_end, m_start)
                                         actualMonths = difference.months + (r_end.day - m_start.day) / 30
                                         planned_data = actualMonths
@@ -405,7 +398,7 @@ class Rentals(models.Model):
                                         'rental_month': rental_month,
                                         'so_line_id': line.id,
                                         'rental_start_date': range_start,
-                                        'rental_return_date': range_end
+                                        'rental_return_date': range_end - timedelta(days=1)
                                     }))
 
                                     next_month_range_end = range_end.date() + relativedelta(months=1)
@@ -439,6 +432,7 @@ class Rentals(models.Model):
                     for sl_line in order.order_line:
                         if sl_line.manually_edited == True:
                             sl_line.product_uom_qty = sl_line.product_uom_qty
+                            sl_line.manually_edited = False
                         else:
                             if sl_line.product_uom.name == 'Hours':
                                 sl_line.product_uom_qty = order.duration_days * 8
@@ -812,7 +806,7 @@ class RentalOrdersLine(models.Model):
             # s_date = start_date.strftime("%m-%d-%Y")
             # r_date = return_date.strftime("%m-%d-%Y")
             return _(
-                "", from_date=start_date, to_date=return_date
+                "\n%(from_date)s to %(to_date)s", from_date=start_date, to_date=return_date
             )
         else:
             start_date = self.order_id.rental_start_date
@@ -829,6 +823,30 @@ class RentalOrdersLine(models.Model):
             return _(
                 "\n%(from_date)s to %(to_date)s", from_date=start_date_part, to_date=return_date_part
             )
+    #
+    # @api.depends('product_id', 'linked_line_id', 'linked_line_ids')
+    # def _compute_name(self):
+    #     for line in self:
+    #         if not line.product_id and not line.is_downpayment:
+    #             continue
+    #
+    #         lang = line.order_id._get_lang()
+    #         if lang != self.env.lang:
+    #             line = line.with_context(lang=lang)
+    #
+    #         if line.product_id and line.order_id.is_rental_order:
+    #             if line.name:
+    #                 line.name = line.name
+    #             else:
+    #                 line.name = "Desc"
+    #             continue
+    #         elif line.product_id:
+    #             line.name = line._get_sale_order_line_multiline_description_sale()
+    #             continue
+    #
+    #         if line.is_downpayment:
+    #             line.name = line._get_downpayment_description()
+
 
 
     # def _timesheet_create_project_prepare_values(self):
@@ -1065,21 +1083,21 @@ class ProjectProject(models.Model):
                 raise ValidationError(_('Project code must be unique.'))
         return super().create(vals)
 
-    def write(self, vals):
-        # if 'name' in vals:
-        #     for record in self:
-        #         existing = self.search([('name', '=', vals['name']), ('id', '!=', record.id)])
-        #         if existing:
-        #             raise ValidationError(_('Name must be unique.'))
-        if 'project_code' in vals:
-            for record in self:
-                existing = self.search([('project_code', 'ilike', vals['project_code']), ('id', '!=', record.id)])
-                if existing:
-                    raise ValidationError(_('Project code must be unique.'))
-        res = super(ProjectProject, self).write(vals) if vals else True
-        for line in self:
-            line.unlinkaa()
-        return res
+    # def write(self, vals):
+    #     # if 'name' in vals:
+    #     #     for record in self:
+    #     #         existing = self.search([('name', '=', vals['name']), ('id', '!=', record.id)])
+    #     #         if existing:
+    #     #             raise ValidationError(_('Name must be unique.'))
+    #     if 'project_code' in vals:
+    #         for record in self:
+    #             existing = self.search([('project_code', 'ilike', vals['project_code']), ('id', '!=', record.id)])
+    #             if existing:
+    #                 raise ValidationError(_('Project code must be unique.'))
+    #     res = super(ProjectProject, self).write(vals) if vals else True
+    #     for line in self:
+    #         line.unlinkaa()
+    #     return res
 
     # @api.constrains('sale_line_id')
     # def _check_sale_line_type(self):

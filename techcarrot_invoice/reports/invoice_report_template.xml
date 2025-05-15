@@ -194,9 +194,16 @@
                                                         <td class="text-end"><strong>Total</strong></td>
                                                         <td class="text-end o_price_total">
                                                             <t t-set="amount_total" t-value="'{:,.2f}'.format(o.amount_total)"/>
-                                                            <b><span t-esc="o.currency_id.name"/> <span class="text-nowrap"
-                                                                  t-esc="amount_total"
-                                                            >31.05</span></b>
+                                                            <t t-if="o.company_id.currency_id != o.currency_id">
+                                                                <b><span t-esc="o.currency_id.symbol"/>
+                                                                <span class="text-nowrap" t-esc="amount_total" >31.05</span></b>
+                                                            </t>
+                                                            <t t-else="">
+                                                                <b><span t-esc="o.currency_id.name"/>
+                                                                <span class="text-nowrap" t-esc="amount_total" >31.05</span></b>
+                                                            </t>
+
+
                                                         </td>
                                                     </tr>
                                                 </t>
@@ -218,7 +225,8 @@
                         </div>
                         <div class="page mb-4">
                             <t t-if="o.company_id.currency_id != o.currency_id">
-                                <strong><span>Tax Summary</span>( 1<span t-field="o.currency_id.name"></span>=<span t-field="o.invoice_currency_rate"></span> AED)</strong>
+                                <t t-set="invoice_currency_rate" t-value="1/o.invoice_currency_rate"/>
+                                <strong><span>Tax Summary</span>( 1<span t-field="o.currency_id.symbol"></span>=<span t-esc="invoice_currency_rate"></span> AED)</strong>
                             </t>
                             <t t-else="">
                                 <h3>Tax Summary</h3>
@@ -240,16 +248,16 @@
                                             <span >Standard Rate (5%)</span>
                                         </td>
                                         <td name="inv_dt" style="border-bottom:none;border-top:none" class="  text-end">
-                                            <t t-set="amount_untaxed" t-value="'{:,.2f}'.format(o.amount_untaxed)"/>
-                                            <span t-esc="amount_untaxed"></span>
+                                            <t t-set="amount_untaxed_signed" t-value="'{:,.2f}'.format(o.amount_untaxed_signed)"/>
+                                            <span t-esc="amount_untaxed_signed"></span>
                                         </td>
                                         <td name="inv_dt" style="border-bottom:none;border-top:none" class="  text-end">
-                                            <t t-set="amount_tax" t-value="'{:,.2f}'.format(o.amount_tax)"/>
-                                            <span t-esc="amount_tax"></span>
+                                            <t t-set="amount_tax_signed" t-value="'{:,.2f}'.format(o.amount_tax_signed)"/>
+                                            <span t-esc="amount_tax_signed"></span>
                                         </td>
                                         <td name="inv_dt" style="border-bottom:none;border-top:none" class="  text-end">
-                                            <t t-set="amount_total" t-value="'{:,.2f}'.format(o.amount_total)"/>
-                                            <span t-esc="amount_total"></span>
+                                            <t t-set="amount_total_signed" t-value="'{:,.2f}'.format(o.amount_total_signed)"/>
+                                            <span t-esc="amount_total_signed"></span>
                                         </td>
                                     </tr>
                                     <tr style="border-bottom:none;border-top:none" >
@@ -258,15 +266,15 @@
                                         </td>
                                         <td name="inv_dt" style="border-bottom:none;border-top:none" class="  text-end">
                                             <t t-set="amount_untaxed_signed" t-value="'{:,.2f}'.format(o.amount_untaxed_signed)"/>
-                                            <b><span t-esc="o.currency_id.name"/> <span t-esc="amount_untaxed_signed"></span></b>
+                                            <b><span t-esc="o.company_id.currency_id.name"/> <span t-esc="amount_untaxed_signed"></span></b>
                                         </td>
                                         <td name="inv_dt" style="border-bottom:none;border-top:none" class="  text-end">
                                             <t t-set="amount_tax_signed" t-value="'{:,.2f}'.format(o.amount_tax_signed)"/>
-                                            <b><span t-esc="o.currency_id.name"/> <span t-esc="amount_tax_signed"></span></b>
+                                            <b><span t-esc="o.company_id.currency_id.name"/> <span t-esc="amount_tax_signed"></span></b>
                                         </td>
                                         <td name="inv_dt" style="border-bottom:none;border-top:none" class="  text-end">
                                             <t t-set="amount_total_signed" t-value="'{:,.2f}'.format(o.amount_total_signed)"/>
-                                            <b><span t-esc="o.currency_id.name"/> <span t-esc="amount_total_signed"></span></b>
+                                            <b><span t-esc="o.company_id.currency_id.name"/> <span t-esc="amount_total_signed"></span></b>
                                         </td>
                                     </tr>
                                 </tbody>
