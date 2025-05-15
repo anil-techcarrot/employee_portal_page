@@ -73,16 +73,16 @@
                             <table width="100%">
                                 <thead>
                                     <tr style="background-color:#d6d6d6;">
-                                        <th name="inv_date" width="30%" class="  text-start">Invoice Date</th>
+                                        <th name="inv_date" width="25%" class="  text-start">Invoice Date</th>
                                         <th name="terms" width="25%" class="  text-start">Terms</th>
-                                        <th name="due_date" width="30%" class="  text-start">Due Date</th>
-                                        <th name="due_date" width="30%" class="  text-start">P.O.#</th>
+                                        <th name="due_date" width="22%" class="  text-start">Due Date</th>
+                                        <th name="due_date" width="28%" class="  text-start">P.O.#</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr style="border-bottom:none;border-top:none" >
                                         <td name="inv_dt" style="border-bottom:none;border-top:none">
-                                            <span t-field="o.invoice_date"></span>
+                                            <span t-esc="o.invoice_date.strftime('%d %b %Y')"></span>
                                         </td>
                                         <td name="inv_dt" style="border-bottom:none;border-top:none">
                                             <span t-field="o.invoice_payment_term_id.name"></span>
@@ -373,8 +373,6 @@
                             <br/>
                             <br/>
                             <br/>
-                            <br/>
-                            <br/>
                             <hr style="border-top: 1px solid #000; margin-top: 30px;" />
 <!--                    </div>-->
 
@@ -589,8 +587,6 @@
 <!--                                <span>Terms &amp; Conditions:</span><br/>-->
 <!--                                <span t-esc="o.narration"></span>-->
 <!--                            </div>-->
-                            <br/>
-                            <br/>
                             <br/>
                             <br/>
                             <br/>

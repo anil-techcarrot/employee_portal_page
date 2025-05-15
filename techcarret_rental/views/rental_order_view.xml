@@ -113,7 +113,7 @@
                         invisible="(not is_subscription or state != 'sale') or (is_subscription and (invoice_status == 'to invoice') or (next_invoice_date &lt;= current_date))"/>
             </button>
             <button id="create_invoice_percentage" position="attributes">
-                <attribute name="invisible">is_subscription or invoice_status != 'no' or state != 'sale'</attribute>
+                <attribute name="invisible">is_rental_order or is_subscription or invoice_status != 'no' or state != 'sale'</attribute>
             </button>
             <button name="action_cancel" position="attributes">
                 <attribute name="invisible">not id or state not in ['draft', 'sent', 'sale']</attribute>

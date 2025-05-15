@@ -4,6 +4,10 @@ from datetime import date, datetime, timedelta
 from odoo.exceptions import UserError
 from odoo.tools import get_lang, SQL
 
+from odoo.tools import html2plaintext
+import re
+
+
 
 class AccountMove(models.Model):
     _inherit = "account.move"
@@ -112,6 +116,14 @@ class AccountMoveLine(models.Model):
                 product = line.product_id
             if not product:
                 return False
+            final_desc = ""
+            full_text = html2plaintext(line.sale_line_ids[0].name).strip()
+            if full_text.startswith(line.name):
+                new_text = full_text[len(line.name):].strip()
+            if "(Rental)" in new_text:
+                final_desc = re.sub(re.escape('(Rental)'), '', new_text, flags=re.IGNORECASE).strip()
+            else:
+                final_desc = new_text
             if line.journal_id.type == 'sale':
                 values.append(product.display_name)
                 if product.description_sale:
@@ -120,7 +132,7 @@ class AccountMoveLine(models.Model):
                     retrun_datetime = line.rental_return_date
                     s_date = line.rental_start_date.strftime(get_lang(self.env).date_format)
                     r_date = retrun_datetime.strftime(get_lang(self.env).date_format)
-                    s_date = str(s_date) +' TO '+str(r_date)
+                    s_date = str(final_desc) + ' ' + str(s_date) +' TO '+str(r_date)
                     values.append(s_date)
             elif line.journal_id.type == 'purchase':
                 values.append(product.display_name)

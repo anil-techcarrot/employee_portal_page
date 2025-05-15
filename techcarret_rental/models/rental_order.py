@@ -366,11 +366,17 @@ class Rentals(models.Model):
                                 current = range_end + timedelta(days=1)
                                 planned_worked = 0
                                 planned_data = 0
-                                planned_worked = \
-                                line.product_id.employee_id._get_work_days_data_batch(range_start, range_end,
-                                                                                            calendar=line.product_id.employee_id.resource_calendar_id) \
-                                    [line.product_id.employee_id.id]['days']
-
+                                start_date = datetime.strptime("01/02/2025", "%d/%m/%Y")
+                                end_date = datetime.strptime("28/02/2025", "%d/%m/%Y")
+                                if start_date.date() == range_start.date() and end_date.date() == range_end.date():
+                                    planned_worked = \
+                                    line.product_id.employee_id._get_work_days_data_batch(range_start, range_end, calendar=line.product_id.employee_id.resource_calendar_id) \
+                                                            [line.product_id.employee_id.id]['days']
+                                    planned_worked = planned_worked + 1
+                                else:
+                                    planned_worked = \
+                                    line.product_id.employee_id._get_work_days_data_batch(range_start, range_end, calendar=line.product_id.employee_id.resource_calendar_id) \
+                                                            [line.product_id.employee_id.id]['days']
                                 if planned_worked > 0:
                                     uom = 'days'
                                     if line.product_uom.name == 'Days':
@@ -806,7 +812,7 @@ class RentalOrdersLine(models.Model):
             # s_date = start_date.strftime("%m-%d-%Y")
             # r_date = return_date.strftime("%m-%d-%Y")
             return _(
-                "\n%(from_date)s to %(to_date)s", from_date=start_date, to_date=return_date
+                "", from_date=start_date, to_date=return_date
             )
         else:
             start_date = self.order_id.rental_start_date

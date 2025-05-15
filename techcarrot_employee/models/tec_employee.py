@@ -304,7 +304,7 @@ class HrEmployeeInherit(models.Model):
             )
 
 
-    @api.model
+    @api.model_create_multi
     def create(self, vals):
         vals['created_by'] = self.env.uid
         vals['created_date_time'] = fields.Datetime.now()
