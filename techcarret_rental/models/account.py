@@ -116,14 +116,15 @@ class AccountMoveLine(models.Model):
                 product = line.product_id
             if not product:
                 return False
-            final_desc = ""
-            full_text = html2plaintext(line.sale_line_ids[0].name).strip()
-            if full_text.startswith(line.name):
-                new_text = full_text[len(line.name):].strip()
-            if "(Rental)" in new_text:
-                final_desc = re.sub(re.escape('(Rental)'), '', new_text, flags=re.IGNORECASE).strip()
-            else:
-                final_desc = new_text
+            final_desc =  ""
+            if line.sale_line_ids:
+                full_text = html2plaintext(line.sale_line_ids[0].name).strip()
+                if full_text.startswith(line.name):
+                    new_text = full_text[len(line.name):].strip()
+                if "(Rental)" in new_text:
+                    final_desc = re.sub(re.escape('(Rental)'), '', new_text, flags=re.IGNORECASE).strip()
+                else:
+                    final_desc = new_text
             if line.journal_id.type == 'sale':
                 values.append(product.display_name)
                 if product.description_sale:

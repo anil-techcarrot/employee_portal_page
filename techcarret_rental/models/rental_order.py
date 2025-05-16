@@ -204,7 +204,7 @@ class Rentals(models.Model):
     def _prepare_invoice(self):
         vals = super()._prepare_invoice()
         if self.payment_term_id:
-            vals['invoice_payment_term_id'] = self.property_payment_term_id.id
+            vals['invoice_payment_term_id'] = self.payment_term_id.id
         return vals
 
 
@@ -409,10 +409,11 @@ class Rentals(models.Model):
                                             next_inv_date = next_inv_date + relativedelta(months=1)
                                     elif next_inv_date <= range_end.date() and next_inv_date >= range_start.date():
                                         next_inv_date = next_inv_date + relativedelta(months=1)
-                                    # else:
-                                    next_range_start = range_start.date() + relativedelta(months=1)
-                                    month_days = calendar.monthrange(current.year, current.month)[1]
-                                    if first_inv_day in [28, 29, 30, 31]:
+                                    # Find date whether last day or not
+                                    month_days = calendar.monthrange(next_inv_date.year, next_inv_date.month)[1]
+                                    last_day = calendar.monthrange(order.rentalfirst_invoice_date.year, order.rentalfirst_invoice_date.month)[1]
+                                    first_inv_month_end = order.rentalfirst_invoice_date.replace(day=last_day)
+                                    if first_inv_month_end == order.rentalfirst_invoice_date:
                                         if month_days == 28:
                                             next_inv_date = next_inv_date.replace(day=28)
                                         elif month_days == 29:
@@ -421,6 +422,10 @@ class Rentals(models.Model):
                                             next_inv_date = next_inv_date.replace(day=30)
                                         elif month_days == 31:
                                             next_inv_date = next_inv_date.replace(day=31)
+
+                                    elif first_inv_day in [28, 29, 30] and next_inv_date.month == 2:
+                                        feb_last_day = calendar.monthrange(next_inv_date.year, next_inv_date.month)[1]
+                                        next_inv_date = next_inv_date.replace(day=feb_last_day)
                                     else:
                                         next_inv_date = next_inv_date.replace(day=first_inv_day)
                                     # next_inv_date = next_inv_date + relativedelta(months=1)
