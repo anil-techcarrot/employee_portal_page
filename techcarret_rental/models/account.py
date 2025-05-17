@@ -118,6 +118,7 @@ class AccountMoveLine(models.Model):
                 return False
             final_desc =  ""
             if line.sale_line_ids:
+                new_text = ""
                 full_text = html2plaintext(line.sale_line_ids[0].name).strip()
                 if full_text.startswith(line.name):
                     new_text = full_text[len(line.name):].strip()

@@ -109,13 +109,15 @@ class Rentals(models.Model):
     ss_analytic_sub_plan_id = fields.Many2one('account.analytic.plan', 'Sub Plan', readonly=False, domain="[('parent_id', '=', ss_analytic_plan_id)]")
     has_recurring_line = fields.Boolean(compute='_compute_has_recurring_line')
     employee_id = fields.Many2one('hr.employee', 'Owner', copy=False)
+    po_no = fields.Char('PO No', copy=False)
 
     _sql_constraints = [
         ('date_order_conditional_required',
          "CHECK((state = 'sale' AND date_order IS NOT NULL) OR state != 'sale')",
          "A confirmed sales order requires a confirmation date."),
-        # ('so_project_code_unique', 'UNIQUE(project_code)', 'The project code must be unique')
+        ('so_po_no_unique', 'UNIQUE(po_no)', 'The PO No must be unique')
     ]
+
 
     @api.depends('order_line.price_unit')
     def _do_create_invoice_schedule(self):
@@ -437,7 +439,7 @@ class Rentals(models.Model):
                     for sl_line in order.order_line:
                         if sl_line.manually_edited == True:
                             sl_line.product_uom_qty = sl_line.product_uom_qty
-                            sl_line.manually_edited = False
+                            # sl_line.manually_edited = False
                         else:
                             if sl_line.product_uom.name == 'Hours':
                                 sl_line.product_uom_qty = order.duration_days * 8
@@ -761,7 +763,7 @@ class RentalOrdersLine(models.Model):
         for order in self:
             if order.order_id and order.order_id.is_rental_order == True:
                 if order.product_id and order.product_uom_qty>0.00:
-                    order.manually_edited = False
+                    # order.manually_edited = False
                     if order.product_uom.name == 'Hours':
                         hours_qty = order.order_id.duration_days * 8
                         if order.product_uom_qty != hours_qty:
@@ -778,6 +780,12 @@ class RentalOrdersLine(models.Model):
                         month_qty = difference.months + (r_end.day - m_start.day) / 30
                         if order.product_uom_qty != month_qty:
                             order.manually_edited = True
+
+    @api.onchange('product_uom')
+    def _onchange_product_uom_manual(self):
+        for order in self:
+            if order.order_id and order.order_id.is_rental_order == True:
+                order.manually_edited = False
 
     # @api.depends(
     #     'qty_delivered_method',
@@ -1054,6 +1062,8 @@ class RentalInvoiceHistory(models.Model):
     @api.onchange('worked_days')
     def _onchange_worked_days(self):
         self.is_ready_to_invoice=False
+        if self.worked_days > self.planned_days:
+            raise ValidationError("Worked Quantity cannot be greater than the Planned Quantity.")
         if self.worked_days>0.0:
             self.is_ready_to_invoice=True
 
@@ -1062,7 +1072,10 @@ class RentalInvoiceHistory(models.Model):
         if self.planned_days == 0:
             raise ValidationError("Planned Quantity cannot be zero.")
 
-
+    def create_invoice_button_reset(self):
+        if self.state == 'done' and not self.inv_ref_id:
+            self.state = 'draft'
+            self.is_ready_to_invoice = True
 
 class ProjectProject(models.Model):
     _inherit = 'project.project'

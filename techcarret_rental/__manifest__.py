@@ -6,7 +6,7 @@
     'author': 'Ifensys',
     'category': 'Sales',
     'version': '18.1',
-    'depends': ['product', 'sale_management', 'sale', 'stock', 'sale_renting', 'hr', 'hr_work_entry', 'account', 'analytic', 'sale_subscription', 'sale_stock_renting',
+    'depends': ['product', 'sale_management', 'sale', 'stock', 'sale_renting', 'sale_project', 'hr', 'hr_work_entry', 'account', 'analytic', 'sale_subscription', 'sale_stock_renting',
                 'techcarrot_employee', 'techcarrot_contacts', 'sale_project', 'purchase', 'sale_fixed_discount'],
     'data': [
         'security/ir.model.access.csv',
@@ -21,6 +21,7 @@
         'views/rental_order_view.xml',
         'views/employee_view.xml',
         'views/import_attendance_view.xml',
+        'views/project_milestone_view.xml',
         'views/cron_view.xml',
         'views/menu_view.xml'
     ],
