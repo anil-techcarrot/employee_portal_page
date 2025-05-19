@@ -40,20 +40,20 @@
         </field>
     </record>
 
-    <record id="view_tec_move_form" model="ir.ui.view">
-        <field name="name">account.move.form</field>
-        <field name="model">account.move</field>
-        <field name="inherit_id" ref="account.view_move_form"/>
-        <field name="arch" type="xml">
-            <xpath expr="//field[@name='invoice_line_ids']/list/field[@name='analytic_distribution']" position='replace'>
-                <field name="analytic_distribution" widget="analytic_distribution"
-                       string="Analytic"
-                       groups="analytic.group_analytic_accounting"
-                       options="{'product_field': 'product_id', 'account_field': 'account_id', 'amount_field': 'price_subtotal'}"
-                       business_domain_compute="parent.move_type in ['out_invoice', 'out_refund', 'out_receipt'] and 'invoice' or parent.move_type in ['in_invoice', 'in_refund', 'in_receipt'] and 'bill' or 'general'"/>
-            </xpath>
-        </field>
-    </record>
+<!--    <record id="view_tec_move_form" model="ir.ui.view">-->
+<!--        <field name="name">account.move.form</field>-->
+<!--        <field name="model">account.move</field>-->
+<!--        <field name="inherit_id" ref="account.view_move_form"/>-->
+<!--        <field name="arch" type="xml">-->
+<!--            <xpath expr="//field[@name='invoice_line_ids']/list/field[@name='analytic_distribution']" position='replace'>-->
+<!--                <field name="analytic_distribution" widget="analytic_distribution"-->
+<!--                       string="Analytic"-->
+<!--                       groups="analytic.group_analytic_accounting"-->
+<!--                       options="{'product_field': 'product_id', 'account_field': 'account_id', 'amount_field': 'price_subtotal'}"-->
+<!--                       business_domain_compute="parent.move_type in ['out_invoice', 'out_refund', 'out_receipt'] and 'invoice' or parent.move_type in ['in_invoice', 'in_refund', 'in_receipt'] and 'bill' or 'general'"/>-->
+<!--            </xpath>-->
+<!--        </field>-->
+<!--    </record>-->
 
     <record id="sale_stock_renting.rental_order_form_view_inherit_stock" model="ir.ui.view">
         <field name="name">rental.order.form.inherit.stock</field>

@@ -13,6 +13,25 @@ class ProjectMilestone(models.Model):
 
 
     quantity_amount = fields.Float('Amount', copy=False)
+    sale_line_amount = fields.Monetary(related='sale_line_id.price_subtotal', string='Price Total', copy=False)
+    currency_id = fields.Many2one(related='sale_line_id.currency_id', string='Curency', copy=False)
+
+    @api.onchange('quantity_amount')
+    def _onchange_quantity_amount(self):
+        sale_line_amount = self.sale_line_id.price_subtotal
+        if self.quantity_amount > sale_line_amount:
+            raise ValidationError(_("The given amount exceeded the sale line amount"))
+        self.quantity_percentage = (self.quantity_amount / sale_line_amount)
+        # self.quantity_percentage = (self.quantity_amount) * (100/sale_line_amount)
+
+    @api.onchange('quantity_percentage')
+    def _onchange_quantity_percentage(self):
+        sale_line_amount = self.sale_line_id.price_subtotal
+        self.quantity_amount = self.quantity_percentage * sale_line_amount
+
+
+
+
 
 
 

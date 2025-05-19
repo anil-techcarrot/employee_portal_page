@@ -115,7 +115,7 @@ class Rentals(models.Model):
         ('date_order_conditional_required',
          "CHECK((state = 'sale' AND date_order IS NOT NULL) OR state != 'sale')",
          "A confirmed sales order requires a confirmation date."),
-        ('so_po_no_unique', 'UNIQUE(po_no)', 'The PO No must be unique')
+        # ('so_po_no_unique', 'UNIQUE(po_no)', 'The PO No must be unique')
     ]
 
 
@@ -1059,13 +1059,13 @@ class RentalInvoiceHistory(models.Model):
         for line in self:
             line.rental_sale_id._cron_create_rental_month_invoices(line)
 
-    @api.onchange('worked_days')
-    def _onchange_worked_days(self):
-        self.is_ready_to_invoice=False
-        if self.worked_days > self.planned_days:
-            raise ValidationError("Worked Quantity cannot be greater than the Planned Quantity.")
-        if self.worked_days>0.0:
-            self.is_ready_to_invoice=True
+    # @api.onchange('worked_days')
+    # def _onchange_worked_days(self):
+    #     self.is_ready_to_invoice=False
+    #     if self.worked_days > self.planned_days:
+    #         raise ValidationError("Worked Quantity cannot be greater than the Planned Quantity.")
+    #     if self.worked_days>0.0:
+    #         self.is_ready_to_invoice=True
 
     @api.onchange('planned_days')
     def _onchage_planned_days(self):

@@ -146,14 +146,24 @@
                                                 </td>
                                             </t>
                                             <t t-elif="line.display_type == 'line_section'">
-                                                <td style="border-bottom:none;border-top:none" colspan="6">
+                                                <td style="border-bottom:none;border-top:none" >
                                                     <span t-field="line.name" t-options="{'widget': 'text'}">A section title</span>
                                                 </td>
+                                                <td style="color: #ffffff;border-bottom:none;border-top:none" >UOM</td>
+                                                <td style="color: #ffffff;border-bottom:none;border-top:none" >UOM</td>
+                                                <td style="color: #ffffff;border-bottom:none;border-top:none" >UOM</td>
+                                                <td style="color: #ffffff;border-bottom:none;border-top:none" >UOM</td>
+                                                <td style="color: #ffffff;border-bottom:none;border-top:none" >UOM</td>
                                             </t>
                                             <t t-elif="line.display_type == 'line_note'">
-                                                <td style="border-bottom:none;border-top:none" colspan="6">
+                                                <td style="border-bottom:none;border-top:none" >
                                                     <span t-field="line.name" t-options="{'widget': 'text'}">A note, whose content usually applies to the section or product above.</span>
                                                 </td>
+                                                <td style="color: #ffffff;border-bottom:none;border-top:none" >UOM</td>
+                                                <td style="color: #ffffff;border-bottom:none;border-top:none" >UOM</td>
+                                                <td style="color: #ffffff;border-bottom:none;border-top:none" >UOM</td>
+                                                <td style="color: #ffffff;border-bottom:none;border-top:none" >UOM</td>
+                                                <td style="color: #ffffff;border-bottom:none;border-top:none" >UOM</td>
                                             </t>
                                         </tr>
                                     </t>

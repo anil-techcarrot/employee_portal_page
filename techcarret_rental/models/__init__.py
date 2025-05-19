@@ -7,4 +7,4 @@ from . import employee
 from . import import_attendance
 from . import res_partner
 from . import purchase_order
-from . import project_milestone
+# from . import project_milestone

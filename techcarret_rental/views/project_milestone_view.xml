@@ -8,6 +8,7 @@
         <field name="inherit_id" ref="sale_project.project_milestone_view_tree" />
         <field name="arch" type="xml">
             <xpath expr="//field[@name='quantity_percentage']" position="before">
+                <field name="sale_line_amount" readonly="1" />
                 <field name="quantity_amount"  />
             </xpath>
         </field>

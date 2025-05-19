@@ -94,8 +94,8 @@
                                     <t t-set="count" t-value="0"/>
                                     <t t-foreach="lines" t-as="line">
                                         <t t-set="count" t-value="count + 1"/>
-                                        <tr style="border:none" t-att-class="'fw-bold o_line_section' if line.display_type == 'line_section' else 'fst-italic o_line_note' if line.display_type == 'line_note' else ''">
-                                            <t name="account_invoice_line_accountable">
+                                        <tr style="border:none" >
+                                            <t t-if="line.display_type not in ['line_section', 'line_note']" >
                                                 <td class="text-center text-nowrap" style="border:none">
                                                     <span t-out="count"></span>
                                                 </td>
@@ -119,6 +119,16 @@
                                                 </td>
                                                 <td name="td_subtotal" style="border:none" class="text-end o_price_total">
                                                     <span class="text-nowrap" t-field="line.price_subtotal">27.00</span>
+                                                </td>
+                                            </t>
+                                            <t t-elif="line.display_type == 'line_section'" t-att-class="'fw-bold o_line_section' if line.display_type == 'line_section' else 'fst-italic o_line_note' if line.display_type == 'line_note' else ''">
+                                                <td style="border-bottom:none;border-top:none" colspan="7">
+                                                    <span t-field="line.name" t-options="{'widget': 'text'}">A section title</span>
+                                                </td>
+                                            </t>
+                                            <t t-elif="line.display_type == 'line_note'" t-att-class="'fw-bold o_line_section' if line.display_type == 'line_section' else 'fst-italic o_line_note' if line.display_type == 'line_note' else ''">
+                                                <td style="border-bottom:none;border-top:none" colspan="7">
+                                                    <span t-field="line.name" t-options="{'widget': 'text'}">A note, whose content usually applies to the section or product above.</span>
                                                 </td>
                                             </t>
 
