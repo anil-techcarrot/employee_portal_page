@@ -1,4 +1,4 @@
-from odoo import api, fields, models
+from odoo import api, fields, models, _
 from odoo.osv import expression
 
 
@@ -58,4 +58,16 @@ class AccountMoveLine(models.Model):
             if '.' in digits:
                 qty = digits.rstrip('0').rstrip('.')
         return qty
+
+
+    def inv_action_replace_product_desc(self):
+        print('rrrrrrrrrrrrrrrrrrrrrrr')
+        return {
+            'name': _('Enter Product Desc'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'inv.edit.product.desc',
+            'view_mode': 'form',
+            # 'context': {'default_demand_quantity': self.product_uom_qty},
+            'target': 'new',
+        }
 

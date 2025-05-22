@@ -18,6 +18,13 @@
                 <field name="project_id"></field>
                 <field name="domain_project_ids" widget="many2many_tags" column_invisible="1"></field>
             </xpath>
+<!--            <xpath expr="//field[@name='invoice_line_ids']/list/field[@name='product_id']" position='after'>-->
+<!--               <button class="oe_stat_button" name="inv_action_replace_product_desc"-->
+<!--                                    type="object" icon="fa-bars" style="width:20 px" help="Click or press enter to add a description"-->
+<!--                                    invisible="parent.state != 'posted'">-->
+<!--               </button>-->
+
+<!--            </xpath>-->
         </field>
     </record>
 

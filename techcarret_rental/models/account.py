@@ -166,3 +166,17 @@ class AccountMoveLine(models.Model):
                     continue
                 if not line.name or line._origin.name == get_name(line._origin):
                     line.name = get_name(line)
+
+    # @api.onchange('name')
+    # def _onchange_product_name_desc(self):
+    #     name = ''
+    #     print('pppppppppppppppppppp')
+    #     if self.rental_start_date and self.rental_return_date:
+    #         retrun_datetime = self.rental_return_date
+    #         s_date = self.rental_start_date.strftime(get_lang(self.env).date_format)
+    #         r_date = retrun_datetime.strftime(get_lang(self.env).date_format)
+    #         prod_desc = str(self.name) + ' \n' + str(s_date) + ' TO ' + str(r_date)
+    #         name = prod_desc
+    #     else:
+    #         name = self.inv_prod_desc
+    #     self.name = name

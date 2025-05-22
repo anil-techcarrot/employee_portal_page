@@ -11,11 +11,13 @@
     'depends': ['sale_management', 'stock', 'sale_renting', 'account', 'account_accountant', 'sale'],
 
     'data': [
+        'security/ir.model.access.csv',
         'reports/invoice_report_template.xml',
         'reports/invoice_ir_actions.xml',
         'views/res_bank_view.xml',
         # 'views/sale_order_view.xml',
         'views/account_move_view.xml',
+        'wizard/inv_edit_prod_desc_view.xml',
     ],
 
     # 'license': "AGPL-1",

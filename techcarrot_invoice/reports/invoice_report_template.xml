@@ -383,17 +383,6 @@
                             <div>
                                 <span>This is a system generated document &amp; does not require a signature.</span>
                             </div>
-<!--                            <div>-->
-<!--                                <span>Terms &amp; Conditions:</span><br/>-->
-<!--                                <span t-esc="o.narration"></span>-->
-<!--                            </div>-->
-                            <br/>
-                            <br/>
-                            <br/>
-                            <br/>
-<!--                            <hr style="border-top: 1px solid #000; margin-top: 30px;" />-->
-<!--                    </div>-->
-
                         </div>
                     </div>
                     </t>
@@ -601,15 +590,6 @@
                                 <div class="text-end no-border" ><b>Balance Due <t t-esc="amount_residual"></t></b></div>
                             </div>
                         </div>
-<!--                            <div>-->
-<!--                                <span>Terms &amp; Conditions:</span><br/>-->
-<!--                                <span t-esc="o.narration"></span>-->
-<!--                            </div>-->
-                            <br/>
-                            <br/>
-                            <br/>
-                            <br/>
-                            <hr style="border-top: 1px solid #000; margin-top: 30px;" />
                         </div>
                         </div>
                     </div>
@@ -624,6 +604,22 @@
                 <t t-foreach="docs" t-as="o">
                     <t t-call="techcarrot_invoice.report_techcarrot_invoices_document" t-lang="o.partner_id.lang"/>
                 </t>
+            </t>
+        </template>
+
+        <template id="report_footer_tech">
+            <div class="footer" style="font-size:10px;">
+                <hr style="border-top: 0.9px solid #000; margin-top: 30px;" />
+            </div>
+        </template>
+
+        <template id="web.basic_layout">
+            <t t-call="web.html_container">
+                <t t-if="not o" t-set="o" t-value="doc"/>
+                <div class="article" t-att-data-oe-model="o and o._name" t-att-data-oe-id="o and o.id" t-att-data-oe-lang="o and o.env.context.get('lang')">
+                    <t t-out="0"/>
+                </div>
+                <t t-call="techcarrot_invoice.report_footer_tech" />
             </t>
         </template>
 

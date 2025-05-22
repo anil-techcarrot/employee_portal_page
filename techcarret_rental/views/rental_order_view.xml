@@ -295,6 +295,12 @@
     <field name="model">sale.order</field>
     <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
+<!--            <xpath expr="//field[@name='order_line']/list/field[@name='analytic_distribution']" position='before'>-->
+<!--               <button class="oe_stat_button" name="action_replace_product_desc"-->
+<!--                                    type="object" icon="fa-bars" style="width:20 px" help="Click or press enter to add a description"-->
+<!--                                    invisible="parent.state != 'sale' or parent.is_rental_order != True">-->
+<!--               </button>-->
+<!--            </xpath>-->
             <xpath expr="//field[@name='order_line']/list/field[@name='analytic_distribution']" position='replace'>
                 <field name="analytic_distribution" widget="analytic_distribution"
                        groups="analytic.group_analytic_accounting"

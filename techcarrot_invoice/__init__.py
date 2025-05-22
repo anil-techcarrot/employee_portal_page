@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from . import models
-# from . import wizard
+from . import wizard
 
 def pre_init_check(cr):
     from odoo.service import common

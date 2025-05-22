@@ -1004,6 +1004,17 @@ class RentalOrdersLine(models.Model):
                     if order.price_unit == 0.00:
                         order.price_unit = order.product_id.with_company(order.company_id.id).lst_price
 
+    def action_replace_product_desc(self):
+        print('rrrrrrrrrrrrrrrrrrrrrrr')
+        return {
+            'name': _('Enter Product Desc'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'edit.product.desc',
+            'view_mode': 'form',
+            # 'context': {'default_demand_quantity': self.product_uom_qty},
+            'target': 'new',
+        }
+
 class RentalInvoiceHistory(models.Model):
     _name = 'rental.invoice.history'
 
