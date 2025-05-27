@@ -84,7 +84,7 @@
                                             <tr>
                                                 <td >Ref#</td>
                                                 <td >:</td>
-                                                <td ><span t-field="o.origin"></span></td>
+                                                <td ><span t-field="o.partner_ref"></span></td>
                                             </tr>
                                         </table>
                             </div>
@@ -180,18 +180,11 @@
                                 <span><b>NOTES:</b></span><br/>
                                 <span >This is a system generated document &amp; does not require any signature. </span>
                             </div>
-                            <div>
+                            <div style="line-height: 1.1;">
                                 <span>Terms &amp; Conditions:</span><br/>
-                                <span t-esc="o.notes"></span>
+                                <span ><t t-esc="o.notes" t-options='{"widget": "html"}'/></span>
                             </div>
 
-                            <br/>
-                            <br/>
-                            <br/>
-                            <br/>
-                            <br/>
-                            <br/>
-                            <hr style="border-top: 1px solid #000; margin-top: 30px;" />
                         </div>
                         </div>
                     </div>
