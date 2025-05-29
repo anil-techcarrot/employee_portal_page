@@ -20,8 +20,6 @@ class PurchaseOrder(models.Model):
     _inherit = 'purchase.order'
 
 
-    deliver_to_partner_id = fields.Many2one('res.partner', 'Deliver To')
-
     def action_rfq_send(self):
         res = super(PurchaseOrder, self).action_rfq_send()
         for order in self:

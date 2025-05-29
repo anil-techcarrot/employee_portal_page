@@ -39,6 +39,7 @@ class AccountMoveLine(models.Model):
 
     project_code = fields.Char('Project Code', copy=False)
     employee_id = fields.Many2one('hr.employee', string="Employee")
+    emp_code = fields.Char('Employee Code', copy=False)
 
     # @api.model
     # def default_get(self, fields_list):
@@ -46,10 +47,17 @@ class AccountMoveLine(models.Model):
     #     return defaults
 
     def create(self, vals):
+        for val in vals:
+            if 'emp_code' in val and not val.get('employee_id'):
+                emp_code = val['emp_code']
+                employee = self.env['hr.employee'].search([('emp_code', '=', emp_code)], limit=1)
+                if employee:
+                    val['employee_id'] = employee.id
         res = super(AccountMoveLine, self).create(vals)
         if res.sale_line_ids:
             res.project_code = res.sale_line_ids[0].order_id.project_id.project_code
         return res
+
     # domain_project_ids = fields.Many2many('project.project', compute='_compute_project_ids')
 
     # @api.depends('account_id')

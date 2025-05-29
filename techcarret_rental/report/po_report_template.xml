@@ -58,7 +58,7 @@
                                     <span>Deliver To</span>
                                 </div>
                                 <div name="partner_header">
-                                    <div t-field="o.deliver_to_partner_id.name"></div>
+                                    <div t-field="o.dest_address_id.name"></div>
                                 </div>
                             </div>
                             <div class="col-6 text-end" name="div_billing_address">
@@ -95,13 +95,13 @@
                             <table width="100%"  style="border:none;" class="table table-borderless">
                                 <thead>
                                     <tr style="background-color:#404040;border:none;">
-                                        <th name="th_description" width="6%" class="text-center" style="color: white;border:none;"><span >#</span></th>
-                                        <th name="th_description" width="25%" style="color: white;border:none;"><span>Item &amp; Description</span></th>
+                                        <th name="th_description" width="5%" class="text-center" style="color: white;border:none;"><span >#</span></th>
+                                        <th name="th_description" width="23%" style="color: white;border:none;"><span>Item &amp; Description</span></th>
                                         <th name="th_quantity" width="9%"  class="text-end" style="color: white;border:none;"><span>Qty</span></th>
                                         <th name="th_quantity" width="9%" class="text-end" style="color: white;border:none;"><span>Rate</span></th>
-                                        <th name="th_quantity" width="10%" class="text-end" style="color: white;border:none;"><span>Tax %</span></th>
-                                        <th name="th_quantity" width="11%" class="text-end" style="color: white;border:none;"><span>Tax</span></th>
-                                        <th name="th_quantity" width="12%" class="text-end" style="color: white;border:none;"><span>Amount</span></th>
+                                        <th name="th_quantity" width="9%" class="text-end" style="color: white;border:none;"><span>Tax %</span></th>
+                                        <th name="th_quantity" width="10%" class="text-end" style="color: white;border:none;"><span>Tax</span></th>
+                                        <th name="th_quantity" width="17%" class="text-end" style="color: white;border:none;"><span>Amount</span></th>
                                     </tr>
                                 </thead>
                                 <tbody class="invoice_tbody">
@@ -186,14 +186,22 @@
                                 </tbody>
                             </table>
                             <br></br>
+                        </div>
                             <div>
-                                <span><b>NOTES:</b></span><br/>
+                            <div>
+                                <h4>Notes:</h4>
                                 <span >This is a system generated document &amp; does not require any signature. </span>
                             </div>
-                            <div style="line-height: 1.1;">
+                            <br></br>
+<!--                            <div style="line-height: 1.1;">-->
+                            <div >
                                 <t t-if="o.notes">
-                                    <span>Terms &amp; Conditions:</span><br/>
-                                    <span ><t t-esc="o.notes" t-options='{"widget": "html"}'/></span>
+<!--                                    <h5>Terms &amp; Conditions:</h5>-->
+<!--                                    <span t-field="o.notes" ></span>-->
+                                    <div class="page">
+                                        <h4>Terms &amp; Conditions</h4>
+                                        <p t-field="o.notes" style="text-align: justify;"/>
+                                    </div>
                                 </t>
                             </div>
 
