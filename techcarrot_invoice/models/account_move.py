@@ -39,6 +39,17 @@ class AccountMoveLine(models.Model):
 
     project_code = fields.Char('Project Code', copy=False)
     employee_id = fields.Many2one('hr.employee', string="Employee")
+
+    # @api.model
+    # def default_get(self, fields_list):
+    #     defaults = super().default_get(fields_list)
+    #     return defaults
+
+    def create(self, vals):
+        res = super(AccountMoveLine, self).create(vals)
+        if res.sale_line_ids:
+            res.project_code = res.sale_line_ids[0].order_id.project_id.project_code
+        return res
     # domain_project_ids = fields.Many2many('project.project', compute='_compute_project_ids')
 
     # @api.depends('account_id')

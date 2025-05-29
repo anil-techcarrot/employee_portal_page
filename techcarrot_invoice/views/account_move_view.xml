@@ -19,6 +19,9 @@
                 <field name="project_code"/>
 <!--                <field name="domain_project_ids" widget="many2many_tags" column_invisible="1"></field>-->
             </xpath>
+            <xpath expr="//page[@id='invoice_tab']/field/list/field[@name='account_id']" position="after">
+                <field name="project_code"/>
+            </xpath>
 <!--            <xpath expr="//field[@name='invoice_line_ids']/list/field[@name='product_id']" position='after'>-->
 <!--               <button class="oe_stat_button" name="inv_action_replace_product_desc"-->
 <!--                                    type="object" icon="fa-bars" style="width:20 px" help="Click or press enter to add a description"-->
