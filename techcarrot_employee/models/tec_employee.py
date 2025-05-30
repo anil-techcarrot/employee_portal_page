@@ -206,23 +206,27 @@ class HrEmployeeInherit(models.Model):
 
     @api.constrains('issue_date')
     def _onchange_date(self):
-        if self.issue_date and self.issue_date > fields.Date.today():
-            raise ValidationError(_("The Date Should Not be a Future Date"))
+        if self.issue_date:
+            if self.issue_date > fields.Date.today():
+                raise ValidationError(_("The Date Should Not be a Future Date"))
 
     @api.constrains('emirates_issue_date')
     def _onchange_emirates_issue_date(self):
-        if self.emirates_issue_date and self.emirates_issue_date > fields.Date.today():
-            raise ValidationError(_("The Date Should Not be a Future Date"))
+        if self.emirates_issue_date:
+            if self.emirates_issue_date > fields.Date.today():
+                raise ValidationError(_("The Date Should Not be a Future Date"))
 
     @api.constrains('spouse_passport_issue_date')
     def _onchange_spouse_passport_issue_date(self):
-        if self.spouse_passport_issue_date and self.spouse_passport_issue_date > fields.Date.today():
-            raise ValidationError(_("The Date Should Not be a Future Date"))
+        if self.spouse_passport_issue_date:
+            if self.spouse_passport_issue_date > fields.Date.today():
+                raise ValidationError(_("The Date Should Not be a Future Date"))
 
     @api.constrains('spouse_emirates_issue_date')
     def _onchange_spouse_emirates_issue_date(self):
-        if self.spouse_emirates_issue_date and self.spouse_emirates_issue_date > fields.Date.today():
-            raise ValidationError(_("The Date Should Not be a Future Date"))
+        if self.spouse_emirates_issue_date:
+            if self.spouse_emirates_issue_date > fields.Date.today():
+                raise ValidationError(_("The Date Should Not be a Future Date"))
 
     @api.onchange('dependent_child_passport_issue_date_1')
     def _onchange_dependent_child_passport_issue_date(self):
@@ -308,8 +312,10 @@ class HrEmployeeInherit(models.Model):
 
     @api.model_create_multi
     def create(self, vals):
-        vals['created_by'] = self.env.uid
-        vals['created_date_time'] = fields.Datetime.now()
+        for val in vals:
+            print('tttttttttttttttt',val)
+            val['created_by'] = self.env.uid
+            val['created_date_time'] = fields.Datetime.now()
         return super(HrEmployeeInherit, self).create(vals)
 
     def write(self, vals):

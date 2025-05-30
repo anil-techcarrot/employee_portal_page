@@ -1,5 +1,6 @@
 from odoo import api, fields, models, _
 from odoo.osv import expression
+from odoo.exceptions import ValidationError
 
 
 class AccountMove(models.Model):
@@ -37,7 +38,20 @@ class AccountMoveSend(models.AbstractModel):
 class AccountMoveLine(models.Model):
     _inherit = "account.move.line"
 
-    project_code = fields.Char('Project Code', copy=False)
+    @api.model
+    def _project_code_get(self):
+        # Using phonenumbers library to get all country calling codes
+        project_codes = []
+        project_ids = self.env['project.project'].search(['|', ('company_id', '=', self.company_id.id),
+                                                            ('company_id', '=', False)])
+        for project_id in project_ids:
+            if project_id.project_code:
+                str_project_code = (f"{project_id.project_code}", f"{project_id.project_code}")
+                if str_project_code not in project_codes:
+                    project_codes.append(str_project_code)
+        return project_codes
+
+    project_code = fields.Selection(selection=_project_code_get, string='Project Code', copy=False)
     employee_id = fields.Many2one('hr.employee', string="Employee")
     emp_code = fields.Char('Employee Code', copy=False)
 
@@ -46,16 +60,23 @@ class AccountMoveLine(models.Model):
     #     defaults = super().default_get(fields_list)
     #     return defaults
 
+
     def create(self, vals):
         for val in vals:
-            if 'emp_code' in val and not val.get('employee_id'):
+            if 'emp_code' in val and not val.get('employee_id') and val['emp_code'] != False:
                 emp_code = val['emp_code']
-                employee = self.env['hr.employee'].search([('emp_code', '=', emp_code)], limit=1)
+                employee = self.env['hr.employee'].sudo().search([('emp_code', '=', str(emp_code))], limit=1)
                 if employee:
                     val['employee_id'] = employee.id
+                else:
+                    raise ValidationError(_('Employee master not found. Employee ID: %s', emp_code))
+
         res = super(AccountMoveLine, self).create(vals)
         if res.sale_line_ids:
             res.project_code = res.sale_line_ids[0].order_id.project_id.project_code
+            print('eeeeeee33333333333',res.project_code)
+            print('eeeeeee33333333333',type(res.project_code))
+            dfdfdf
         return res
 
     # domain_project_ids = fields.Many2many('project.project', compute='_compute_project_ids')

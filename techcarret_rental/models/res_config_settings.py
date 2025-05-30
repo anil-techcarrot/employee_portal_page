@@ -18,6 +18,7 @@ class ResCompany(models.Model):
     sales_journal_id = fields.Many2one('account.journal', 'Project Journal', domain="[('type', '=', 'sale')]")
 
 
+
 class ResConfigSettings(models.TransientModel):
     _inherit = 'res.config.settings'
 
