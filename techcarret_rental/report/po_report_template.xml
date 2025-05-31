@@ -58,7 +58,7 @@
                                     <span>Deliver To</span>
                                 </div>
                                 <div name="partner_header">
-                                    <div t-field="o.dest_address_id.name"></div>
+                                    <div t-field="o.deliver_partner_id.name"></div>
                                 </div>
                             </div>
                             <div class="col-6 text-end" name="div_billing_address">

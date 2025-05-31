@@ -72,11 +72,11 @@ class AccountMoveLine(models.Model):
                     raise ValidationError(_('Employee master not found. Employee ID: %s', emp_code))
 
         res = super(AccountMoveLine, self).create(vals)
-        if res.sale_line_ids:
-            res.project_code = res.sale_line_ids[0].order_id.project_id.project_code
-            print('eeeeeee33333333333',res.project_code)
-            print('eeeeeee33333333333',type(res.project_code))
-            dfdfdf
+        # if res.sale_line_ids:
+        #     res.project_code = res.sale_line_ids[0].order_id.project_id.project_code
+        #     print('eeeeeee33333333333',res.project_code)
+        #     print('eeeeeee33333333333',type(res.project_code))
+        #     dfdfdf
         return res
 
     # domain_project_ids = fields.Many2many('project.project', compute='_compute_project_ids')

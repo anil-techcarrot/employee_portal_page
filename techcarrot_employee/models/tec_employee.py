@@ -204,23 +204,23 @@ class HrEmployeeInherit(models.Model):
 
     _sql_constraints = [('unique_emp_code', 'unique (emp_code)', 'Employee Code must be unique.')]
 
-    @api.constrains('issue_date')
-    def _onchange_date(self):
-        if self.issue_date:
-            if self.issue_date > fields.Date.today():
-                raise ValidationError(_("The Date Should Not be a Future Date"))
-
-    @api.constrains('emirates_issue_date')
-    def _onchange_emirates_issue_date(self):
-        if self.emirates_issue_date:
-            if self.emirates_issue_date > fields.Date.today():
-                raise ValidationError(_("The Date Should Not be a Future Date"))
-
-    @api.constrains('spouse_passport_issue_date')
-    def _onchange_spouse_passport_issue_date(self):
-        if self.spouse_passport_issue_date:
-            if self.spouse_passport_issue_date > fields.Date.today():
-                raise ValidationError(_("The Date Should Not be a Future Date"))
+    # @api.constrains('issue_date')
+    # def _onchange_date(self):
+    #     if self.issue_date:
+    #         if self.issue_date > fields.Date.today():
+    #             raise ValidationError(_("The Date Should Not be a Future Date"))
+    #
+    # @api.constrains('emirates_issue_date')
+    # def _onchange_emirates_issue_date(self):
+    #     if self.emirates_issue_date:
+    #         if self.emirates_issue_date > fields.Date.today():
+    #             raise ValidationError(_("The Date Should Not be a Future Date"))
+    #
+    # @api.constrains('spouse_passport_issue_date')
+    # def _onchange_spouse_passport_issue_date(self):
+    #     if self.spouse_passport_issue_date:
+    #         if self.spouse_passport_issue_date > fields.Date.today():
+    #             raise ValidationError(_("The Date Should Not be a Future Date"))
 
     @api.constrains('spouse_emirates_issue_date')
     def _onchange_spouse_emirates_issue_date(self):

@@ -21,11 +21,11 @@ class ResBank(models.Model):
 
     branch = fields.Char('Branch', copy=False)
 
-
 #
-# class ResCompany(models.Model):
-#     _inherit = "res.company"
+#
+# class ResPartner(models.Model):
+#     _inherit = "res.partner"
 #
 #     lut_code = fields.Char(string="LUT Code")
 #     iec_code = fields.Char(string="IEC Code")
-
+#
