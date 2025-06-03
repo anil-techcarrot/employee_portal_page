@@ -38,17 +38,18 @@ class HrContractInherit(models.Model):
     sub_total = fields.Monetary('Sub Total', copy=False)
     emp_code = fields.Char('Employee Code', copy=False)
     #
-    @api.model
-    def create(self, vals):
-        print('cdddddddddddddddddd',vals)
-        if 'emp_code' in vals and not vals.get('employee_id') and vals['emp_code'] != False:
-            emp_code = vals['emp_code']
-            employee = self.env['hr.employee'].search([('emp_code', '=', emp_code)], limit=1)
-            if employee:
-                vals['employee_id'] = employee.id
-            else:
-                raise ValidationError(_('Employee master not found. Employee ID: %s', emp_code))
-        return super(HrContractInherit, self).create(vals)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if 'emp_code' in vals and not vals.get('employee_id') and vals['emp_code'] != False:
+                emp_code = vals['emp_code']
+                employee = self.env['hr.employee'].search([('emp_code', '=', emp_code)], limit=1)
+                if employee:
+                    vals['employee_id'] = employee.id
+                else:
+                    raise ValidationError(_('Employee master not found. Employee ID: %s', emp_code))
+        return super(HrContractInherit, self).create(vals_list)
 
 
 
@@ -57,16 +58,17 @@ class HrSalaryInherit(models.Model):
 
     emp_code = fields.Char('Employee Code', copy=False)
 
-    @api.model
-    def create(self, vals):
-        if 'emp_code' in vals and not vals.get('employee_ids') and vals['emp_code'] != False:
-            emp_code = vals['emp_code']
-            employee = self.env['hr.employee'].search([('emp_code', '=', emp_code)], limit=1)
-            if employee:
-                vals['employee_ids'] = employee.ids
-            else:
-                raise ValidationError(_('Employee master not found. Employee ID: %s', emp_code))
-        return super(HrSalaryInherit, self).create(vals)
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if 'emp_code' in vals and not vals.get('employee_ids') and vals['emp_code'] != False:
+                emp_code = vals['emp_code']
+                employee = self.env['hr.employee'].search([('emp_code', '=', emp_code)], limit=1)
+                if employee:
+                    vals['employee_ids'] = employee.ids
+                else:
+                    raise ValidationError(_('Employee master not found. Employee ID: %s', emp_code))
+        return super(HrSalaryInherit, self).create(vals_list)
 
 
 class HrLeaveInherit(models.Model):
@@ -74,16 +76,17 @@ class HrLeaveInherit(models.Model):
 
     emp_code = fields.Char('Employee Code', copy=False)
 
-    @api.model
-    def create(self, vals):
-        if 'emp_code' in vals and not vals.get('employee_id') and vals['emp_code'] != False:
-            emp_code = vals['emp_code']
-            employee = self.env['hr.employee'].search([('emp_code', '=', emp_code)], limit=1)
-            if employee:
-                vals['employee_id'] = employee.id
-            else:
-                raise ValidationError(_('Employee master not found. Employee ID: %s', emp_code))
-        return super(HrLeaveInherit, self).create(vals)
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if 'emp_code' in vals and not vals.get('employee_id') and vals['emp_code'] != False:
+                emp_code = vals['emp_code']
+                employee = self.env['hr.employee'].search([('emp_code', '=', emp_code)], limit=1)
+                if employee:
+                    vals['employee_id'] = employee.id
+                else:
+                    raise ValidationError(_('Employee master not found. Employee ID: %s', emp_code))
+        return super(HrLeaveInherit, self).create(vals_list)
 
 
 class HrAttendance(models.Model):
@@ -91,13 +94,14 @@ class HrAttendance(models.Model):
 
     emp_code = fields.Char('Employee Code', copy=False)
 
-    @api.model
-    def create(self, vals):
-        if 'emp_code' in vals and not vals.get('employee_id') and vals['emp_code'] != False:
-            emp_code = vals['emp_code']
-            employee = self.env['hr.employee'].search([('emp_code', '=', emp_code)], limit=1)
-            if employee:
-                vals['employee_id'] = employee.id
-            else:
-                raise ValidationError(_('Employee master not found. Employee ID: %s', emp_code))
-        return super(HrAttendance, self).create(vals)
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if 'emp_code' in vals and not vals.get('employee_id') and vals['emp_code'] != False:
+                emp_code = vals['emp_code']
+                employee = self.env['hr.employee'].search([('emp_code', '=', emp_code)], limit=1)
+                if employee:
+                    vals['employee_id'] = employee.id
+                else:
+                    raise ValidationError(_('Employee master not found. Employee ID: %s', emp_code))
+        return super(HrAttendance, self).create(vals_list)

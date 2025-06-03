@@ -49,12 +49,12 @@ class AccountMove(models.Model):
             elif move.ref:
                 invoice_origin= move.ref
             if invoice_origin:
-                if not move.company_id.rental_journal_id:
-                    raise UserError(_("Default journal not found for rental."))
-                if not move.company_id.subscription_journal_id:
-                    raise UserError(_("Default journal not found for subscription."))
-                if not move.company_id.sales_journal_id:
-                    raise UserError(_("Default journal not found for project."))
+                # if not move.company_id.rental_journal_id:
+                #     raise UserError(_("Default journal not found for rental."))
+                # if not move.company_id.subscription_journal_id:
+                #     raise UserError(_("Default journal not found for subscription."))
+                # if not move.company_id.sales_journal_id:
+                #     raise UserError(_("Default journal not found for project."))
                 so_obj = self.env['sale.order'].search([('name', '=', invoice_origin)], limit=1)
                 if so_obj:
                     if so_obj.is_rental_order == True:

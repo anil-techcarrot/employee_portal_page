@@ -294,7 +294,7 @@ class Rentals(models.Model):
                                 aa_objs = self.env['account.analytic.account'].create({
                                     'plan_id': analytic_plan_id.id,
                                     'name': aa_name,
-                                    'company_id':sale.company_id.id,
+                                    # 'company_id':sale.company_id.id,
                                     'partner_id': sale.partner_id.id,
                                 })
                                 if aa_objs:
@@ -370,8 +370,8 @@ class Rentals(models.Model):
                                 planned_worked = 0
                                 planned_data = 0
                                 planned_worked = \
-                                line.product_id.employee_id._get_work_days_data_batch(range_start, range_end, calendar=line.product_id.employee_id.resource_calendar_id) \
-                                                        [line.product_id.employee_id.id]['days']
+                                line.product_id.sudo().employee_id._get_work_days_data_batch(range_start, range_end, calendar=line.product_id.sudo().employee_id.resource_calendar_id) \
+                                                        [line.product_id.sudo().employee_id.id]['days']
                                 if planned_worked > 0:
                                     uom = 'days'
                                     if line.product_uom.name == 'Days':
@@ -393,7 +393,7 @@ class Rentals(models.Model):
                                         'sale_state': order.state,
                                         'planned_days': planned_data,
                                         'partner_id': order.partner_id.id,
-                                        'employee_id': line.product_id.employee_id.id,
+                                        'employee_id': line.product_id.sudo().employee_id.id,
                                         'rentalnext_invoice_date': next_inv_date,
                                         'rentalnext_invoice_date_time': next_inv_date,
                                         'uom': uom,
@@ -448,10 +448,10 @@ class Rentals(models.Model):
                             if sl_line.product_uom.name == 'Months':
                                 if not employee:
                                     month_employee = order.rental_inv_line_ids.filtered(lambda so_inv: so_inv.uom == 'months')
-                                    employee = month_employee[0].employee_id
+                                    employee = month_employee[0].sudo().employee_id
                                 month_planned_data = 0
                                 for rental_inv in order.rental_inv_line_ids:
-                                    if employee == rental_inv.employee_id:
+                                    if employee == rental_inv.sudo().employee_id:
                                         month_planned_data = rental_inv.planned_days + month_planned_data
                                 sl_line.product_uom_qty = month_planned_data
 
@@ -480,9 +480,9 @@ class Rentals(models.Model):
                 if not invoice_date and rental_line.is_ready_to_invoice==True and rental_line.worked_days>0:
                     invoice_date = rental_line.rentalnext_invoice_date
                 if not rental_line.inv_ref_id and rental_line.worked_days>0 and rental_line.is_selected:
-                    if line.product_id.employee_id.id == rental_line.employee_id.id:
+                    if line.product_id.sudo().employee_id.id == rental_line.sudo().employee_id.id:
                         old_rental_objs = self.env['rental.invoice.history'].search(
-                            [('rental_sale_id', '=', rental_obj.rental_sale_id.id),('employee_id', '=', rental_line.employee_id.id),
+                            [('rental_sale_id', '=', rental_obj.rental_sale_id.id),('employee_id', '=', rental_line.sudo().employee_id.id),
                              ('state', 'in', ['confirmed', 'done'])], limit=1, order='id desc')
                         if old_rental_objs:
                             old_inv_date = old_rental_objs.rentalnext_invoice_date
@@ -490,7 +490,7 @@ class Rentals(models.Model):
                             old_inv_date = rental_obj.rental_sale_id.rental_start_date + relativedelta(hours=8)
                         upcoming_rental_objs = self.env['rental.invoice.history'].search(
                             [('rental_sale_id', '=', rental_obj.rental_sale_id.id),
-                             ('employee_id', '=', rental_line.employee_id.id),
+                             ('employee_id', '=', rental_line.sudo().employee_id.id),
                              ('state', 'in', ['draft'])], limit=1)
                         if upcoming_rental_objs:
                             new_inv_date = upcoming_rental_objs.rentalnext_invoice_date
@@ -543,7 +543,7 @@ class Rentals(models.Model):
                 for line in rental_obj.rental_sale_id.order_line:
                     for rental_line in rental_obj.rental_sale_id.rental_inv_line_ids:
                         if not rental_line.inv_ref_id and rental_line.worked_days > 0.00 and rental_line.is_selected:
-                            if line.product_id.employee_id.id == rental_line.employee_id.id:
+                            if line.product_id.sudo().employee_id.id == rental_line.sudo().employee_id.id:
                                 rental_line.inv_ref_id = inv_obj.id
                                 rental_line.is_selected = False
                 for inv_line in inv_obj.invoice_line_ids:
@@ -612,7 +612,7 @@ class Rentals(models.Model):
                         if str_m_y not in timesheet_months and str_m_y in pending_month:
                             timesheet_months.append(str_m_y)
                         start_date += delta
-                    if rental_obj.employee_id:
+                    if rental_obj.sudo().employee_id:
                         #CREATE RENTAL INVOICE
                         if rental_obj.worked_days>0:
                             self.create_rental_invoice(rental_obj)

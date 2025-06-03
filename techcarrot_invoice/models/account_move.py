@@ -19,6 +19,20 @@ class AccountMove(models.Model):
                 # ('type', '=', journal_type),
             ])
 
+    def _get_partner_shipping_id(self):
+        partner_shipping_id = False
+        if self.is_invoice(include_receipts=True):
+            addr = self.partner_id.address_get(['delivery'])
+            partner_shipping_id = addr and addr.get('delivery')
+            if partner_shipping_id:
+                partner_shipping_id = self.env['res.partner'].browse(partner_shipping_id)
+            else:
+                partner_shipping_id = False
+        else:
+            partner_shipping_id = False
+        return partner_shipping_id
+
+
 class AccountMoveSend(models.AbstractModel):
     _inherit = 'account.move.send'
 
@@ -60,7 +74,7 @@ class AccountMoveLine(models.Model):
     #     defaults = super().default_get(fields_list)
     #     return defaults
 
-
+    @api.model_create_multi
     def create(self, vals):
         for val in vals:
             if 'emp_code' in val and not val.get('employee_id') and val['emp_code'] != False:
@@ -74,9 +88,6 @@ class AccountMoveLine(models.Model):
         res = super(AccountMoveLine, self).create(vals)
         # if res.sale_line_ids:
         #     res.project_code = res.sale_line_ids[0].order_id.project_id.project_code
-        #     print('eeeeeee33333333333',res.project_code)
-        #     print('eeeeeee33333333333',type(res.project_code))
-        #     dfdfdf
         return res
 
     # domain_project_ids = fields.Many2many('project.project', compute='_compute_project_ids')

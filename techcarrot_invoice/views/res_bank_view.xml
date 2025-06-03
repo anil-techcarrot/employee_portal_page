@@ -26,17 +26,17 @@
         </field>
     </record>
 
-<!--&lt;!&ndash;    Res COmpany&ndash;&gt;-->
-<!--    <record id="techcarret_res_company_inherit_form" model="ir.ui.view">-->
-<!--        <field name="name">res.company.bank.form</field>-->
-<!--        <field name="model">res.company</field>-->
-<!--        <field name="inherit_id" ref="base.view_company_form"/>-->
-<!--        <field name="arch" type="xml">-->
-<!--            <xpath expr="//field[@name='vat']" position="after">-->
-<!--                <field name="lut_code" />-->
-<!--                <field name="iec_code" />-->
-<!--            </xpath>-->
-<!--        </field>-->
-<!--    </record>-->
+<!--    Res COmpany-->
+    <record id="techcarret_res_company_inherit_form" model="ir.ui.view">
+        <field name="name">res.company.bank.form</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='vat']" position="after">
+                <field name="lut_code" />
+                <field name="iec_code" />
+            </xpath>
+        </field>
+    </record>
 
 </odoo>
