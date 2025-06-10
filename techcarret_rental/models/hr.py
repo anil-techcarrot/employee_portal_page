@@ -30,10 +30,10 @@ class HrSalaryAttachment(models.Model):
                 record.date_estimated_end = date_estimated_end  - relativedelta(days=1)
                 date_end = start_of(record.date_start + relativedelta(months=ceil(record.remaining_amount / record.monthly_amount)),'month')
                 record.date_end = date_end - relativedelta(days=1)
-            else:
+            elif record.no_end_date == False:
                 record.date_estimated_end = False
                 record.date_end = False
-            if record.no_end_date == False:
+            else:
                 record.date_estimated_end = False
                 record.date_end = False
 
