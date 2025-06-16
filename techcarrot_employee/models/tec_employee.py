@@ -9,6 +9,7 @@ import phonenumbers
 class HrEmployeeInherit(models.Model):
     _inherit = 'hr.employee'
 
+    resource_id = fields.Many2one('resource.resource', required=False)
     employee_first_name = fields.Char('Employee First Name', copy=False)
     employee_middle_name = fields.Char('Employee Middle Name', copy=False)
     employee_last_name = fields.Char('Employee Last Name', copy=False)
