@@ -11,6 +11,13 @@ class HrEmployeePrivate(models.Model):
         inverse_name='employee_id',
         string="Work Entry",
         copy=True, auto_join=True)
+    marital = fields.Selection(
+        selection='_get_marital_status_selection',
+        string='Marital Status',
+        groups="hr.group_hr_user",
+        default='single',
+        required=False,
+        tracking=True)
 
     @api.model_create_multi
     def create(self, vals_list):
