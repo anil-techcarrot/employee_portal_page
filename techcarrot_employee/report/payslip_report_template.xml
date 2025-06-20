@@ -2,6 +2,10 @@
 <odoo>
 
         <template id="report_payslip_custom" inherit_id="hr_payroll.report_payslip">
+            <xpath expr="//h2[@id='payslip_name']" position="replace">
+                <t t-set="report_name" t-value="o._get_report_name()"/>
+                <h2 id="payslip_name"><span t-out="report_name">August 2023 Payslip</span></h2>
+            </xpath>
             <xpath expr="//div[@id='worked_days_table']" position="replace">
                 <div id="worked_days_table" style="display: none;">
                     <table class="table table-sm table-borderless">
@@ -76,14 +80,20 @@
                                     <tr id="line_display">
                                         <td width="60%" id="payslip_line_name" style="padding-left: 5px;border-right: 1px solid black;"><span t-field="line.name"/></td>
                                         <td width="40%" id="payslip_line_total" style="padding-right: 5px;border-right: 2px solid black;" class="text-end" >
-                                            <span t-out="line.total"/>
+                                            <t t-set="amount_total" t-value="'{:,.2f}'.format(line.total)"/>
+                                            <b><span t-esc="amount_total"/> </b>
                                         </td>
                                     </tr>
-                                    <t t-set="alw_amount" t-value="alw_amount + line.total"/>
+                                    <t t-if="line.category_id.code != 'NET'">
+                                        <t t-set="alw_amount" t-value="alw_amount + line.total"/>
+                                    </t>
                                 </span>
                                 <tr style="border: 2px solid black;">
                                     <td style="padding-left: 5px;border-right: 1px solid black;"><b>Total Earnings</b></td>
-                                    <td style="padding-right: 5px;" class="text-end"><b><span t-out="alw_amount"/></b> </td>
+                                    <td style="padding-right: 5px;" class="text-end">
+                                        <t t-set="alw_amount_format" t-value="'{:,.2f}'.format(alw_amount)"/>
+                                        <b><span t-esc="alw_amount_format"/> </b>
+                                    </td>
                                 </tr>
                                 <tr style="border: 1px solid white;">
                                     <td style="border: 1px solid white;"><b></b></td>
@@ -104,7 +114,8 @@
                                     <tr id="line_display">
                                         <td width="60%" id="payslip_line_name"  style="padding-left: 5px;border-right: 1px solid black;"><span t-field="line.name"/></td>
                                         <td width="40%" id="payslip_line_total" style="padding-right: 5px;" class="text-end" >
-                                            <span t-out="line.total"/>
+                                            <t t-set="total" t-value="'{:,.2f}'.format(line.total)"/>
+                                            <b><span t-esc="total"/> </b>
                                         </td>
                                     </tr>
                                     <t t-set="ded_amount" t-value="ded_amount + line.total"/>
@@ -117,12 +128,15 @@
                                 </t>
                                 <tr style="border: 2px solid black;border-left: none;">
                                     <td width="60%" style="padding-left: 5px;border-right: 1px solid black;"><b>Total Deductions</b></td>
-                                    <td width="40%"  style="padding-right: 5px;" class="text-end"><b><span t-out="ded_amount"/></b></td>
+                                    <td width="40%"  style="padding-right: 5px;" class="text-end">
+                                        <t t-set="ded_amount_format" t-value="'{:,.2f}'.format(ded_amount)"/>
+                                        <b><span t-esc="ded_amount_format"/> </b>
+                                    </td>
                                 </tr>
                                 <t t-set="net_amount" t-value="alw_amount - ded_amount"/>
                                 <tr style="border: 1px solid white;">
                                     <td width="60%" style="border: 1px solid white;"><b></b></td>
-                                    <td width="40%" style="border: 2px solid black;padding-right: 5px;" class="text-end"><b><span t-out="net_amount"></span></b> </td>
+                                    <td width="40%" style="border: 2px solid black;padding-right: 5px;" class="text-end"><b><span t-field="o.net_wage"/></b> </td>
                                 </tr>
                             </tbody>
                         </table>

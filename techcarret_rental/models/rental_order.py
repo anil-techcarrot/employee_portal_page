@@ -537,6 +537,7 @@ class Rentals(models.Model):
                 'invoice_user_id': rental_obj.rental_sale_id.user_id.id,
                 'payment_reference': rental_obj.rental_sale_id.reference,
                 'user_id': rental_obj.rental_sale_id.user_id.id,
+                'currency_id': rental_obj.rental_sale_id.currency_id.id,
                 'invoice_line_ids': invoice_line_ids
             })
             if inv_obj:

@@ -105,3 +105,25 @@ class HrAttendance(models.Model):
                 else:
                     raise ValidationError(_('Employee master not found. Employee ID: %s', emp_code))
         return super(HrAttendance, self).create(vals_list)
+
+
+class HrPayslip(models.Model):
+    _inherit = 'hr.payslip'
+
+
+    def _get_report_name(self):
+        formated_date_cache = {}
+        report_name = ''
+        for slip in self.filtered(lambda p: p.employee_id and p.date_from and p.date_to):
+            lang = slip.employee_id.lang or self.env.user.lang
+            context = {'lang': lang}
+            payslip_name = slip.struct_id.payslip_name or _('Salary Slip')
+            del context
+
+            report_name = '%(employee_name)s - %(dates)s' % {
+                'employee_name': slip.employee_id.legal_name,
+                'dates': slip._get_period_name(formated_date_cache),
+            }
+        print('rrrrrrrrrrrr',report_name)
+        return report_name
+

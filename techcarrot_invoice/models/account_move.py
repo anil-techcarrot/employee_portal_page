@@ -55,8 +55,9 @@ class AccountMoveLine(models.Model):
     @api.model
     def _project_code_get(self):
         # Using phonenumbers library to get all country calling codes
+        company = self.env.company
         project_codes = []
-        project_ids = self.env['project.project'].search(['|', ('company_id', '=', self.company_id.id),
+        project_ids = self.env['project.project'].search(['|', ('company_id', '=', company.id),
                                                             ('company_id', '=', False)])
         for project_id in project_ids:
             if project_id.project_code:
