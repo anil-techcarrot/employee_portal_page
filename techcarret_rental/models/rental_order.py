@@ -808,7 +808,28 @@ class RentalOrdersLine(models.Model):
     #             for so_line in lines_by_analytic:
     #                 so_line.qty_delivered = mapping.get(so_line.id or so_line._origin.id, 0.0)
 
-    def _get_rental_order_line_description(self):
+    @api.depends('qty_delivered_method', 'product_uom_qty', 'reached_milestones_ids.quantity_percentage')
+    def _compute_qty_delivered(self):
+        lines_by_milestones = self.filtered(lambda sol: sol.qty_delivered_method == 'milestones')
+        super(RentalOrdersLine, self - lines_by_milestones)._compute_qty_delivered()
+
+        if not lines_by_milestones:
+            return
+
+        project_milestone_read_group = self.env['project.milestone']._read_group(
+            [('sale_line_id', 'in', lines_by_milestones.ids), ('is_reached', '=', True)],
+            ['sale_line_id'],
+            ['quantity_percentage:sum'],
+        )
+        reached_milestones_per_sol = {sale_line.id: percentage_sum for sale_line, percentage_sum in
+                                      project_milestone_read_group}
+        for line in lines_by_milestones:
+            sol_id = line.id or line._origin.id
+            qty_delivered = reached_milestones_per_sol.get(sol_id, 0.0) * line.product_uom_qty
+            line.qty_delivered = line.product_uom._compute_quantity(qty_delivered, line.product_uom)
+
+
+def _get_rental_order_line_description(self):
         tz = self._get_tz()
         if self.order_id.is_rental_order == True:
             start_date = self.order_id.rental_start_date + relativedelta(hours=2)
@@ -838,28 +859,28 @@ class RentalOrdersLine(models.Model):
                 "\n%(from_date)s to %(to_date)s", from_date=start_date_part, to_date=return_date_part
             )
 
-    @api.depends('product_id', 'linked_line_id', 'linked_line_ids')
-    def _compute_name(self):
-        for line in self:
-            if not line.product_id and not line.is_downpayment:
-                continue
+@api.depends('product_id', 'linked_line_id', 'linked_line_ids')
+def _compute_name(self):
+    for line in self:
+        if not line.product_id and not line.is_downpayment:
+            continue
 
-            lang = line.order_id._get_lang()
-            if lang != self.env.lang:
-                line = line.with_context(lang=lang)
+        lang = line.order_id._get_lang()
+        if lang != self.env.lang:
+            line = line.with_context(lang=lang)
 
-            if line.product_id and line.order_id.is_rental_order:
-                if line.name:
-                    line.name = line.name
-                else:
-                    line.name = " "
-                continue
-            elif line.product_id:
-                line.name = line._get_sale_order_line_multiline_description_sale()
-                continue
+        if line.product_id and line.order_id.is_rental_order:
+            if line.name:
+                line.name = line.name
+            else:
+                line.name = " "
+            continue
+        elif line.product_id:
+            line.name = line._get_sale_order_line_multiline_description_sale()
+            continue
 
-            if line.is_downpayment:
-                line.name = line._get_downpayment_description()
+        if line.is_downpayment:
+            line.name = line._get_downpayment_description()
 
 
 
