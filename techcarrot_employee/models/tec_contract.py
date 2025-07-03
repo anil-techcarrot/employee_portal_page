@@ -111,6 +111,26 @@ class HrPayslip(models.Model):
     _inherit = 'hr.payslip'
 
 
+    def _prepare_line_values(self, line, account_id, date, debit, credit):
+        # if not self.company_id.batch_payroll_move_lines and line.code == "NET":
+        #     partner = self.employee_id.work_contact_id
+        # else:
+        #     partner = line.partner_id
+        partner = self.employee_id.work_contact_id
+        return {
+            'name': line.name if line.salary_rule_id.split_move_lines else line.salary_rule_id.name,
+            'partner_id': partner.id,
+            'account_id': account_id,
+            'journal_id': line.slip_id.struct_id.journal_id.id,
+            'date': date,
+            'debit': debit,
+            'credit': credit,
+            'analytic_distribution': (line.salary_rule_id.analytic_account_id and {line.salary_rule_id.analytic_account_id.id: 100}) or
+                                     (line.slip_id.contract_id.analytic_account_id.id and {line.slip_id.contract_id.analytic_account_id.id: 100}),
+            'tax_tag_ids': line.debit_tag_ids.ids if account_id == line.salary_rule_id.account_debit.id else line.credit_tag_ids.ids,
+        }
+
+
     def _get_report_name(self):
         formated_date_cache = {}
         report_name = ''
@@ -124,6 +144,5 @@ class HrPayslip(models.Model):
                 'employee_name': slip.employee_id.legal_name,
                 'dates': slip._get_period_name(formated_date_cache),
             }
-        print('rrrrrrrrrrrr',report_name)
         return report_name
 
