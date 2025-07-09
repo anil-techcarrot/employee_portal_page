@@ -1027,7 +1027,6 @@ def _compute_name(self):
                         order.price_unit = order.product_id.with_company(order.company_id.id).lst_price
 
     def action_replace_product_desc(self):
-        print('rrrrrrrrrrrrrrrrrrrrrrr')
         return {
             'name': _('Enter Product Desc'),
             'type': 'ir.actions.act_window',
@@ -1100,10 +1099,10 @@ class RentalInvoiceHistory(models.Model):
     #     if self.worked_days>0.0:
     #         self.is_ready_to_invoice=True
 
-    # @api.onchange('planned_days')
-    # def _onchage_planned_days(self):
-    #     if self.planned_days == 0:
-    #         raise ValidationError("Planned Quantity cannot be zero.")
+    @api.onchange('planned_days')
+    def _onchage_planned_days(self):
+        if self.planned_days == 0:
+            raise ValidationError("Planned Quantity cannot be zero.")
 
     def create_invoice_button_reset(self):
         if self.state == 'done' and not self.inv_ref_id:
