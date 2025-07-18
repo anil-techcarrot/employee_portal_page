@@ -1080,7 +1080,7 @@ class RentalInvoiceHistory(models.Model):
         ("12", "December"),
     ], string="Rental Month", default="1")
     work_entry_ids = fields.Many2many('hr.work.entry', string='Work Entries')
-    planned_days = fields.Float("Planned QTY")
+    planned_days = fields.Float("Planned QTY", default=1.0)
     worked_days = fields.Float("Worked QTY")
     company_id = fields.Many2one('res.company', required=True, default=lambda self: self.env.company)
     is_selected = fields.Boolean("Select")
