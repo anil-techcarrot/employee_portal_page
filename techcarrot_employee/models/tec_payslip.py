@@ -24,3 +24,18 @@ class HrPayslipEmployees(models.TransientModel):
                 for emp_obj in emp_objs:
                     employee_objs.append(emp_obj.id)
             wizard.employee_ids = employee_objs
+
+
+
+class HrPaysliprun(models.Model):
+    _inherit = 'hr.payslip.run'
+
+    def _are_payslips_ready(self):
+        to_process = self.env["hr.payroll"]
+        # self.env.cr.commit()
+        for slip in self.mapped('slip_ids'):
+            if slip.state in ['done'] and not slip.entry_id:
+                print('ENTTTTTTTT=====',slip.entry_id)
+                to_process += slip
+        return all(to_process)
+

@@ -109,6 +109,7 @@ class HrAttendance(models.Model):
 
 class HrPayslip(models.Model):
     _inherit = 'hr.payslip'
+    _order = 'number desc'
 
 
     def _prepare_line_values(self, line, account_id, date, debit, credit):
@@ -117,9 +118,12 @@ class HrPayslip(models.Model):
         # else:
         #     partner = line.partner_id
         partner = self.employee_id.work_contact_id
+        product = self.env['product.product'].sudo().search([('employee_id', '=', self.employee_id.id)], limit=1)
         return {
             'name': line.name if line.salary_rule_id.split_move_lines else line.salary_rule_id.name,
             'partner_id': partner.id,
+            'product_id': product.id,
+            'emp_code': self.employee_id.emp_code,
             'account_id': account_id,
             'journal_id': line.slip_id.struct_id.journal_id.id,
             'date': date,
@@ -145,4 +149,16 @@ class HrPayslip(models.Model):
                 'dates': slip._get_period_name(formated_date_cache),
             }
         return report_name
+
+
+class HrPayslipRun(models.Model):
+    _inherit = 'hr.payslip.run'
+
+    def _are_payslips_ready(self):
+        to_process = self.env["hr.payroll"]
+        # self.env.cr.commit()
+        for slip in self.mapped('slip_ids'):
+            if slip.state in ['done'] and not slip.entry_id:
+                to_process += slip
+        return all(to_process)
 

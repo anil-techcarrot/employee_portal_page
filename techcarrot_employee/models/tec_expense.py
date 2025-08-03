@@ -20,3 +20,4 @@ class HrExpense(models.Model):
             if employee:
                 vals['employee_id'] = employee.id
         return super(HrExpense, self).create(vals)
+# .
