@@ -214,9 +214,6 @@ class Rentals(models.Model):
     def _onchange_project_id(self):
         if self.project_id:
             self.project_code = self.project_id.project_code
-            if not self.is_rental_order and not self.is_subscription:
-                if self.project_id.reinvoiced_sale_order_id:
-                    raise ValidationError(_("This Project already contains another Sale Order . Please Choose without Sale order projects."))
             if self.project_id.project_code=='' or self.project_id.project_code==False:
                 raise ValidationError(_("Project code not available. Please check the project details."))
 
