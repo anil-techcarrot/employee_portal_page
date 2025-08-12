@@ -89,10 +89,12 @@ class AccountMoveLine(models.Model):
                 # emp_product = self.env.cr.fetchall()
 
                 employee = self.env['hr.employee'].sudo().search([('emp_code', '=', str(emp_code))], limit=1)
-                emp_product = self.env['product.product'].sudo().search([('employee_id', '=', employee.id)], limit=1)
-                print('rrrrrrrrrrrrr',emp_product)
-                if emp_product:
-                    val['product_id'] = emp_product.id
+                if employee:
+                    emp_product = self.env['product.product'].sudo().search([('employee_id', '=', employee.id)], limit=1)
+                    if emp_product:
+                        val['product_id'] = emp_product.id
+                    else:
+                        raise ValidationError(_('Employee master not found. Employee ID: %s', emp_code))
                 else:
                     raise ValidationError(_('Employee master not found. Employee ID: %s', emp_code))
 
