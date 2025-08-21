@@ -13,7 +13,7 @@
                             </div>
                         </a>
                     </div>
-                    <!-- <div class="col-md-4 mb-4">
+                    <div class="col-md-4 mb-4">
                         <a href="/my/employee/attendance" class="card text-center h-100 shadow-sm text-decoration-none">
                             <div class="card-body">
                                 <i class="fa fa-calendar-check-o fa-2x mb-2"></i>
@@ -21,7 +21,7 @@
                                 <p class="card-text">Check your attendance records.</p>
                             </div>
                         </a>
-                    </div> -->
+                    </div>
                     <!-- <div class="col-md-4 mb-4">
                         <a href="/my/employee/payslips" class="card text-center h-100 shadow-sm text-decoration-none">
                             <div class="card-body">
