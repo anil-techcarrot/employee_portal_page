@@ -8,6 +8,55 @@ class AccountMove(models.Model):
 
     doc_no = fields.Char('Doc No#')
     cust_inv_date = fields.Date('Customer INV Date')
+    project_id = fields.Many2one('project.project', string='Project')
+    
+    @api.onchange('project_id')
+    def _onchange_project_id(self):
+        """When project is selected on invoice, update all line project codes"""
+        if self.project_id and self.project_id.project_code:
+            for line in self.invoice_line_ids:
+                if not line.project_code:
+                    line.project_code = self.project_id.project_code
+    
+    def action_update_project_codes(self):
+        """Update all invoice lines with the selected project code"""
+        self.ensure_one()
+        if not self.project_id or not self.project_id.project_code:
+            raise ValidationError(_("Please select a project with a valid project code first."))
+        
+        for line in self.invoice_line_ids:
+            line.project_code = self.project_id.project_code
+            
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Success'),
+                'message': _('All invoice lines updated with project code: %s') % self.project_id.project_code,
+                'type': 'success',
+                'sticky': False,
+            }
+        }
+    
+    @api.model
+    def create(self, vals):
+        """Override create to handle auto-filling project codes when invoice is created"""
+        move = super(AccountMove, self).create(vals)
+        
+        # Check if this is created from a sale order with a project
+        if move.move_type == 'out_invoice' and move.invoice_origin:
+            # Try to find related sale order
+            sale_orders = self.env['sale.order'].search([('name', '=', move.invoice_origin)])
+            if sale_orders and sale_orders[0].project_id:
+                project_code = sale_orders[0].project_id.project_code
+                if project_code:
+                    # Set the invoice project
+                    move.project_id = sale_orders[0].project_id.id
+                    # Update all lines without project code
+                    for line in move.invoice_line_ids.filtered(lambda l: not l.project_code):
+                        line.project_code = project_code
+        
+        return move
 
     @api.depends('company_id', 'invoice_filter_type_domain')
     def _compute_suitable_journal_ids(self):
@@ -69,6 +118,17 @@ class AccountMoveLine(models.Model):
     project_code = fields.Selection(selection=_project_code_get, string='Project Code', copy=False)
     employee_id = fields.Many2one('hr.employee', string="Employee")
     emp_code = fields.Char('Employee Code', copy=False)
+    project_id = fields.Many2one('project.project', string='Project', compute='_compute_project_id', store=False, readonly=True)
+    
+    @api.depends('project_code')
+    def _compute_project_id(self):
+        """Compute the related project based on project code"""
+        for line in self:
+            if line.project_code:
+                project = self.env['project.project'].search([('project_code', '=', line.project_code)], limit=1)
+                line.project_id = project.id if project else False
+            else:
+                line.project_id = False
 
     # @api.model
     # def default_get(self, fields_list):
@@ -99,8 +159,14 @@ class AccountMoveLine(models.Model):
                     raise ValidationError(_('Employee master not found. Employee ID: %s', emp_code))
 
         res = super(AccountMoveLine, self).create(vals)
-        # if res.sale_line_ids:
-        #     res.project_code = res.sale_line_ids[0].order_id.project_id.project_code
+        
+        # Set project code automatically from linked sale order
+        for line in res:
+            if line.sale_line_ids and not line.project_code:
+                sale_line = line.sale_line_ids[0]
+                if sale_line.order_id.project_id and sale_line.order_id.project_id.project_code:
+                    line.project_code = sale_line.order_id.project_id.project_code
+                    
         return res
 
     # domain_project_ids = fields.Many2many('project.project', compute='_compute_project_ids')
@@ -123,6 +189,15 @@ class AccountMoveLine(models.Model):
             if '.' in digits:
                 qty = digits.rstrip('0').rstrip('.')
         return qty
+        
+    @api.onchange('sale_line_ids', 'move_id')
+    def _onchange_sale_line_ids(self):
+        """Update project code when sale lines change or when invoice is created from a sale order"""
+        for line in self:
+            if line.sale_line_ids and not line.project_code:
+                sale_line = line.sale_line_ids[0]
+                if sale_line.order_id.project_id and sale_line.order_id.project_id.project_code:
+                    line.project_code = sale_line.order_id.project_id.project_code
 
 
     def inv_action_replace_product_desc(self):
