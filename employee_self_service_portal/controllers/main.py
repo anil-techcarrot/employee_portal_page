@@ -100,7 +100,7 @@ def _process_partner_field(field_value, field_name='partner_id'):
             return existing_partner.id
         
         # Create new partner
-        partner_vals = {'name': partner_name}
+        # partner_vals = {'name': partner_name}
         
         # For point of contact, set as individual (not company)
         if field_name == 'point_of_contact_id':
