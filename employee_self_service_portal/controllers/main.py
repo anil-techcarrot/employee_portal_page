@@ -111,11 +111,11 @@ def _process_partner_field(field_value, field_name='partner_id'):
             
         # new_partner = request.env['res.partner'].sudo().create(partner_vals)
         
-        import logging
-        _logger = logging.getLogger(__name__)
-        _logger.info('ESS Portal: Created new partner: %s (ID: %s)', partner_name, new_partner.id)
+      #  import logging
+       # _logger = logging.getLogger(__name__)
+        # _logger.info('ESS Portal: Created new partner: %s (ID: %s)', partner_name, new_partner.id)
         
-        return new_partner.id
+        # return new_partner.id
     
     return False
 
