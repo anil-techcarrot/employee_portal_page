@@ -6,7 +6,7 @@ class HREmployee(models.Model):
     user_id = fields.Many2one('res.users', string="Portal User", help="Portal user linked to this employee")
     portal_access_crm = fields.Boolean("Portal Access CRM", default=False, help="Allow access to CRM functionality in portal")
     portal_access_attendance = fields.Boolean("Portal Access Attendance", default=True, help="Allow access to attendance functionality in portal")
-    portal_access_expenses = fields.Boolean("Portal Access Expenses", default=False, help="Allow access to expenses functionality in portal")
+    # portal_access_expenses = fields.Boolean("Portal Access Expenses", default=False, help="Allow access to expenses functionality in portal")
     portal_access_payslip = fields.Boolean("Portal Access Payslip", default=False, help="Allow access to payslip functionality in portal")
     
     # @api.onchange('portal_access_crm', 'portal_access_attendance', 'portal_access_expenses', 'portal_access_payslip', 'user_id')
@@ -54,7 +54,7 @@ class HREmployee(models.Model):
             access_groups = {
                 'portal_access_crm': self.env.ref('employee_self_service_portal.group_portal_crm'),
                 'portal_access_attendance': self.env.ref('employee_self_service_portal.group_portal_attendance'),
-                'portal_access_expenses': self.env.ref('employee_self_service_portal.group_portal_expenses'),
+                # 'portal_access_expenses': self.env.ref('employee_self_service_portal.group_portal_expenses'),
                 'portal_access_payslip': self.env.ref('employee_self_service_portal.group_portal_payslip'),
             }
             

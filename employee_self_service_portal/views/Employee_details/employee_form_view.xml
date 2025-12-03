@@ -13,7 +13,7 @@
         <group name="portal_access" string="Portal Access Management">
           <field name="portal_access_attendance"/>
           <field name="portal_access_crm"/>
-          <field name="portal_access_expenses"/>
+<!--          <field name="portal_access_expenses"/>-->
           <field name="portal_access_payslip"/>
         </group>
       </xpath>
