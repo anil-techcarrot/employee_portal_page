@@ -2232,128 +2232,128 @@ class PortalEmployee(http.Controller):
         else:
             return '<div class="alert alert-danger">Invalid action</div>'
 
-    @http.route(MY_EMPLOYEE_URL + '/expenses', type='http', auth='user', website=True)
-    @check_portal_access('expenses')
-    def portal_expense_history(self, **kwargs):
-        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.uid)], limit=1)
-        company_id = employee.company_id.id
-        domain = [('employee_id', '=', employee.id)]
-        # Filtering logic
-        status = kwargs.get('status')
-        if status:
-            if status == 'withdrawn' or status == 'cancel':
-                domain += [('sheet_id.state', '=', 'cancel')]
-            else:
-                domain += [('sheet_id.state', '=', status)]
-        category = kwargs.get('category')
-        if category:
-            domain += [('product_id', '=', int(category))]
-        date = kwargs.get('date')
-        if date:
-            domain += [('date', '=', date)]
-        expenses = request.env['hr.expense'].sudo().search(domain, order='date desc')
-        
-        # Filter categories by the employee's company
-        categories = request.env['product.product'].sudo().search([
-            ('can_be_expensed', '=', True),
-            '|',
-            ('company_id', '=', False),
-            ('company_id', '=', company_id)
-        ])
-        
-        # Ensure we have access to the company currency
-        company_currency = employee.company_id.currency_id
-        
-        return request.render('employee_self_service_portal.portal_expense', {
-            'expenses': expenses,
-            'employee': employee,
-            'categories': categories,
-            'selected_status': status or '',
-            'selected_category': category or '',  # Pass as string
-            'selected_date': date or '',
-            'company_currency': company_currency,
-        })
-
-    @http.route(MY_EMPLOYEE_URL + '/expenses/submit', type='http', auth='user', website=True, methods=['GET', 'POST'])
-    def portal_expense_submit(self, **post):
-        import logging
-        import base64
-        _logger = logging.getLogger(__name__)
-        
-        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.uid)], limit=1)
-        company_id = employee.company_id.id
-        
-        # Use product_id as category (many2one to product.product, can_be_expensed=True)
-        # Filter by employee's company
-        categories = request.env['product.product'].sudo().search([
-            ('can_be_expensed', '=', True),
-            '|',
-            ('company_id', '=', False),
-            ('company_id', '=', company_id)
-        ])
-        errors = []
-        success = None
-        
-        if request.httprequest.method == 'POST':
-            # Enhanced validation
-            validation_errors = self._validate_expense_data(post)
-            if validation_errors:
-                errors.extend(validation_errors)
-            else:
-                try:
-                    # Create expense record
-                    vals = {
-                        'name': post.get('name'),
-                        'date': post.get('date'),
-                        'employee_id': employee.id,
-                        'total_amount': float(post.get('total_amount')),
-                        'product_id': int(post.get('category_id')),
-                        'description': post.get('notes', ''),
-                        'company_id': company_id,  # Set the company_id to employee's company
-                        'currency_id': employee.company_id.currency_id.id,  # Set currency based on employee's company
-                    }
-                    expense = request.env['hr.expense'].sudo().create(vals)
-                    _logger.info("Created expense record with ID: %d", expense.id)
-                    
-                    # Handle file attachment
-                    attachment = request.httprequest.files.get('attachment')
-                    if attachment and attachment.filename:
-                        try:
-                            attachment_vals = {
-                                'name': attachment.filename,
-                                'datas': base64.b64encode(attachment.read()),
-                                'res_model': 'hr.expense',
-                                'res_id': expense.id,
-                                'mimetype': attachment.content_type or 'application/octet-stream',
-                                'description': 'Expense Receipt',
-                            }
-                            attachment_record = request.env['ir.attachment'].sudo().create(attachment_vals)
-                            _logger.info("Created attachment with ID: %d for expense: %d", attachment_record.id, expense.id)
-                        except Exception as attachment_error:
-                            _logger.warning("Failed to save attachment: %s", str(attachment_error))
-                            errors.append("Attachment could not be saved, but expense was created successfully.")
-                    
-                    # Find or create expense sheet and add expense
-                    sheet = self._get_or_create_expense_sheet(employee, expense)
-                    
-                    success = 'Expense submitted successfully with receipt.' if attachment else 'Expense submitted successfully.'
-                    _logger.info("Expense submission completed successfully")
-                    
-                except Exception as e:
-                    _logger.error("Error creating expense: %s", str(e))
-                    errors.append('Error submitting expense: %s' % str(e))
-        
-        # Ensure we have access to the company currency
-        company_currency = employee.company_id.currency_id
-        
-        return request.render('employee_self_service_portal.portal_expense_submit', {
-            'employee': employee,
-            'categories': categories,
-            'errors': errors if errors else None,
-            'success': success,
-            'company_currency': company_currency,
-        })
-    
+    # @http.route(MY_EMPLOYEE_URL + '/expenses', type='http', auth='user', website=True)
+    # @check_portal_access('expenses')
+    # def portal_expense_history(self, **kwargs):
+    #     employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.uid)], limit=1)
+    #     company_id = employee.company_id.id
+    #     domain = [('employee_id', '=', employee.id)]
+    #     # Filtering logic
+    #     status = kwargs.get('status')
+    #     if status:
+    #         if status == 'withdrawn' or status == 'cancel':
+    #             domain += [('sheet_id.state', '=', 'cancel')]
+    #         else:
+    #             domain += [('sheet_id.state', '=', status)]
+    #     category = kwargs.get('category')
+    #     if category:
+    #         domain += [('product_id', '=', int(category))]
+    #     date = kwargs.get('date')
+    #     if date:
+    #         domain += [('date', '=', date)]
+    #     expenses = request.env['hr.expense'].sudo().search(domain, order='date desc')
+    #
+    #     # Filter categories by the employee's company
+    #     categories = request.env['product.product'].sudo().search([
+    #         ('can_be_expensed', '=', True),
+    #         '|',
+    #         ('company_id', '=', False),
+    #         ('company_id', '=', company_id)
+    #     ])
+    #
+    #     # Ensure we have access to the company currency
+    #     company_currency = employee.company_id.currency_id
+    #
+    #     return request.render('employee_self_service_portal.portal_expense', {
+    #         'expenses': expenses,
+    #         'employee': employee,
+    #         'categories': categories,
+    #         'selected_status': status or '',
+    #         'selected_category': category or '',  # Pass as string
+    #         'selected_date': date or '',
+    #         'company_currency': company_currency,
+    #     })
+    #
+    # @http.route(MY_EMPLOYEE_URL + '/expenses/submit', type='http', auth='user', website=True, methods=['GET', 'POST'])
+    # def portal_expense_submit(self, **post):
+    #     import logging
+    #     import base64
+    #     _logger = logging.getLogger(__name__)
+    #
+    #     employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.uid)], limit=1)
+    #     company_id = employee.company_id.id
+    #
+    #     # Use product_id as category (many2one to product.product, can_be_expensed=True)
+    #     # Filter by employee's company
+    #     categories = request.env['product.product'].sudo().search([
+    #         ('can_be_expensed', '=', True),
+    #         '|',
+    #         ('company_id', '=', False),
+    #         ('company_id', '=', company_id)
+    #     ])
+    #     errors = []
+    #     success = None
+    #
+    #     if request.httprequest.method == 'POST':
+    #         # Enhanced validation
+    #         validation_errors = self._validate_expense_data(post)
+    #         if validation_errors:
+    #             errors.extend(validation_errors)
+    #         else:
+    #             try:
+    #                 # Create expense record
+    #                 vals = {
+    #                     'name': post.get('name'),
+    #                     'date': post.get('date'),
+    #                     'employee_id': employee.id,
+    #                     'total_amount': float(post.get('total_amount')),
+    #                     'product_id': int(post.get('category_id')),
+    #                     'description': post.get('notes', ''),
+    #                     'company_id': company_id,  # Set the company_id to employee's company
+    #                     'currency_id': employee.company_id.currency_id.id,  # Set currency based on employee's company
+    #                 }
+    #                 expense = request.env['hr.expense'].sudo().create(vals)
+    #                 _logger.info("Created expense record with ID: %d", expense.id)
+    #
+    #                 # Handle file attachment
+    #                 attachment = request.httprequest.files.get('attachment')
+    #                 if attachment and attachment.filename:
+    #                     try:
+    #                         attachment_vals = {
+    #                             'name': attachment.filename,
+    #                             'datas': base64.b64encode(attachment.read()),
+    #                             'res_model': 'hr.expense',
+    #                             'res_id': expense.id,
+    #                             'mimetype': attachment.content_type or 'application/octet-stream',
+    #                             'description': 'Expense Receipt',
+    #                         }
+    #                         attachment_record = request.env['ir.attachment'].sudo().create(attachment_vals)
+    #                         _logger.info("Created attachment with ID: %d for expense: %d", attachment_record.id, expense.id)
+    #                     except Exception as attachment_error:
+    #                         _logger.warning("Failed to save attachment: %s", str(attachment_error))
+    #                         errors.append("Attachment could not be saved, but expense was created successfully.")
+    #
+    #                 # Find or create expense sheet and add expense
+    #                 sheet = self._get_or_create_expense_sheet(employee, expense)
+    #
+    #                 success = 'Expense submitted successfully with receipt.' if attachment else 'Expense submitted successfully.'
+    #                 _logger.info("Expense submission completed successfully")
+    #
+    #             except Exception as e:
+    #                 _logger.error("Error creating expense: %s", str(e))
+    #                 errors.append('Error submitting expense: %s' % str(e))
+    #
+    #     # Ensure we have access to the company currency
+    #     company_currency = employee.company_id.currency_id
+    #
+    #     return request.render('employee_self_service_portal.portal_expense_submit', {
+    #         'employee': employee,
+    #         'categories': categories,
+    #         'errors': errors if errors else None,
+    #         'success': success,
+    #         'company_currency': company_currency,
+    #     })
+    #
     def _validate_expense_data(self, post):
         """Validate expense submission data"""
         import logging
@@ -2472,56 +2472,56 @@ class PortalEmployee(http.Controller):
         
         return sheet
 
-    @http.route(MY_EMPLOYEE_URL + '/expenses/withdraw/<int:expense_id>', type='http', auth='user', website=True, methods=['POST'])
-    def portal_expense_withdraw(self, expense_id, **post):
-        import logging
-        _logger = logging.getLogger(__name__)
-        
-        expense = request.env['hr.expense'].sudo().browse(expense_id)
-        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.uid)], limit=1)
-        
-        # Only allow withdraw if expense is in submitted state and belongs to the current employee
-        if expense and expense.employee_id.id == employee.id and expense.sheet_id and expense.sheet_id.state == 'submit':
-            try:
-                # Set the report to cancelled (withdraw)
-                expense.sheet_id.write({'state': 'cancel'})
-                _logger.info("Successfully withdrew expense ID: %d", expense_id)
-            except Exception as withdraw_error:
-                _logger.error("Failed to withdraw expense: %s", str(withdraw_error))
-        
-        return request.redirect(MY_EMPLOYEE_URL + '/expenses')
-
-    @http.route(MY_EMPLOYEE_URL + '/expenses/receipt/<int:expense_id>', type='http', auth='user', website=True)
-    def portal_expense_receipt(self, expense_id, **kwargs):
-        """View expense receipt/attachment"""
-        import logging
-        _logger = logging.getLogger(__name__)
-        
-        expense = request.env['hr.expense'].sudo().browse(expense_id)
-        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.uid)], limit=1)
-        
-        # Security check: only allow viewing own expense receipts
-        if not expense or expense.employee_id.id != employee.id:
-            return request.not_found()
-        
-        # Get the main attachment
-        attachment = expense.message_main_attachment_id
-        if not attachment:
-            # If no main attachment is set, try to find any attachment related to this expense
-            attachments = request.env['ir.attachment'].sudo().search([
-                ('res_model', '=', 'hr.expense'),
-                ('res_id', '=', expense_id)
-            ], limit=1)
-            
-            if attachments:
-                attachment = attachments[0]
-            else:
-                return request.not_found()
-        
-        # Return the attachment data
-        return request.env['ir.http'].with_context(attachment_token=attachment.access_token)._get_record_and_check(
-            'ir.attachment', attachment.id
-        )
+    # @http.route(MY_EMPLOYEE_URL + '/expenses/withdraw/<int:expense_id>', type='http', auth='user', website=True, methods=['POST'])
+    # def portal_expense_withdraw(self, expense_id, **post):
+    #     import logging
+    #     _logger = logging.getLogger(__name__)
+    #
+    #     expense = request.env['hr.expense'].sudo().browse(expense_id)
+    #     employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.uid)], limit=1)
+    #
+    #     # Only allow withdraw if expense is in submitted state and belongs to the current employee
+    #     if expense and expense.employee_id.id == employee.id and expense.sheet_id and expense.sheet_id.state == 'submit':
+    #         try:
+    #             # Set the report to cancelled (withdraw)
+    #             expense.sheet_id.write({'state': 'cancel'})
+    #             _logger.info("Successfully withdrew expense ID: %d", expense_id)
+    #         except Exception as withdraw_error:
+    #             _logger.error("Failed to withdraw expense: %s", str(withdraw_error))
+    #
+    #     return request.redirect(MY_EMPLOYEE_URL + '/expenses')
+    #
+    # @http.route(MY_EMPLOYEE_URL + '/expenses/receipt/<int:expense_id>', type='http', auth='user', website=True)
+    # def portal_expense_receipt(self, expense_id, **kwargs):
+    #     """View expense receipt/attachment"""
+    #     import logging
+    #     _logger = logging.getLogger(__name__)
+    #
+    #     expense = request.env['hr.expense'].sudo().browse(expense_id)
+    #     employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.uid)], limit=1)
+    #
+    #     # Security check: only allow viewing own expense receipts
+    #     if not expense or expense.employee_id.id != employee.id:
+    #         return request.not_found()
+    #
+    #     # Get the main attachment
+    #     attachment = expense.message_main_attachment_id
+    #     if not attachment:
+    #         # If no main attachment is set, try to find any attachment related to this expense
+    #         attachments = request.env['ir.attachment'].sudo().search([
+    #             ('res_model', '=', 'hr.expense'),
+    #             ('res_id', '=', expense_id)
+    #         ], limit=1)
+    #
+    #         if attachments:
+    #             attachment = attachments[0]
+    #         else:
+    #             return request.not_found()
+    #
+    #     # Return the attachment data
+    #     return request.env['ir.http'].with_context(attachment_token=attachment.access_token)._get_record_and_check(
+    #         'ir.attachment', attachment.id
+    #     )
 
     @http.route(MY_EMPLOYEE_URL + '/payslips', type='http', auth='user', website=True)
     @check_portal_access('payslip')

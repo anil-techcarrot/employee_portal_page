@@ -13,11 +13,11 @@
         <field name="comment">Users with access to attendance functionality in portal</field>
     </record>
     
-    <record id="group_portal_expenses" model="res.groups">
-        <field name="name">Portal: Expenses Access</field>
-        <field name="category_id" ref="base.module_category_hidden"/>
-        <field name="comment">Users with access to expenses functionality in portal</field>
-    </record>
+<!--    <record id="group_portal_expenses" model="res.groups">-->
+<!--        <field name="name">Portal: Expenses Access</field>-->
+<!--        <field name="category_id" ref="base.module_category_hidden"/>-->
+<!--        <field name="comment">Users with access to expenses functionality in portal</field>-->
+<!--    </record>-->
     
     <record id="group_portal_payslip" model="res.groups">
         <field name="name">Portal: Payslip Access</field>
@@ -48,16 +48,16 @@
         <field name="perm_unlink" eval="False"/>
     </record>
     
-    <record id="rule_hr_expense_portal_user" model="ir.rule">
-        <field name="name">Portal: Manage Own Expenses</field>
-        <field name="model_id" ref="hr_expense.model_hr_expense"/>
-        <field name="groups" eval="[(4, ref('employee_self_service_portal.group_portal_expenses'))]"/>
-        <field name="domain_force">[('employee_id.user_id', '=', user.id)]</field>
-        <field name="perm_read" eval="True"/>
-        <field name="perm_write" eval="True"/>
-        <field name="perm_create" eval="True"/>
-        <field name="perm_unlink" eval="False"/>
-    </record>
+<!--    <record id="rule_hr_expense_portal_user" model="ir.rule">-->
+<!--        <field name="name">Portal: Manage Own Expenses</field>-->
+<!--        <field name="model_id" ref="hr_expense.model_hr_expense"/>-->
+<!--        <field name="groups" eval="[(4, ref('employee_self_service_portal.group_portal_expenses'))]"/>-->
+<!--        <field name="domain_force">[('employee_id.user_id', '=', user.id)]</field>-->
+<!--        <field name="perm_read" eval="True"/>-->
+<!--        <field name="perm_write" eval="True"/>-->
+<!--        <field name="perm_create" eval="True"/>-->
+<!--        <field name="perm_unlink" eval="False"/>-->
+<!--    </record>-->
     
     <record id="rule_hr_payslip_portal_user" model="ir.rule">
         <field name="name">Portal: Access Own Payslips</field>
@@ -70,3 +70,6 @@
         <field name="perm_unlink" eval="False"/>
     </record>
 </odoo>
+
+<!--access_hr_expense_portal_user,hr.expense.portal.user.access,hr_expense.model_hr_expense,employee_self_service_portal.group_portal_expenses,1,1,1,0-->
+<!--access_hr_expense_sheet_portal_user,hr.expense.sheet.portal.user.access,hr_expense.model_hr_expense_sheet,employee_self_service_portal.group_portal_expenses,1,1,1,0-->

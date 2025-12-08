@@ -10,7 +10,6 @@ access_res_partner_portal_user,res.partner.portal.user.access,base.model_res_par
 access_hr_payslip_portal_user,hr.payslip.portal.user.access,hr_payroll.model_hr_payslip,employee_self_service_portal.group_portal_payslip,1,0,0,0
 access_hr_payslip_line_portal_user,hr.payslip.line.portal.user.access,hr_payroll.model_hr_payslip_line,employee_self_service_portal.group_portal_payslip,1,0,0,0
 access_hr_salary_rule_category_portal_user,hr.salary.rule.category.portal.user.access,hr_payroll.model_hr_salary_rule_category,employee_self_service_portal.group_portal_payslip,1,0,0,0
-access_hr_expense_portal_user,hr.expense.portal.user.access,hr_expense.model_hr_expense,employee_self_service_portal.group_portal_expenses,1,1,1,0
-access_hr_expense_sheet_portal_user,hr.expense.sheet.portal.user.access,hr_expense.model_hr_expense_sheet,employee_self_service_portal.group_portal_expenses,1,1,1,0
+
 access_product_product_portal_user,product.product.portal.user.access,product.model_product_product,base.group_portal,1,0,0,0
 access_ir_attachment_portal_user,ir.attachment.portal.user.access,base.model_ir_attachment,base.group_portal,1,1,1,0

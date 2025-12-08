@@ -19,12 +19,12 @@ class HrExpense(models.Model):
         
         return super(HrExpense, self).create(vals)
     
-    @api.onchange('employee_id')
-    def _onchange_employee_id(self):
-        """Set company and currency when employee changes"""
-        if self.employee_id:
-            self.company_id = self.employee_id.company_id
-            self.currency_id = self.employee_id.company_id.currency_id
+#    @api.onchange('employee_id')
+#    def _onchange_employee_id(self):
+#        """Set company and currency when employee changes"""
+#        if self.employee_id:
+#            self.company_id = self.employee_id.company_id
+#            self.currency_id = self.employee_id.company_id.currency_id
     
     @api.constrains('company_id', 'product_id')
     def _check_product_company(self):
