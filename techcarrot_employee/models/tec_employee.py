@@ -204,7 +204,7 @@ class HrEmployeeInherit(models.Model):
     u_private_country_id = fields.Many2one("res.country", string="Private Country", copy=False)
 
     _sql_constraints = [('unique_emp_code', 'unique (emp_code)', 'Employee Code must be unique.')]
-
+    
     # @api.constrains('issue_date')
     # def _onchange_date(self):
     #     if self.issue_date:
