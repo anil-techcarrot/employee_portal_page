@@ -24,7 +24,7 @@
                 <field name="employee_id" column_invisible="1"/>
                 <field name="product_id" string="Employee" domain="[('employee_id', '!=', False)]"/>
                 <field name="emp_code" column_invisible="0"/>
-                <field name="project_code"/>
+                <field name="project_code" required="move_type in ['in_invoice','entry', 'out_invoice']" />
 <!--                <field name="domain_project_ids" widget="many2many_tags" column_invisible="1"></field>-->
             </xpath>
             <xpath expr="//page[@id='invoice_tab']/field/list/field[@name='account_id']" position="after">
