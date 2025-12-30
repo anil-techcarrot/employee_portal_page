@@ -1128,7 +1128,7 @@ class ProjectProject(models.Model):
     _inherit = 'project.project'
 
     allow_billable = fields.Boolean("Billable", default=True)
-    project_code = fields.Char('Project Code', copy=False, required=True)
+    project_code = fields.Char('Project Code', copy=False)
 
     def unlinkaa(self):
         # Delete the empty related analytic account
