@@ -18,11 +18,11 @@ class SaleOrderLine(models.Model):
         "Missing required fields on accountable sale order line."
     )
 
-    _non_accountable_null_fields = models.Constraint(
-        "CHECK((product_id IS NULL AND price_unit = 0 AND product_uom_qty = 0 "
-        "AND product_uom_id IS NULL AND customer_lead = 0))",
-        "Forbidden values on non-accountable sale order line"
-    )
+   #_non_accountable_null_fields = models.Constraint(
+   #     "CHECK((product_id IS NULL AND price_unit = 0 AND product_uom_qty = 0 "
+   #     "AND product_uom_id IS NULL AND customer_lead = 0))",
+   #     "Forbidden values on non-accountable sale order line"
+   #)
 
 class SaleAdvancePaymentInv(models.TransientModel):
     _inherit = 'sale.advance.payment.inv'
