@@ -6,18 +6,18 @@ from odoo.exceptions import UserError, ValidationError
 class HrExpense(models.Model):
     _inherit = 'hr.expense'
     
-    @api.model
-    def create(self, vals):
-        """Override create to ensure company and currency consistency"""
-        if vals.get('employee_id'):
-            employee = self.env['hr.employee'].browse(vals.get('employee_id'))
+@api.model
+def create(self, vals):
+    """Override create to ensure company and currency consistency"""
+    for record in vals:
+        if record.get('employee_id'):
+            employee = self.env['hr.employee'].browse(record.get('employee_id'))
             if employee:
                 # Set company from employee
-                vals['company_id'] = employee.company_id.id
+                record['company_id'] = employee.company_id.id
                 # Set currency from employee's company
-                vals['currency_id'] = employee.company_id.currency_id.id
-        
-        return super(HrExpense, self).create(vals)
+                record['currency_id'] = employee.company_id.currency_id.id
+    return super(HrExpense, self).create(vals)
     
 #    @api.onchange('employee_id')
 #    def _onchange_employee_id(self):
