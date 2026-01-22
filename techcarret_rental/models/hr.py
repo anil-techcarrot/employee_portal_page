@@ -78,7 +78,7 @@ class HrPayslip(models.Model):
         res = []
         # fill only if the contract as a working schedule linked
         self.ensure_one()
-        contract = self.contract_id
+        contract = self.employee_id
         if contract.resource_calendar_id:
             res = self._get_worked_day_lines_values(domain=domain)
             if not check_out_of_contract:
