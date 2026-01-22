@@ -210,7 +210,7 @@ class HrEmployeeInherit(models.Model):
     #_emp_code_unique = models.Constraint(
     #    'unique (emp_code)',
     #    'Employee code must be unique!'
-    #)
+    #) 
 
 
 
