@@ -19,7 +19,7 @@
             <field name="model">hr.salary.attachment</field>
             <field name="inherit_id" ref="hr_payroll.hr_salary_attachment_view_tree"/>
             <field name="arch" type="xml">
-                 <field name="monthly_amount" position="after">
+                 <field name="monthly_amount_display" position="after">
                     <field name="currency_id"  groups="base.group_multi_currency" optional="show"/>
                 </field>
             </field>

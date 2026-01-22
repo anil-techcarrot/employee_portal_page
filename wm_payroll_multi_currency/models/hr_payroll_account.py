@@ -11,7 +11,7 @@ from markupsafe import Markup
 class HrPayslip(models.Model):
     _inherit = 'hr.payslip'
 
-    @api.depends('employee_id', 'contract_id', 'struct_id', 'date_from', 'date_to', 'struct_id')
+    @api.depends('employee_id',  'date_from', 'date_to', 'struct_id')
     def _compute_input_line_ids(self):
         attachment_types = self._get_attachment_types()
         attachment_type_ids = [f.id for f in attachment_types.values()]
@@ -168,7 +168,7 @@ class HrPayslip(models.Model):
                 payslips_to_post |= run.slip_ids
 
         # A payslip need to have a done state and not an accounting move.
-        payslips_to_post = payslips_to_post.filtered(lambda slip: slip.state == 'done' and not slip.move_id)
+        payslips_to_post = payslips_to_post.filtered(lambda slip: slip.state == 'validated' and not slip.move_id)
 
         # Check that a journal exists on all the structures
         if any(not payslip.struct_id for payslip in payslips_to_post):
@@ -182,15 +182,15 @@ class HrPayslip(models.Model):
         if self.company_id.batch_payroll_move_lines:
             all_slip_mapped_data = defaultdict(lambda: defaultdict(lambda: self.env['hr.payslip']))
             for slip in payslips_to_post:
-                if slip.contract_id.currency_id not in currencies:
-                    currencies.append(slip.contract_id.currency_id)
+                if slip.employee_id.currency_id not in currencies:
+                    currencies.append(slip.employee_id.currency_id)
                 all_slip_mapped_data[slip.struct_id.journal_id.id][
                     slip.date or fields.Date.end_of(slip.date_to, 'month')] |= slip
             all_slip_mapped_data = [all_slip_mapped_data]
         else:
             for slip in payslips_to_post:
-                if slip.contract_id.currency_id not in currencies:
-                    currencies.append(slip.contract_id.currency_id)
+                if slip.employee_id.currency_id not in currencies:
+                    currencies.append(slip.employee_id.currency_id)
             all_slip_mapped_data = [{
                 slip.struct_id.journal_id.id: {
                     slip.date or fields.Date.end_of(slip.date_to, 'month'): slip
@@ -219,7 +219,7 @@ class HrPayslip(models.Model):
                     }
                     for currency in currencies:
                         payslips = (slip for slip in slip_mapped_data[journal_id][slip_date] if
-                                    slip.contract_id.currency_id.id == currency.id)
+                                    slip.employee_id.currency_id.id == currency.id)
                         line_ids_per_curency = []
                         amount_currency = 0.0
                         debit_sum = 0.0
@@ -227,7 +227,7 @@ class HrPayslip(models.Model):
 
                         for slip in payslips:
                             move_dict['narration'] += plaintext2html(
-                                slip.number or '' + ' - ' + slip.employee_id.name or '')
+                                slip.employee_id.name or '')
                             move_dict['narration'] += Markup('<br/>')
                             slip_lines = slip._prepare_slip_lines(date, line_ids_per_curency)
                             line_ids_per_curency.extend(slip_lines)
