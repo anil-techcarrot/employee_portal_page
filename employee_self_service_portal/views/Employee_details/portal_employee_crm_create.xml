@@ -31,7 +31,7 @@
                     width: '100%',
                     placeholder: 'Search for a customer',
                     allowClear: true,
-                    tags: false, // chnaged to false by Sriman to flase for stopping create new customer
+                    tags: false, // changed to false for stopping creation of new customers.
                     createTag: function (params) {
                       var term = $.trim(params.term);
                       if (term === '') {
