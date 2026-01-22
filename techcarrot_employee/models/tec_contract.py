@@ -132,11 +132,12 @@ class HrPayslip(models.Model):
             'date': date,
             'debit': debit,
             'credit': credit,
-            'analytic_distribution': (line.salary_rule_id.analytic_account_id and {line.salary_rule_id.analytic_account_id.id: 100}) or
-                                     (line.slip_id.contract_id.analytic_account_id.id and {line.slip_id.contract_id.analytic_account_id.id: 100}),
+            'analytic_distribution': False , 
             'tax_tag_ids': line.debit_tag_ids.ids if account_id == line.salary_rule_id.account_debit.id else line.credit_tag_ids.ids,
         }
-
+        # commented by Dinesh / Sriman on 22-Jan and stopped anaytic distribution as it was creating error. We will reimplement as part of payroll 
+        #(line.salary_rule_id.analytic_account_id and {line.salary_rule_id.analytic_account_id.id: 100}) or
+        #                         (line.slip_id.contract_id.analytic_account_id.id and {line.slip_id.contract_id.analytic_account_id.id: 100}),
 
     def _get_report_name(self):
         formated_date_cache = {}
