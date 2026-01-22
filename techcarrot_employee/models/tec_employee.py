@@ -205,12 +205,12 @@ class HrEmployeeInherit(models.Model):
     u_private_zip = fields.Char(string="Private Zip", copy=False)
     u_private_country_id = fields.Many2one("res.country", string="Private Country", copy=False)
 
-    _sql_constraints = [('unique_emp_code', 'unique (emp_code)', 'Employee Code must be unique.')]
+    #_sql_constraints = [('unique_emp_code', 'unique (emp_code)', 'Employee Code must be unique.')]
     # code change by sriman
-    _emp_code_unique = models.Constraint(
-        'unique (emp_code)',
-        'Employee code must be unique!'
-    )
+    #_emp_code_unique = models.Constraint(
+    #    'unique (emp_code)',
+    #    'Employee code must be unique!'
+    #)
 
 
 
