@@ -15,4 +15,6 @@
         'views/compliance_menus.xml',
     ],
     'application': True,
+    "installable": True,
+    "auto_install": False
 }
