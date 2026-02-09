@@ -23,16 +23,16 @@ class EmployeeCodeGenerationWizard(models.TransientModel):
         [
             ('onsite', 'Onsite'),
             ('offshore', 'Offshore'),
-            ('near_shore', 'Nearshore'),
+            ('near-shore', 'Nearshore'),
         ],
         string='Engagement Location',
         required=True
     )
 
     payroll_location = fields.Selection([
-        ('dubai_onsite', 'Dubai- Onsite'),
-        ('dubai_offshore', 'Dubai-Offshore'),
-        ('tcip_india', 'TCIP India'),
+        ('dubai-onsite', 'Dubai- Onsite'),
+        ('dubai-offshore', 'Dubai-Offshore'),
+        ('tcip-india', 'TCIP India'),
     ], string='Payroll', required=True)
 
     employment_type = fields.Selection([
@@ -73,24 +73,24 @@ class EmployeeCodeGenerationWizard(models.TransientModel):
             return 'TFL'
 
         if emp_type == 'bootcamp':
-            if engagement in ['onsite', 'near_shore'] and payroll == 'dubai_onsite':
+            if engagement in ['onsite', 'near-shore'] and payroll == 'dubai-onsite':
                 return 'BC'
-            elif engagement == 'offshore' and payroll == 'dubai_offshore':
+            elif engagement == 'offshore' and payroll == 'dubai-offshore':
                 return 'BCO'
-            elif engagement == 'offshore' and payroll == 'tcip_india':
+            elif engagement == 'offshore' and payroll == 'tcip-india':
                 return 'BCI'
 
-        if engagement == 'offshore' and payroll == 'tcip_india' and emp_type == 'permanent':
+        if engagement == 'offshore' and payroll == 'tcip-india' and emp_type == 'permanent':
             return 'TCIP'
 
-        if engagement == 'offshore' and payroll == 'dubai_offshore':
+        if engagement == 'offshore' and payroll == 'dubai-offshore':
             if emp_type in ['permanent', 'temporary']:
                 return 'T'
 
-        if engagement in ['onsite', 'near_shore'] and payroll == 'dubai_onsite' and emp_type == 'permanent':
+        if engagement in ['onsite', 'near-shore'] and payroll == 'dubai-onsite' and emp_type == 'permanent':
             return 'P'
 
-        if engagement in ['onsite', 'near_shore'] and payroll == 'dubai_onsite' and emp_type == 'temporary':
+        if engagement in ['onsite', 'near-shore'] and payroll == 'dubai-onsite' and emp_type == 'temporary':
             return 'T'
 
         return 'EMP'

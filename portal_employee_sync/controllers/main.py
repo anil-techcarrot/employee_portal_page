@@ -13,37 +13,125 @@ class PortalEmployeeSyncController(http.Controller):
         return api_key == "bafed37384fd011b0a237103a4040f47420a9d1e"
 
     def _val(self, value):
-        """Extract value from string or SharePoint object"""
+        """Extract value from SharePoint object"""
         if not value:
             return None
-
-        # Handle SharePoint JSON string
         if isinstance(value, str) and value.startswith('{'):
             try:
-                # Check if it's a JSON string that needs parsing
                 if '"Value"' in value or '"value"' in value:
                     parsed = json.loads(value)
                     value = parsed.get('Value') or parsed.get('value')
-                    _logger.info(f" Extracted from SharePoint JSON: {value}")
-            except Exception as e:
-                _logger.warning(f"Failed to parse as JSON, using as-is: {e}")
+            except:
                 pass
-
-        # Handle dictionary
         if isinstance(value, dict):
             value = value.get('Value') or value.get('value')
-
         if value is None:
             return None
-
         value = str(value).strip()
         return value if value else None
+
+    def _normalize_engagement_location(self, value):
+        """
+        Normalize engagement_location to valid Odoo selection value.
+        ACCEPTS: onsite, ONSITE, offshore, OFFSHORE, nearshore, near-shore, near_shore, etc.
+        RETURNS: 'onsite', 'offshore', 'near-shore', or None (if empty)
+        RAISES: ValueError if unrecognized value
+        """
+        if not value:
+            return None  # Empty is OK - field is optional
+
+        raw = str(value).lower().strip()
+        clean = raw.replace('-', '').replace('_', '').replace(' ', '')
+
+        if clean == 'onsite':
+            _logger.info(f"✓ Normalized engagement_location: '{value}' → 'onsite'")
+            return 'onsite'
+        elif clean == 'offshore':
+            _logger.info(f"✓ Normalized engagement_location: '{value}' → 'offshore'")
+            return 'offshore'
+        elif clean in ['nearshore', 'nearshore']:
+            _logger.info(f"✓ Normalized engagement_location: '{value}' → 'near-shore'")
+            return 'near-shore'
+        else:
+            # REJECT unknown values - prevents data quality issues
+            error_msg = (
+                f"Invalid engagement_location: '{value}'. "
+                f"Must be one of: onsite, offshore, nearshore (case-insensitive, spaces/hyphens OK)"
+            )
+            _logger.error(f" {error_msg}")
+            raise ValueError(error_msg)
+
+    def _normalize_payroll_location(self, value):
+        """
+        Normalize payroll_location to valid Odoo selection value.
+        ACCEPTS: dubai-onsite, Dubai_Onsite, DUBAI ONSITE, tcip india, TCIP-INDIA, etc.
+        RETURNS: 'dubai-onsite', 'dubai-offshore', 'tcip-india', or None (if empty)
+        RAISES: ValueError if unrecognized value
+        """
+        if not value:
+            return None  # Empty is OK - field is optional
+
+        raw = str(value).lower().strip()
+        clean = raw.replace('_', '-').replace(' ', '-')
+
+        if 'dubai' in clean and 'onsite' in clean:
+            _logger.info(f"✓ Normalized payroll_location: '{value}' → 'dubai-onsite'")
+            return 'dubai-onsite'
+        elif 'dubai' in clean and 'offshore' in clean:
+            _logger.info(f"✓ Normalized payroll_location: '{value}' → 'dubai-offshore'")
+            return 'dubai-offshore'
+        elif 'tcip' in clean or 'india' in clean:
+            _logger.info(f"✓ Normalized payroll_location: '{value}' → 'tcip-india'")
+            return 'tcip-india'
+        else:
+            # REJECT unknown values
+            error_msg = (
+                f"Invalid payroll_location: '{value}'. "
+                f"Must be one of: dubai-onsite, dubai-offshore, tcip-india (case-insensitive, spaces/hyphens OK)"
+            )
+            _logger.error(f" {error_msg}")
+            raise ValueError(error_msg)
+
+    def _normalize_employment_type(self, value):
+        """
+        Normalize employment_type to valid Odoo selection value.
+        ACCEPTS: PERMANENT, PERMANENt, Permanent, temporary, BOOTCAMP, etc.
+        RETURNS: 'permanent', 'temporary', 'bootcamp', 'seconded', 'freelancer', or None (if empty)
+        RAISES: ValueError if unrecognized value
+        """
+        if not value:
+            return None  # Empty is OK - field is optional
+
+        raw = str(value).lower().strip()
+
+        valid_types = {
+            'permanent': 'permanent',
+            'temporary': 'temporary',
+            'bootcamp': 'bootcamp',
+            'seconded': 'seconded',
+            'freelancer': 'freelancer',
+            # Add common variations if needed:
+            'temp': 'temporary',
+            'perm': 'permanent',
+        }
+
+        if raw in valid_types:
+            normalized = valid_types[raw]
+            _logger.info(f" Normalized employment_type: '{value}' → '{normalized}'")
+            return normalized
+        else:
+            # REJECT unknown values
+            error_msg = (
+                f"Invalid employment_type: '{value}'. "
+                f"Must be one of: permanent, temporary, bootcamp, seconded, freelancer (case-insensitive)"
+            )
+            _logger.error(f" {error_msg}")
+            raise ValueError(error_msg)
 
     def _parse_date(self, value):
         value = self._val(value)
         if not value:
             return None
-
         formats = [
             '%Y-%m-%d', '%d-%m-%Y', '%m/%d/%Y', '%d/%m/%Y', '%Y/%m/%d',
             '%Y-%m-%dT%H:%M:%S.%fZ', '%Y-%m-%dT%H:%M:%SZ'
@@ -56,33 +144,16 @@ class PortalEmployeeSyncController(http.Controller):
         return None
 
     def _find_country(self, name):
-        """Find country by name or code - exact match priority"""
         name = self._val(name)
         if not name:
             return None
-
-        name = name.strip()
-
-        # First: Try exact code match (IN, AE, etc.)
-        country = request.env['res.lang'].sudo().search([
-            ('code', '=', name.upper())
-        ], limit=1)
+        country = request.env['res.country'].sudo().search([('code', '=', name.upper())], limit=1)
         if country:
             return country
-
-        # Second: Try EXACT name match (case insensitive)
-        country = request.env['res.country'].sudo().search([
-            ('name', '=ilike', name)
-        ], limit=1)
+        country = request.env['res.country'].sudo().search([('name', '=ilike', name)], limit=1)
         if country:
             return country
-
-        # Third: Try partial match as fallback
-        country = request.env['res.country'].sudo().search([
-            ('name', 'ilike', name)
-        ], limit=1, order='name')
-
-        return country if country else None
+        return request.env['res.country'].sudo().search([('name', 'ilike', name)], limit=1, order='name')
 
     def _find_state(self, name, country_id=None):
         name = self._val(name)
@@ -94,94 +165,28 @@ class PortalEmployeeSyncController(http.Controller):
         return request.env['res.country.state'].sudo().search(domain, limit=1)
 
     def _find_language_in_res_lang(self, name):
-        """
-        Search in res.lang table for language
-        Maps common language names to res.lang codes
-        """
         name = self._val(name)
         if not name:
-            _logger.warning(f" _find_language_in_res_lang called with empty name")
             return None
-
-        name = name.strip()
-        _logger.info(f" Searching for language in res.lang: '{name}'")
-
-        # Language name to code mapping (common cases)
         language_map = {
-            'english': 'en_US',
-            'hindi': 'hi_IN',
-            'telugu': 'te_IN',
-            'tamil': 'ta_IN',
-            'kannada': 'kn_IN',
-            'malayalam': 'ml_IN',
-            'marathi': 'mr_IN',
-            'bengali': 'bn_IN',
-            'gujarati': 'gu_IN',
-            'punjabi': 'pa_IN',
-            'urdu': 'ur_IN',
-            'arabic': 'ar_001',
-            'french': 'fr_FR',
-            'german': 'de_DE',
-            'spanish': 'es_ES',
-            'chinese': 'zh_CN',
+            'english': 'en_US', 'hindi': 'hi_IN', 'telugu': 'te_IN', 'tamil': 'ta_IN',
+            'kannada': 'kn_IN', 'malayalam': 'ml_IN', 'marathi': 'mr_IN', 'bengali': 'bn_IN',
+            'gujarati': 'gu_IN', 'punjabi': 'pa_IN', 'urdu': 'ur_IN', 'arabic': 'ar_001',
+            'french': 'fr_FR', 'german': 'de_DE', 'spanish': 'es_ES', 'chinese': 'zh_CN',
             'japanese': 'ja_JP',
         }
-
-        try:
-            # First: Try exact code match (e.g., 'en_US')
-            lang = request.env['res.lang'].sudo().search([
-                ('code', '=', name)
-            ], limit=1)
+        lang = request.env['res.lang'].sudo().search([('code', '=', name)], limit=1)
+        if lang:
+            return lang
+        if name.lower() in language_map:
+            code = language_map[name.lower()]
+            lang = request.env['res.lang'].sudo().search([('code', '=', code)], limit=1)
             if lang:
-                _logger.info(f" Found by code: '{name}' -> ID: {lang.id}, Name: '{lang.name}'")
                 return lang
-
-            # Second: Try mapping (e.g., 'English' -> 'en_US')
-            name_lower = name.lower()
-            if name_lower in language_map:
-                code = language_map[name_lower]
-                lang = request.env['res.lang'].sudo().search([
-                    ('code', '=', code)
-                ], limit=1)
-                if lang:
-                    _logger.info(f" Found by mapping: '{name}' -> '{code}' -> ID: {lang.id}")
-                    return lang
-
-            # Third: Try exact name match
-            lang = request.env['res.lang'].sudo().search([
-                ('name', '=ilike', name)
-            ], limit=1)
-            if lang:
-                _logger.info(f" Found by exact name: '{name}' -> ID: {lang.id}")
-                return lang
-
-            # Fourth: Try partial name match
-            lang = request.env['res.lang'].sudo().search([
-                ('name', 'ilike', name)
-            ], limit=1)
-            if lang:
-                _logger.info(f" Found by partial name: '{name}' -> ID: {lang.id}")
-                return lang
-
-            # Fifth: Try ISO code match
-            lang = request.env['res.lang'].sudo().search([
-                ('iso_code', 'ilike', name)
-            ], limit=1)
-            if lang:
-                _logger.info(f" Found by ISO code: '{name}' -> ID: {lang.id}")
-                return lang
-
-            # Log available languages for debugging
-            _logger.warning(f" Language NOT found: '{name}'")
-            all_langs = request.env['res.lang'].sudo().search([])
-            available = [(l.code, l.name) for l in all_langs[:10]]
-            _logger.info(f"📋 Sample available languages: {available}")
-
-            return None
-
-        except Exception as e:
-            _logger.error(f" Error searching res.lang: {e}", exc_info=True)
-            return None
+        lang = request.env['res.lang'].sudo().search([('name', '=ilike', name)], limit=1)
+        if lang:
+            return lang
+        return request.env['res.lang'].sudo().search([('name', 'ilike', name)], limit=1)
 
     def _get_or_create_department(self, name):
         name = self._val(name)
@@ -208,12 +213,10 @@ class PortalEmployeeSyncController(http.Controller):
                 rel = Relationship.create({'name': name})
             return rel.id
         except:
-            _logger.warning(f"Relationship model not found, skipping")
             return False
 
     @http.route('/odoo/api/employees', type='http', auth='public', methods=['POST'], csrf=False, cors='*')
     def create_employee(self, **kwargs):
-        # CRITICAL: Set admin user context FIRST
         admin_user = request.env.ref('base.user_admin')
         request.update_env(user=admin_user.id)
 
@@ -223,43 +226,52 @@ class PortalEmployeeSyncController(http.Controller):
                 return self._json_response({'success': False, 'error': 'Invalid API key'}, 401)
 
             data = json.loads(request.httprequest.data or "{}")
-            _logger.info(f" Received: {json.dumps(data, indent=2)}")
+            _logger.info(f" API Request: {json.dumps(data, indent=2)}")
 
             if not self._val(data.get('name')):
                 return self._json_response({'success': False, 'error': 'Name is required'}, 400)
 
-            # Use request.env (already set to admin user)
             Employee = request.env['hr.employee']
             employee = Employee.search([('name', '=', self._val(data.get('name')))], limit=1)
 
-            # DIAGNOSTIC: Check if field exists
-            _logger.info(" DIAGNOSTIC: Checking if 'second_relation_with_employee' field exists")
+            # ========== NORMALIZE AND VALIDATE FIELDS ==========
+            engagement_location_raw = self._val(data.get('engagement_location'))
+            payroll_location_raw = self._val(data.get('payroll_location'))
+            employment_type_raw = self._val(data.get('employment_type'))
+            emp_code_from_sharepoint = self._val(data.get('emp_code'))
+
             try:
-                if 'second_relation_with_employee' in Employee._fields:
-                    _logger.info(" Field 'second_relation_with_employee' EXISTS in hr.employee model")
-                    field_info = Employee._fields['second_relation_with_employee']
-                    _logger.info(f" Field type: {field_info.type}, required: {field_info.required}")
-                else:
-                    _logger.error(" Field 'second_relation_with_employee' DOES NOT EXIST in hr.employee model")
-            except Exception as e:
-                _logger.error(f" Error checking field: {e}")
+                # These will raise ValueError if invalid
+                engagement_location_normalized = self._normalize_engagement_location(engagement_location_raw)
+                payroll_location_normalized = self._normalize_payroll_location(payroll_location_raw)
+                employment_type_normalized = self._normalize_employment_type(employment_type_raw)
+            except ValueError as e:
+                # Return clear error to SharePoint
+                error_response = {
+                    'success': False,
+                    'error': str(e),
+                    'invalid_data': {
+                        'engagement_location': engagement_location_raw,
+                        'payroll_location': payroll_location_raw,
+                        'employment_type': employment_type_raw
+                    }
+                }
+                _logger.error(f" Validation failed: {json.dumps(error_response, indent=2)}")
+                return self._json_response(error_response, 400)
 
-            # DIAGNOSTIC: Extract and log the value
-            second_relation_value = self._val(data.get('second_relation_with_employee'))
-            _logger.info(f" DIAGNOSTIC: Extracted second_relation_with_employee value: '{second_relation_value}'")
+            _logger.info(f"✓ NORMALIZATION SUCCESS:")
+            _logger.info(f"   engagement_location: '{engagement_location_raw}' → '{engagement_location_normalized}'")
+            _logger.info(f"   payroll_location: '{payroll_location_raw}' → '{payroll_location_normalized}'")
+            _logger.info(f"   employment_type: '{employment_type_raw}' → '{employment_type_normalized}'")
+            _logger.info(f"   emp_code: '{emp_code_from_sharepoint}'")
 
-            # EMPLOYEE VALUES
             vals = {
                 'name': self._val(data.get('name')),
                 'work_email': self._val(data.get('email')),
                 'mobile_phone': self._val(data.get('phone')),
-                'emp_code': self._val(data.get('employee_code')),
                 'total_it_experience': self._val(data.get('total_it_experience')),
                 'alternate_mobile_number': self._val(data.get('alternate_mobile_number')),
                 'second_alternative_number': self._val(data.get('second_alternative_number')),
-                'engagement_location': self._val(data.get('engagement_location')),
-                'payroll_location': self._val(data.get('payroll_location')),
-                'employment_type': self._val(data.get('employment_type')),
                 'last_location': self._val(data.get('last_location')),
                 'department_id': self._get_or_create_department(data.get('department')),
                 'job_id': self._get_or_create_job(data.get('job_title')),
@@ -293,17 +305,28 @@ class PortalEmployeeSyncController(http.Controller):
                 'period_in_company': self._val(data.get('period_in_company')),
             }
 
-            # Add second_relation_with_employee conditionally
+            # Set emp_code from SharePoint
+            if emp_code_from_sharepoint:
+                vals['emp_code'] = emp_code_from_sharepoint
+
+            # Add VALIDATED classification fields
+            if engagement_location_normalized:
+                vals['engagement_location'] = engagement_location_normalized
+            if payroll_location_normalized:
+                vals['payroll_location'] = payroll_location_normalized
+            if employment_type_normalized:
+                vals['employment_type'] = employment_type_normalized
+
+            # Line Manager
+            line_manager = self._find_employee(data.get('line_manager'))
+            if line_manager:
+                vals['line_manager_id'] = line_manager.id
+
+            # Other fields
+            second_relation_value = self._val(data.get('second_relation_with_employee'))
             if second_relation_value:
                 vals['second_relation_with_employee'] = second_relation_value
-                _logger.info(f" Added 'second_relation_with_employee' to vals: '{second_relation_value}'")
 
-            emp_code_value = self._val(data.get('employee_code'))  # API sends "employee_code"
-            if emp_code_value:
-                vals['emp_code'] = emp_code_value  # But we save to "emp_code"
-                _logger.info(f"✓ Using employee_code from API: {emp_code_value}")
-
-            # PRIVATE ADDRESS FIELDS
             if self._val(data.get('private_street')):
                 vals['private_street'] = self._val(data.get('private_street'))
             if self._val(data.get('private_city')):
@@ -313,22 +336,20 @@ class PortalEmployeeSyncController(http.Controller):
             if self._val(data.get('private_phone')):
                 vals['private_phone'] = self._val(data.get('private_phone'))
 
-            # RELATIONSHIP
             relationship_id = self._get_or_create_relationship(data.get('relationship_with_emp_id'))
             if relationship_id:
                 vals['relationship_with_emp_id'] = relationship_id
 
-            # GENDER & MARITAL
             if self._val(data.get('sex')):
                 sex_value = self._val(data.get('sex')).lower()
                 if sex_value in ['male', 'female', 'other']:
                     vals['sex'] = sex_value
+
             if self._val(data.get('marital')):
                 marital_value = self._val(data.get('marital')).lower()
                 if marital_value in ['single', 'married', 'cohabitant', 'widower', 'divorced']:
                     vals['marital'] = marital_value
 
-            # DATES
             vals.update({
                 'birthday': self._parse_date(data.get('birthday')),
                 'issue_date': self._parse_date(data.get('issue_date')),
@@ -339,7 +360,6 @@ class PortalEmployeeSyncController(http.Controller):
                 'expiry_date': self._parse_date(data.get('expiry_date')),
             })
 
-            # SALARY
             try:
                 salary = self._val(data.get('last_salary_per_annum_amt'))
                 if salary:
@@ -347,7 +367,6 @@ class PortalEmployeeSyncController(http.Controller):
             except:
                 pass
 
-            # COUNTRIES & STATES
             country = self._find_country(data.get('country_id'))
             if country:
                 vals['country_id'] = country.id
@@ -360,170 +379,86 @@ class PortalEmployeeSyncController(http.Controller):
             if issue_country:
                 vals['issue_countries_id'] = issue_country.id
 
-            private_state = self._find_state(
-                data.get('private_state_id'),
-                private_country.id if private_country else None
-            )
+            private_state = self._find_state(data.get('private_state_id'),
+                                             private_country.id if private_country else None)
             if private_state:
                 vals['private_state_id'] = private_state.id
 
-            # MOTHER TONGUE (also from res.lang)
             mother_tongue = self._find_language_in_res_lang(data.get('mother_tongue_id'))
             if mother_tongue:
                 vals['mother_tongue_id'] = mother_tongue.id
 
-            # ========== PROCESS LANGUAGES KNOWN (res.lang) ==========
-            _logger.info("=" * 80)
-            _logger.info(" STARTING LANGUAGE PROCESSING (res.lang)")
-            _logger.info("=" * 80)
-
-            # Try multiple possible field names from SharePoint
+            # Languages
             langs_raw_data = (
                     data.get('language_known_ids') or
                     data.get('names') or
                     data.get('languages') or
                     data.get('language_known')
             )
-
-            _logger.info(f" Raw language data from API: {langs_raw_data}")
-            _logger.info(f" Type: {type(langs_raw_data)}")
-
             langs_raw = self._val(langs_raw_data)
             language_ids_to_set = []
 
             if langs_raw:
-                _logger.info(f"✓ Cleaned language value: '{langs_raw}'")
-
-                # Split by comma and process each language
                 lang_names = [name.strip() for name in langs_raw.split(',') if name.strip()]
-                _logger.info(f" Split into {len(lang_names)} language(s): {lang_names}")
-
-                for idx, name in enumerate(lang_names, 1):
-                    _logger.info(f"\n--- Processing language {idx}/{len(lang_names)}: '{name}' ---")
-
+                for name in lang_names:
                     lang_obj = self._find_language_in_res_lang(name)
-
                     if lang_obj:
                         language_ids_to_set.append(lang_obj.id)
-                        _logger.info(
-                            f" SUCCESS: Added res.lang ID {lang_obj.id} ('{lang_obj.name}' / {lang_obj.code})")
-                    else:
-                        _logger.error(f" FAILED: Language '{name}' not found in res.lang")
 
-                _logger.info(f"\n{'=' * 80}")
-                _logger.info(f" LANGUAGE PROCESSING SUMMARY:")
-                _logger.info(f"   • Input string: '{langs_raw}'")
-                _logger.info(f"   • Languages found: {len(language_ids_to_set)}/{len(lang_names)}")
-                _logger.info(f"   • IDs to save: {language_ids_to_set}")
-                _logger.info(f"{'=' * 80}\n")
-            else:
-                _logger.info(f" No languages provided in request")
-
-            # LOG FINAL VALUES
-            _logger.info(f" Final vals (before create/update): {json.dumps(vals, default=str, indent=2)}")
-
-            # CREATE OR UPDATE EMPLOYEE
+            # CREATE or UPDATE
             if employee:
-                _logger.info(f" UPDATING existing employee: {employee.name} (ID: {employee.id})")
+                _logger.info(f" UPDATING: {employee.name} (ID: {employee.id})")
                 employee.write(vals)
                 action = "updated"
-                _logger.info(f" Employee UPDATED")
             else:
                 _logger.info(f" CREATING new employee")
                 employee = Employee.with_context(auto_generate_code=False).create(vals)
                 action = "created"
-                _logger.info(f" Employee CREATED: {employee.name} (ID: {employee.id})")
 
-            # ========== SET LANGUAGES SEPARATELY (CRITICAL FOR MANY2MANY) ==========
+            _logger.info(f"✓ Saved to Odoo:")
+            _logger.info(f"   emp_code: '{employee.emp_code}'")
+            _logger.info(f"   engagement_location: '{employee.engagement_location}'")
+            _logger.info(f"   payroll_location: '{employee.payroll_location}'")
+            _logger.info(f"   employment_type: '{employee.employment_type}'")
+
+            # Set languages
             if language_ids_to_set:
                 try:
-                    _logger.info(f"\n{'=' * 80}")
-                    _logger.info(f" SETTING LANGUAGES FOR EMPLOYEE {employee.id}")
-                    _logger.info(f"{'=' * 80}")
-                    _logger.info(f"   Language IDs to set: {language_ids_to_set}")
-
-                    # Clear existing languages first
-                    employee.write({
-                        'language_known_ids': [(5, 0, 0)]  # (5, 0, 0) = Clear all
-                    })
-                    _logger.info(f" Cleared existing languages")
-
-                    # Now set the new languages
-                    employee.write({
-                        'language_known_ids': [(6, 0, language_ids_to_set)]  # (6, 0, [IDs]) = Replace with these IDs
-                    })
-                    _logger.info(f" Languages written to database using ORM write")
-
-                    # Force refresh from database
+                    employee.write({'language_known_ids': [(6, 0, language_ids_to_set)]})
                     employee.invalidate_cache(['language_known_ids'])
-
-                    # Verify what was actually saved
-                    saved_langs = employee.language_known_ids
-                    saved_ids = saved_langs.ids
-                    saved_names = saved_langs.mapped('name')
-                    saved_codes = saved_langs.mapped('code')
-
-                    _logger.info(f"\n{'=' * 80}")
-                    _logger.info(f"  VERIFICATION RESULTS:")
-                    _logger.info(f"   • Expected IDs: {language_ids_to_set}")
-                    _logger.info(f"   • Saved IDs: {saved_ids}")
-                    _logger.info(f"   • Saved Names: {saved_names}")
-                    _logger.info(f"   • Saved Codes: {saved_codes}")
-                    _logger.info(f"   • Count: {len(saved_ids)}/{len(language_ids_to_set)}")
-
-                    if set(saved_ids) == set(language_ids_to_set):
-                        _logger.info(f" ALL LANGUAGES SAVED SUCCESSFULLY!")
-                    else:
-                        missing = set(language_ids_to_set) - set(saved_ids)
-                        extra = set(saved_ids) - set(language_ids_to_set)
-                        if missing:
-                            _logger.error(f" Missing IDs: {missing}")
-                        if extra:
-                            _logger.error(f" Extra IDs: {extra}")
-                    _logger.info(f"{'=' * 80}\n")
-
                 except Exception as e:
-                    _logger.error(f" ERROR SETTING LANGUAGES: {e}", exc_info=True)
-            else:
-                _logger.info(f" No languages to set for employee {employee.id}")
-
-            # Prepare response
-            azure_email = employee.work_email or ''
-            azure_id = ''
-            if hasattr(employee, 'azure_user_id'):
-                azure_id = employee.azure_user_id or ''
-
-            # Get saved languages for response
-            saved_language_info = []
-            if language_ids_to_set:
-                for lang in employee.language_known_ids:
-                    saved_language_info.append({
-                        'name': lang.name,
-                        'code': lang.code
-                    })
+                    _logger.error(f" Language error: {e}")
 
             response_data = {
                 'success': True,
                 'action': action,
                 'employee_id': employee.id,
                 'name': employee.name,
-                'email': azure_email,
-                'azure_user_id': azure_id,
-                'languages_saved': saved_language_info,
-                'languages_count': len(saved_language_info)
+                'email': employee.work_email or '',
+                'emp_code': employee.emp_code or '',
+                'normalized_fields': {
+                    'engagement_location': employee.engagement_location,
+                    'payroll_location': employee.payroll_location,
+                    'employment_type': employee.employment_type
+                }
             }
 
-            _logger.info(f" Response: {json.dumps(response_data, indent=2)}")
-
+            _logger.info(f" SUCCESS: {json.dumps(response_data, indent=2)}")
             return self._json_response(response_data)
 
         except Exception as e:
-            _logger.error(f" CRITICAL ERROR: {str(e)}", exc_info=True)
+            _logger.error(f" ERROR: {str(e)}", exc_info=True)
             try:
                 request.env.cr.rollback()
             except:
                 pass
             return self._json_response({'success': False, 'error': str(e)}, 500)
+
+    def _find_employee(self, name):
+        name = self._val(name)
+        if not name:
+            return None
+        return request.env['hr.employee'].sudo().search([('name', '=ilike', name)], limit=1)
 
     def _json_response(self, data, status=200):
         return request.make_response(
