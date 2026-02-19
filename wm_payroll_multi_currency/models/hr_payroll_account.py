@@ -40,7 +40,11 @@ class HrPayslip(models.Model):
                     #         slip.employee_id.contract_id.currency_id,
                     #         self.company_id,
                     #         fields.Date.context_today(self), )
-                    name = ', '.join(attachments.mapped('description'))
+                    # commented below name line sriman
+                    descriptions = attachments.mapped('description')
+                    descriptions = [d for d in descriptions if d]
+                    name = ', '.join(descriptions)
+                    # name = ', '.join(attachments.mapped('description'))
                     input_type_id = attachment_types[deduction_type].id
                     input_line_vals.append(Command.create({
                         'name': name,

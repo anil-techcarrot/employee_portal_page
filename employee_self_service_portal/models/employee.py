@@ -61,9 +61,9 @@ class HREmployee(models.Model):
             # Add or remove user from groups based on settings
             for field_name, group in access_groups.items():
                 if employee[field_name]:
-                    user.sudo().write({'groups_id': [(4, group.id)]})
+                    user.sudo().write({'group_ids': [(4, group.id)]})
                 else:
-                    user.sudo().write({'groups_id': [(3, group.id)]})
+                    user.sudo().write({'group_ids': [(3, group.id)]})
     
     x_experience = fields.Text("Experience")
     x_skills = fields.Char("Skills")

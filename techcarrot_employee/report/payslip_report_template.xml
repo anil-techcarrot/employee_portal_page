@@ -26,8 +26,8 @@
             </xpath>
             <xpath expr="//div[@id='wage']" position="replace">
                 <div id="wage" style="display:none;">
-                    <strong class="me-2">Contract Wage (<span class="text-capitalize" t-out="o.contract_id.wage_type"/>):</strong>
-                    <span t-out="o.contract_id._get_contract_wage()" t-options="{'widget': 'monetary', 'display_currency': o.company_id.currency_id}" style="color:#875A7B" class="fw-bold"/>
+                    <strong class="me-2">Contract Wage (<span class="text-capitalize" t-out="o.version_id.wage_type"/>):</strong>
+                    <span t-out="o.version_id._get_contract_wage()" t-options="{'widget': 'monetary', 'display_currency': o.company_id.currency_id}" style="color:#875A7B" class="fw-bold"/>
                 </div>
             </xpath>
             <xpath expr="//div[@id='computed_on']" position="replace">
@@ -42,7 +42,7 @@
             <xpath expr="//div[@id='working_schedule']" position="replace">
                 <div id="working_schedule" style="display:none;">
                     <strong class="me-2">Working Schedule:</strong>
-                    <span t-field="o.employee_id.contract_id.hours_per_week"/> Hours / Week
+                    <span t-field="o.employee_id.version_id.hours_per_week"/> Hours / Week
                 </div>
             </xpath>
             <xpath expr="//div[@id='wage']" position="before">
@@ -51,12 +51,36 @@
                     <span t-field="o.employee_id.department_id"/>
                 </div>
             </xpath>
+            <xpath expr="//div[@id='contract_start']" position="after">
+
+    <!-- Calculate unpaid leave days -->
+    <t t-set="unpaid_days"
+       t-value="sum(o.worked_days_line_ids.filtered(lambda l: l.code in ['OUT', 'LEAVE90']).mapped('number_of_days'))"/>
+
+    <!-- Calculate total days in payslip period -->
+    <t t-set="total_days"
+       t-value="(o.date_to - o.date_from).days + 1"/>
+
+    <!-- Calculate paid days -->
+    <t t-set="paid_days"
+       t-value="total_days - unpaid_days"/>
+
+    <div id="salary_paid_days">
+        <strong class="me-2">Net Paid Days:</strong>
+        <span t-esc="paid_days"/> Days
+
+    </div>
+
+</xpath>
+
             <xpath expr="//div[@id='employee_department']" position="replace">
                 <div id="employee_department" t-if="o.employee_id.department_id" style="display:none;">
                     <strong class="me-2">Department:</strong>
                     <span t-field="o.employee_id.department_id"/>
                 </div>
             </xpath>
+
+
 
             <xpath expr="//div[@id='worked_days_table']" position="replace">
                 <div id="worked_days_table" style="display: none;">
@@ -112,8 +136,12 @@
                     </table>
                 </div>
             </xpath>
-            <xpath expr="//div[@id='payslip_lines_table']" position="replace">
-                <div id="payslip_lines_table" class="row">
+            <xpath expr="//div[@id='payslip_lines_table']" position="attributes">
+    <attribute name="style">display: none;</attribute>
+</xpath>
+            <xpath expr="//div[@id='payslip_lines_table']" position="after">
+
+                <div id="custom_payslip_lines_table" class="row">
                     <t t-set="pay_line_ids" t-value="o.line_ids.filtered(lambda line: line.appears_on_payslip)"/>
                     <t t-set="alw_line_ids" t-value="pay_line_ids.filtered(lambda l: l.category_id.code != 'DED')"/>
                     <t t-set="ded_line_ids" t-value="pay_line_ids.filtered(lambda l: l.category_id.code == 'DED')"/>

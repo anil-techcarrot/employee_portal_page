@@ -18,9 +18,9 @@ class HrContract(models.Model):
             # payslips = self.env['hr.payslip'].search_count([('contract_id', '=', contract.id)])
             payslips = self.env['hr.payslip'].search_count([('employee_id',"=", self.id)])
 
-            # if 'currency_id' in vals and payslips > 0:
-            #     raise UserError(_("Changing the currency will cause an errors in accounting \n"
-            #                     "If you want to change the currency please create a new contract"))
+            if 'currency_id' in vals and payslips > 0:
+                raise UserError(_("Changing the currency will cause an errors in accounting \n"
+                                "If you want to change the currency please create a new employee"))
 
         return super(HrContract, self).write(vals)
 

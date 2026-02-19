@@ -13,6 +13,13 @@
                   t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
         </span>
 
+        <xpath expr="//td[@id='worked_days_total_amount']/span"
+               position="replace">
+            <span t-out="sum(worked_days_lines.mapped('amount'))"
+                  digits="[42, 2]"
+                  t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+        </xpath>
+
         <xpath expr="//div[@id='payslip_lines_table']//table//tbody//tr//td[@id='payslip_line_total']//span"
                position="replace">
             <span t-out="line.total"

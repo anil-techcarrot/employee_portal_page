@@ -201,8 +201,8 @@
                                                     <span t-out="taxes" id="line_tax_ids"></span>
                                                 </td>
                                                 <td name="td_taxes" style="border: 1px solid #ccc;" t-attf-class="text-end {{ 'd-none d-md-table-cell' if report_type == 'html' else '' }} {{ 'text-nowrap' if len(taxes) &lt; 10 else '' }}">
-                                                    <t t-set="l10n_ae_vat_amount" t-value="'{:,.2f}'.format(line.l10n_ae_vat_amount)"/>
-                                                    <span t-esc="l10n_ae_vat_amount" id="line_tax_ids">Tax 15%</span>
+                                                    <t t-set="l10n_gcc_invoice_tax_amount" t-value="'{:,.2f}'.format(line.l10n_gcc_invoice_tax_amount)"/>
+                                                    <span t-esc="l10n_gcc_invoice_tax_amount" id="line_tax_ids">Tax 15%</span>
 <!--                                                    <span t-out="taxes" id="line_tax_ids"></span>-->
                                                 </td>
                                                 <td name="td_subtotal" style="border: 1px solid #ccc;"   class="text-end o_price_total">

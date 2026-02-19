@@ -2537,7 +2537,7 @@ class PortalEmployee(http.Controller):
         # Only show confirmed payslips - no status filter needed
         domain = [
             ('employee_id', '=', employee.id),
-            ('state', 'in', ['done', 'paid'])
+            ('state', 'in', ['validated','done', 'paid'])
         ]
         
         # Only month/year filtering allowed
@@ -2598,7 +2598,7 @@ class PortalEmployee(http.Controller):
                 return request.redirect(MY_EMPLOYEE_URL + '/payslips?error=access_denied')
             
             # Only allow download of confirmed payslips
-            if payslip.state not in ['done', 'paid']:
+            if payslip.state not in ['validated','done', 'paid']:
                 _logger.warning("Download attempt for unconfirmed payslip %s by user %s", payslip_id, request.uid)
                 return request.redirect(MY_EMPLOYEE_URL + '/payslips?error=not_confirmed')
             
@@ -2859,7 +2859,7 @@ Payslip Details:
                 _logger.info("Generated small PDF - likely from fallback method (%d bytes)", len(pdf_content))
             
             # Create safe filename
-            safe_number = (payslip.number or str(payslip.id)).replace('/', '_').replace('\\', '_')
+            safe_number = (payslip.name or str(payslip.id)).replace('/', '_').replace('\\', '_')
             safe_date = payslip.date_from.strftime('%Y-%m') if payslip.date_from else 'unknown'
             filename = f"Payslip_{safe_number}_{safe_date}.pdf"
             
