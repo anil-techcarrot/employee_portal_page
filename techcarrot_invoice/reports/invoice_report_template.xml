@@ -33,10 +33,10 @@
                             <div class="col-6 text-end" name="div_billing_address" >
 <!--                                <div name="partner_header" class="row mb-4">-->
                                 <div class="text-end no-border" style="font-size:24px;"><b><t t-esc="o.company_id.name"/></b></div>
-                                <div class="text-end no-border" ><t t-esc="o.company_id.street"/>, <t t-esc="o.company_id.street2"/></div>
-                                <div class="text-end no-border" ><t t-esc="o.company_id.city"/></div>
-                                <div class="text-end no-border" ><t t-esc="o.company_id.zip"/></div>
-                                <div class="text-end no-border" ><t t-esc="o.company_id.state_id.name"/>, <t t-esc="o.company_id.country_id.name"/></div>
+                                <div class="text-end no-border" ><t t-esc="o.company_id.street"/></div>
+                                <div class="text-end no-border" ><t t-esc="o.company_id.street2"/></div>
+                                <div class="text-end no-border" ><t t-esc="o.company_id.city"/>, <t t-esc="o.company_id.state_id.name"/>, <t t-esc="o.company_id.zip"/></div>
+                                <div class="text-end no-border" ><t t-esc="o.company_id.country_id.name"/></div>
                                 <div class="text-end no-border" >TRN <t t-esc="o.company_id.vat"/></div>
                             </div>
                         </div>

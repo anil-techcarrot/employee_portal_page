@@ -140,7 +140,8 @@
                                         <t t-foreach="payslips" t-as="payslip">
                                             <tr>
                                                 <td>
-                                                    <strong t-esc="payslip.number or payslip.name"/>
+<!--                                                   sriman removed this 'payslip.number' or-->
+                                                    <strong t-esc=" payslip.name"/>
                                                     <br/>
                                                     <small class="text-muted">
                                                         <i class="fa fa-calendar-o mr-1"></i>
@@ -164,7 +165,7 @@
                                                     </strong>
                                                     <br/>
                                                     <small class="text-muted">
-                                                        Gross: <t t-esc="'{:,.2f}'.format(payslip.basic_wage or 0.0)"/>
+                                                        Gross: <t t-esc="'{:,.2f}'.format(payslip.version_id.sub_total or 0.0)"/>
                                                         <t t-esc="payslip.company_id.currency_id.symbol or '$'"/>
                                                     </small>
                                                 </td>
@@ -196,11 +197,11 @@
                                                     </t>
                                                 </td>
                                                 <td>
-                                                    <t t-if="payslip.contract_id">
-                                                        <strong t-esc="payslip.contract_id.name"/>
+                                                    <t t-if="payslip.version_id">
+                                                        <strong t-esc="payslip.version_id.name"/>
                                                         <br/>
                                                         <small class="text-muted">
-                                                            <t t-esc="payslip.contract_id.job_id.name if payslip.contract_id.job_id else ''"/>
+                                                            <t t-esc="payslip.version_id.job_id.name if payslip.version_id.job_id else ''"/>
                                                         </small>
                                                     </t>
                                                     <t t-else="">
@@ -214,7 +215,7 @@
                                                            title="View Details">
                                                             <i class="fa fa-eye"></i>
                                                         </a>
-                                                        <t t-if="payslip.state in ['done', 'paid']">
+                                                        <t t-if="payslip.state in ['validated','done', 'paid']">
                                                             <a t-att-href="'/my/employee/payslips/download/%d' % payslip.id" 
                                                                class="btn btn-sm btn-success" 
                                                                title="Download PDF">

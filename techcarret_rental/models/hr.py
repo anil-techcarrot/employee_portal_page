@@ -45,7 +45,7 @@ class HrPayslip(models.Model):
         self.ensure_one()
         res = []
         hours_per_day = self._get_worked_day_lines_hours_per_day()
-        work_hours = self.employee_id.current_version_id.get_work_hours(self.date_from, self.date_to, domain=domain)
+        work_hours = self.version_id.get_work_hours(self.date_from, self.date_to, domain=domain)
         work_hours_ordered = sorted(work_hours.items(), key=lambda x: x[1])
         biggest_work = work_hours_ordered[-1][0] if work_hours_ordered else 0
         add_days_rounding = 0
@@ -58,14 +58,14 @@ class HrPayslip(models.Model):
             add_days_rounding += (days - day_rounded)
             # DO NOT LOAD ATTENDACE IN PAYROLL FORM
             # REQUIREMENT FROM MOSESS/DANIEL
-            if work_entry_type.code !='WORK100':
-                attendance_line = {
-                    'sequence': work_entry_type.sequence,
-                    'work_entry_type_id': work_entry_type_id,
-                    'number_of_days': day_rounded,
-                    'number_of_hours': hours,
-                }
-                res.append(attendance_line)
+            # if work_entry_type.code !='WORK100':
+            attendance_line = {
+                'sequence': work_entry_type.sequence,
+                'work_entry_type_id': work_entry_type_id,
+                'number_of_days': day_rounded,
+                'number_of_hours': hours,
+            }
+            res.append(attendance_line)
 
         # Sort by Work Entry Type sequence
         work_entry_type = self.env['hr.work.entry.type']
@@ -78,7 +78,7 @@ class HrPayslip(models.Model):
         res = []
         # fill only if the contract as a working schedule linked
         self.ensure_one()
-        contract = self.employee_id
+        contract = self.version_id
         if contract.resource_calendar_id:
             res = self._get_worked_day_lines_values(domain=domain)
             if not check_out_of_contract:
@@ -102,7 +102,7 @@ class HrPayslip(models.Model):
                 out_hours += out_time['hours']
 
             if out_days or out_hours:
-                work_entry_type = self.env.ref('hr_payroll.hr_work_entry_type_out_of_contract')
+                work_entry_type = self.env.ref('hr_work_entry.hr_work_entry_type_out_of_contract')
                 if work_entry_type.code =='OUT':
                     #DO NOT LOOK FOR SATUREDAY AND SUNDAY FOR OUT OF CONTRACT
                     #REQUIREMENT FROM MOSESS/DANIEL

@@ -334,11 +334,11 @@
             <xpath expr="//field[@name='sale_order_template_id']" position="after">
                 <field name="employee_id" readonly="state!='draft'"/>
             </xpath>
-            <xpath expr="//field[@name='date_order']" position="after">
-                <field name="po_no" />
-                <field name="x_studio_po_date"/>
-                <field name="x_studio_so_period_1"/>
-            </xpath>
+<!--            <xpath expr="//field[@name='date_order']" position="after">-->
+<!--                <field name="po_no" />-->
+<!--                <field name="x_studio_po_date"/>-->
+<!--                <field name="x_studio_so_period_1"/>-->
+<!--            </xpath>-->
         </field>
     </record>
 
