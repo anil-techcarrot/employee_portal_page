@@ -23,7 +23,7 @@
 #
 #     # ── Errors ────────────────────────────────────
 #     error_count   = fields.Integer('Total Errors',  readonly=True)
-#     error_details = fields.Text('Error Details',    readonly=True)
+#     error_details = fields.Text('Error Details',    readonly=True) 
 
 from odoo import models, fields
 
