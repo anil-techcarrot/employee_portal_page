@@ -291,8 +291,14 @@ class StagingDatabaseSanitizer(models.Model):
         if not self._table_exists('ir_attachment'):
             _logger.info("    ℹ Table not found — skipping")
             return 0
-
-        self.env.cr.execute('DELETE FROM "ir_attachment"')
+        self.env.cr.execute("""
+            DELETE FROM ir_attachment
+            WHERE create_uid != 1
+            AND id NOT IN (
+                SELECT id FROM ir_attachment
+                WHERE url LIKE '/web/%' or url like '/_custom/%'
+            )
+        """)
         count = self.env.cr.rowcount
 
         if count > 0:
