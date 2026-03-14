@@ -39,6 +39,13 @@ class HrVersionInherit(models.Model):
 
     aat_allowance = fields.Monetary('MI Allowance', copy=False)
     sub_total = fields.Monetary('Sub Total', copy=False)
+    basic_salary_manual = fields.Monetary(string="Basic Salary Manual")
+    hra_manual = fields.Monetary(string="HRA Manual")
+    flexi_manual = fields.Monetary(string="Flexi Basket Manual")
+    statutory_manual = fields.Monetary(string="Statutory Bonus Manual")
+    gratuity_manual = fields.Monetary(string="Gratuity Manual")
+    pf_manual = fields.Monetary(string="PF Manual")
+    medical_manual=fields.Monetary(string="Medical Insurance Manual")
     # emp_code = fields.Char('Employee Code', copy=False)
     #
     #
