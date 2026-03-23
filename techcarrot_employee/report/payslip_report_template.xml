@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <record id="hr_payroll.action_report_payslip" model="ir.actions.report">
+    <field name="print_report_name">
+        object._get_report_name()
+    </field>
+    </record>
     <template id="report_payslip_custom" inherit_id="hr_payroll.report_payslip">
         <xpath expr="//strong[@id='invalid_warning']" position="replace">
             <strong id="invalid_warning" class="d-none">
