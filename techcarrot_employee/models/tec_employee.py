@@ -10,6 +10,40 @@ import phonenumbers
 class HrEmployeeInherit(models.Model):
     _inherit = 'hr.employee'
 
+    mother_tongue_name = fields.Char(string='Mother Tongue')
+    language_known_name = fields.Char(string='language known')
+
+    bank_account_no = fields.Char(string='Bank Account Number')
+
+    # Professional Development & Supporting Documents
+    resume_file = fields.Binary(string='Resume/CV', attachment=True)
+    resume_file_filename = fields.Char(string='Resume/CV Filename')
+
+    training_certificates = fields.Binary(string='Training Certificates', attachment=True)
+    training_certificates_filename = fields.Char(string='Training Certificates Filename')
+
+    awards_files = fields.Binary(string='Awards & Recognition', attachment=True)
+    awards_files_filename = fields.Char(string='Awards & Recognition Filename')
+
+    x_experience = fields.Text(
+        string='Professional Experience Summary',
+        help='Describe professional experience, roles, responsibilities and achievements'
+    )
+    x_skills = fields.Char(
+        string='Technical & Professional Skills',
+        help='Separate skills with commas. e.g., Python, Project Management'
+    )
+
+    # Document Management
+    emirates_id_file = fields.Binary(string='Emirates ID Copy', attachment=True)
+    emirates_id_filename = fields.Char(string='Emirates ID Filename')
+
+    passport_file = fields.Binary(string='Passport Copy', attachment=True)
+    passport_filename = fields.Char(string='Passport Filename')
+
+    other_documents = fields.Binary(string='Other Documents', attachment=True)
+    other_documents_filename = fields.Char(string='Other Documents Filename')
+
     resource_id = fields.Many2one('resource.resource', required=False)
     employee_first_name = fields.Char('Employee First Name', copy=False)
     employee_middle_name = fields.Char('Employee Middle Name', copy=False)

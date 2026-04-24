@@ -45,8 +45,11 @@
                 <field name="billing_currency_id"/>
                 <field name="emp_category_id" options="{'no_open': True, 'no_create': True}"/>
             </xpath>
+
         </field>
+
     </record>
+
 
     <!-- as contracts is not present in separate i am removing this code (sriman) -->
     <!--    <record id="techcarrot_employee_contract_button_form_view" model="ir.ui.view">-->
@@ -104,12 +107,43 @@
                             <div class="o_address_format">
                                 <field name="branch_name" placeholder="Branch Name..." class="o_address_branch_name"/>
                                 <field name="bank_city" placeholder="Bank City..." class="o_address_bank_city"/>
+                                <field name="bank_account_no" placeholder="Bank Account Number..."
+                                       class="o_address_bank_account_no"/>
                                 <field name="iban_no" placeholder="IBAN Number" class="o_address_iban_no"/>
                                 <field name="ifsc_code" placeholder="Bank SWIFT / IFSC Code"
                                        class="o_address_ifsc_code"/>
                             </div>
                             <field name="bank_name"/>
                         </group>
+
+
+                        <separator string="Document Management"/>
+                        <group>
+                            <group string="Emirates ID Copy">
+                                <field name="emirates_id_file"
+                                       string="Emirates ID Copy"
+                                       widget="binary"
+                                       filename="emirates_id_filename"/>
+                                <field name="emirates_id_filename" invisible="1"/>
+                            </group>
+                            <group string="Passport Copy">
+                                <field name="passport_file"
+                                       string="Passport Copy"
+                                       widget="binary"
+                                       filename="passport_filename"/>
+                                <field name="passport_filename" invisible="1"/>
+                            </group>
+                        </group>
+                        <group>
+                            <group string="Other Documents">
+                                <field name="other_documents"
+                                       string="Other Documents"
+                                       widget="binary"
+                                       filename="other_documents_filename"/>
+                                <field name="other_documents_filename" invisible="1"/>
+                            </group>
+                        </group>
+
 
                         <group string="Document and Personal Details">
                             <field name="aadhar_no" string="Aadhar Number"/>
@@ -131,6 +165,8 @@
                             <field name="zip_code" string="Zip Code"/>
                             <field name="linkedin" string="LinkedIn"/>
                             <field name="religion" string="Religion"/>
+                            <field name="mother_tongue_name"/>
+                            <field name="language_known_name"/>
                         </group>
 
                         <group string="Dependent Details">
@@ -310,6 +346,56 @@
                     </group>
                 </page>
             </page>
+
+        </field>
+    </record>
+
+
+    <!-- Separate record to inherit hr.view_employee_form for Resume tab -->
+    <record id="techcarrot_employee_resume_tab_view" model="ir.ui.view">
+        <field name="name">hr.employee.resume.experience</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//page[@name='resume']" position="inside">
+
+                <separator string="Work Experience &amp; Skills"/>
+
+
+                <separator string="Certifications"/>
+                <group>
+                    <group string="Certifications">
+                        <field name="x_certifications"
+                               widget="text"
+                               placeholder="List your certifications..."/>
+                    </group>
+                </group>
+
+                <separator string="Professional Development"/>
+                <group>
+                    <group string="Resume/CV">
+                        <field name="resume_file" string="Resume/CV"
+                               widget="binary" filename="resume_file_filename"/>
+                        <field name="resume_file_filename" invisible="1"/>
+                    </group>
+                    <group string="Training Certificates">
+                        <field name="training_certificates" string="Training Certificates"
+                               widget="binary" filename="training_certificates_filename"/>
+                        <field name="training_certificates_filename" invisible="1"/>
+                    </group>
+                </group>
+                <group>
+                    <group string="Awards &amp; Recognition">
+                        <field name="awards_files" string="Awards &amp; Recognition"
+                               widget="binary" filename="awards_files_filename"/>
+                        <field name="awards_files_filename" invisible="1"/>
+                    </group>
+                </group>
+
+
+            </xpath>
+
         </field>
     </record>
 

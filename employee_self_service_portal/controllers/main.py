@@ -123,12 +123,26 @@ def _process_partner_field(field_value, field_name='partner_id'):
     return False
 
 class PortalEmployee(http.Controller):
+
+    def _get_many2one_id(self, value, model_name, field_name='name'):
+        """Helper to safely get ID from either int or string"""
+        if not value:
+            return False
+        try:
+            return int(value)
+        except (ValueError, TypeError):
+            record = request.env[model_name].sudo().search([
+                (field_name, '=', value)
+            ], limit=1)
+            return record.id if record else False
+
+
     def _get_employee(self):
-        return request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.uid)], limit=1)
+        return request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.env.uid)], limit=1)
 
     @http.route(MY_EMPLOYEE_URL, type='http', auth='user', website=True)
     def portal_employee_profile(self, **kw):
-        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.uid)], limit=1)
+        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.env.uid)], limit=1)
         return request.render('employee_self_service_portal.portal_employee_profile_personal', {
             'employee': employee,
             'section': 'personal',
@@ -136,7 +150,7 @@ class PortalEmployee(http.Controller):
 
     @http.route(MY_EMPLOYEE_URL + '/attendance/checkin', type='http', auth='user', methods=['POST'], website=True)
     def check_in(self, **post):
-        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.uid)], limit=1)
+        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.env.uid)], limit=1)
         if not employee:
             return request.redirect(MY_EMPLOYEE_URL + '?error=employee_not_found')
         
@@ -227,7 +241,7 @@ class PortalEmployee(http.Controller):
     @http.route(MY_EMPLOYEE_URL + '/attendance/quick-checkin', type='http', auth='user', methods=['POST'], website=True, csrf=False)
     def quick_check_in(self, **post):
         """Quick check-in from dashboard"""
-        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.uid)], limit=1)
+        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.env.uid)], limit=1)
         if not employee:
             return request.make_response(json.dumps({'status': 'error', 'message': 'Employee not found'}), 
                                        headers={'Content-Type': 'application/json'})
@@ -292,7 +306,7 @@ class PortalEmployee(http.Controller):
 
     @http.route(MY_EMPLOYEE_URL + '/attendance/checkout', type='http', auth='user', methods=['POST'], website=True)
     def check_out(self, **post):
-        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.uid)], limit=1)
+        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.env.uid)], limit=1)
         if not employee:
             return request.redirect(MY_EMPLOYEE_URL + '?error=employee_not_found')
             
@@ -387,7 +401,7 @@ class PortalEmployee(http.Controller):
     @http.route(MY_EMPLOYEE_URL + '/attendance/quick-checkout', type='http', auth='user', methods=['POST'], website=True, csrf=False)
     def quick_check_out(self, **post):
         """Quick check-out from dashboard"""
-        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.uid)], limit=1)
+        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.env.uid)], limit=1)
         if not employee:
             return request.make_response(json.dumps({'status': 'error', 'message': 'Employee not found'}), 
                                        headers={'Content-Type': 'application/json'})
@@ -479,7 +493,7 @@ class PortalEmployee(http.Controller):
         user_timezone = get_user_timezone()
         user_pytz = pytz.timezone(user_timezone)
         
-        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.uid)], limit=1)
+        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.env.uid)], limit=1)
         
         # Get current time in user's timezone
         utc_now = datetime.now(pytz.UTC)
@@ -697,7 +711,7 @@ class PortalEmployee(http.Controller):
     @http.route(MY_EMPLOYEE_URL + '/attendance/analytics', type='http', auth='user', website=True)
     def portal_attendance_analytics(self, **kwargs):
         """Dedicated analytics page for attendance"""
-        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.uid)], limit=1)
+        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.env.uid)], limit=1)
         if not employee:
             return request.redirect(MY_EMPLOYEE_URL)
         
@@ -733,7 +747,7 @@ class PortalEmployee(http.Controller):
     @http.route(MY_EMPLOYEE_URL + '/attendance/export', type='http', auth='user', website=True)
     def portal_attendance_export(self, **kwargs):
         """Export attendance data to Excel"""
-        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.uid)], limit=1)
+        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.env.uid)], limit=1)
         if not employee:
             return request.redirect(MY_EMPLOYEE_URL)
         
@@ -855,26 +869,127 @@ class PortalEmployee(http.Controller):
 
     @http.route(MY_EMPLOYEE_URL + '/edit', type='http', auth='user', website=True, methods=['GET', 'POST'])
     def portal_employee_edit(self, **post):
-        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.uid)], limit=1)
+        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.env.uid)], limit=1)
         if not employee:
             return request.redirect(MY_EMPLOYEE_URL)
         if http.request.httprequest.method == 'POST':
             vals = {}
+
+            if post.get('work_email'):
+                import re
+                email_pattern = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
+                if re.match(email_pattern, post.get('work_email')):
+                    vals['work_email'] = post.get('work_email')
+
+            if post.get('work_phone'):
+                vals['work_phone'] = post.get('work_phone')
+            if post.get('birthday'):
+                vals['birthday'] = post.get('birthday')
+            if post.get('gender'):
+                vals['gender'] = post.get('gender')
+            if post.get('marital'):
+                vals['marital'] = post.get('marital')
+
+                # Identity documents
+            if post.get('emirates_id_number'):
+                vals['emirates_id_number'] = post.get('emirates_id_number')
+            if post.get('emirates_expiry_date'):
+                vals['emirates_expiry_date'] = post.get('emirates_expiry_date')
+            if post.get('issue_date'):
+                vals['issue_date'] = post.get('issue_date')
+            if post.get('expiry_date'):
+                vals['expiry_date'] = post.get('expiry_date')
+            if post.get('passport_id'):
+                vals['passport_id'] = post.get('passport_id')
+            if post.get('ssnid'):
+                vals['ssnid'] = post.get('ssnid')
+            if post.get('issue_countries_id'):
+                vals['issue_countries_id'] = self._get_many2one_id(
+                    post.get('issue_countries_id'), 'res.country')
+
+                # Contact information
+            # Write regular fields
+            try:
+                employee.sudo().write(vals)
+            except Exception as e:
+                _logger.error("Error saving employee data: %s", str(e))
+
+            # Write private fields separately with sudo
+            private_vals = {}
+            if post.get('private_email'):
+                private_vals['private_email'] = post.get('private_email')
+            if post.get('private_phone'):
+                private_vals['private_phone'] = post.get('private_phone')
+            if post.get('private_street'):
+                private_vals['private_street'] = post.get('private_street')
+            if post.get('private_street2'):
+                private_vals['private_street2'] = post.get('private_street2')
+            if post.get('private_city'):
+                private_vals['private_city'] = post.get('private_city')
+            if post.get('private_zip'):
+                private_vals['private_zip'] = post.get('private_zip')
+
+            if private_vals:
+                try:
+                    # Use env with superuser to bypass private field restrictions
+                    request.env['hr.employee'].sudo().browse(employee.id).write(private_vals)
+                    _logger.info("Private fields saved: %s", list(private_vals.keys()))
+                except Exception as e:
+                    _logger.error("Error saving private fields: %s", str(e))
+
+                # Emergency contact
+            if post.get('emergency_contact'):
+                vals['emergency_contact'] = post.get('emergency_contact')
+            if post.get('emergency_phone'):
+                vals['emergency_phone'] = post.get('emergency_phone')
+
+                # Private Contact (from inherited template)
+            # if post.get('private_email'):
+            #     vals['private_email'] = post.get('private_email')
+            # if post.get('private_phone'):
+            #     vals['private_phone'] = post.get('private_phone')
+
+                # Personal Information (from inherited template)
+            # if post.get('legal_name'):
+            #     vals['legal_name'] = post.get('legal_name')
+            # if post.get('place_of_birth'):
+            #     vals['place_of_birth'] = post.get('place_of_birth')
+
+                # Visa & Work Permit (from inherited template)
+            if post.get('visa_no'):
+                vals['visa_no'] = post.get('visa_no')
+            if post.get('permit_no'):
+                vals['permit_no'] = post.get('permit_no')
+
+                # Citizenship (from inherited template)
+            if post.get('identification_id'):
+                vals['identification_id'] = post.get('identification_id')
+
+                # Family (from inherited template)
+            if post.get('study_field'):
+                vals['study_field'] = post.get('study_field')
+            if post.get('certificate'):
+                vals['certificate'] = post.get('certificate')
+            if post.get('children'):
+                try:
+                    vals['children'] = int(post.get('children'))
+                except (ValueError, TypeError):
+                    pass
             # Personal Details
-            vals['work_email'] = post.get('work_email')
-            vals['work_phone'] = post.get('work_phone')
-            vals['birthday'] = post.get('birthday')
-            vals['gender'] = post.get('gender')
-            vals['marital'] = post.get('marital')
-            # Experience & Skills
-            vals['x_experience'] = post.get('x_experience')
-            vals['x_skills'] = post.get('x_skills')
-            # Certifications
-            vals['x_certifications'] = post.get('x_certifications')
-            # Bank Details
-            vals['x_bank_account'] = post.get('x_bank_account')
-            vals['x_bank_name'] = post.get('x_bank_name')
-            vals['x_ifsc'] = post.get('x_ifsc')
+            # vals['work_email'] = post.get('work_email')
+            # vals['work_phone'] = post.get('work_phone')
+            # vals['birthday'] = post.get('birthday')
+            # vals['gender'] = post.get('gender')
+            # vals['marital'] = post.get('marital')
+            # # Experience & Skills
+            # vals['x_experience'] = post.get('x_experience')
+            # vals['x_skills'] = post.get('x_skills')
+            # # Certifications
+            # vals['x_certifications'] = post.get('x_certifications')
+            # # Bank Details
+            # vals['x_bank_account'] = post.get('x_bank_account')
+            # vals['x_bank_name'] = post.get('x_bank_name')
+            # vals['x_ifsc'] = post.get('x_ifsc')
             # Only update fields that are present in the form
             vals = {k: v for k, v in vals.items() if v is not None}
             if vals:
@@ -889,10 +1004,11 @@ class PortalEmployee(http.Controller):
         # Set enhanced dashboard as default
         return self._render_ess_dashboard('employee_self_service_portal.portal_ess_dashboard_enhanced', **kwargs)
 
-    @http.route('/my/ess/classic', type='http', auth='user', website=True)
+    @http.route('/my/ess/classic', type='http', auth='user', website=True)  
     def portal_ess_dashboard_classic(self, **kwargs):
         # Keep the classic view accessible via /my/ess/classic
         return self._render_ess_dashboard('employee_self_service_portal.portal_ess_dashboard', **kwargs)
+
 
     # ---------------------------------------------------------------------------
     # IT Ticket routes (added from updated version)
@@ -1072,8 +1188,8 @@ class PortalEmployee(http.Controller):
     # End IT Ticket routes
     # ---------------------------------------------------------------------------
 
-
-    @http.route('/my/ess/enhanced', type='http', auth='user', website=True)
+        
+    @http.route('/my/ess/enhanced', type='http', auth='user', website=True)  
     def portal_ess_dashboard_enhanced(self, **kwargs):
         # Maintain this route for backward compatibility
         return self._render_ess_dashboard('employee_self_service_portal.portal_ess_dashboard_enhanced', **kwargs)
@@ -1082,7 +1198,7 @@ class PortalEmployee(http.Controller):
         """Common method to render dashboard with enhanced data"""
         import pytz
         
-        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.uid)], limit=1)
+        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.env.uid)], limit=1)
         
         # Get dashboard statistics
         dashboard_data = {}
@@ -1309,6 +1425,7 @@ class PortalEmployee(http.Controller):
         except Exception:
             pass
 
+        
         dashboard_data.update({
             'payslips_count': payslips_count,
             'latest_payslip': latest_payslip,
@@ -1385,17 +1502,24 @@ class PortalEmployee(http.Controller):
             'expense_budget': 2000,   # $2000 monthly expense budget
         }
 
-    @http.route(MY_EMPLOYEE_URL + '/personal', type='http', auth='user', website=True, methods=['GET', 'POST'])
+    @http.route(MY_EMPLOYEE_URL + '/personal', type='http', auth='user', website=True, methods=['GET', 'POST'],
+                csrf=False)
     def portal_employee_personal(self, **post):
         employee = self._get_employee()
+
+        #  Only active/installed languages
+
+        countries = request.env['res.country'].sudo().search([], order='name')
+
+        _logger.info("portal_employee_profile - Countries count: %s", len(countries))
+
+
         if request.httprequest.method == 'POST':
             try:
-                # Enhanced personal details update with validation
                 vals = {}
-                
+
                 # Basic information
                 if post.get('work_email'):
-                    # Validate email format
                     import re
                     email_pattern = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
                     if re.match(email_pattern, post.get('work_email')):
@@ -1405,32 +1529,60 @@ class PortalEmployee(http.Controller):
                             'success': False,
                             'error': 'Invalid email format'
                         })
-                
+
                 if post.get('work_phone'):
                     vals['work_phone'] = post.get('work_phone')
                 if post.get('birthday'):
                     vals['birthday'] = post.get('birthday')
-                if post.get('gender'):
-                    vals['gender'] = post.get('gender')
+                if post.get('sex'):
+                    vals['sex'] = post.get('sex')
                 if post.get('marital'):
                     vals['marital'] = post.get('marital')
-                
+                if post.get('children'):
+                    try:
+                        vals['children'] = int(post.get('children'))
+                    except (ValueError, TypeError):
+                        pass
+                if post.get('study_field'):
+                    vals['study_field'] = post.get('study_field')
+                if post.get('l10n_in_relationship'):
+                    vals['l10n_in_relationship'] = post.get('l10n_in_relationship')
+
                 # Identity documents
-                if post.get('x_nationality'):
-                    vals['x_nationality'] = post.get('x_nationality')
-                if post.get('x_emirates_id'):
-                    vals['x_emirates_id'] = post.get('x_emirates_id')
-                if post.get('x_emirates_expiry'):
-                    vals['x_emirates_expiry'] = post.get('x_emirates_expiry')
-                if post.get('x_passport_number'):
-                    vals['x_passport_number'] = post.get('x_passport_number')
-                if post.get('x_passport_country'):
-                    vals['x_passport_country'] = post.get('x_passport_country')
-                if post.get('x_passport_issue'):
-                    vals['x_passport_issue'] = post.get('x_passport_issue')
-                if post.get('x_passport_expiry'):
-                    vals['x_passport_expiry'] = post.get('x_passport_expiry')
-                
+                if post.get('emirates_id_number'):
+                    vals['emirates_id_number'] = post.get('emirates_id_number')
+                if post.get('emirates_issue_date'):
+                    vals['emirates_issue_date'] = post.get('emirates_issue_date')
+                if post.get('emirates_expiry_date'):
+                    vals['emirates_expiry_date'] = post.get('emirates_expiry_date')
+                if post.get('ssnid'):
+                    vals['ssnid'] = post.get('ssnid')
+                if post.get('issue_date'):
+                    vals['issue_date'] = post.get('issue_date')
+                if post.get('expiry_date'):
+                    vals['expiry_date'] = post.get('expiry_date')
+
+                if post.get('issue_countries_id'):
+                    try:
+                        vals['issue_countries_id'] = int(post.get('issue_countries_id'))
+                    except (ValueError, TypeError):
+                        country = request.env['res.country'].sudo().search([
+                            ('name', '=', post.get('issue_countries_id'))
+                        ], limit=1)
+                        if country:
+                            vals['issue_countries_id'] = country.id
+
+                # Nationality
+                if post.get('country_id'):
+                    try:
+                        vals['country_id'] = int(post.get('country_id'))
+                    except (ValueError, TypeError):
+                        country = request.env['res.country'].sudo().search([
+                            ('name', '=', post.get('country_id'))
+                        ], limit=1)
+                        if country:
+                            vals['country_id'] = country.id
+
                 # Contact information
                 if post.get('private_email'):
                     vals['private_email'] = post.get('private_email')
@@ -1444,36 +1596,247 @@ class PortalEmployee(http.Controller):
                     vals['private_city'] = post.get('private_city')
                 if post.get('private_zip'):
                     vals['private_zip'] = post.get('private_zip')
-                
+                if post.get('e_private_city'):
+                    vals['e_private_city'] = post.get('e_private_city')
+
                 # Emergency contact
                 if post.get('emergency_contact'):
                     vals['emergency_contact'] = post.get('emergency_contact')
                 if post.get('emergency_phone'):
                     vals['emergency_phone'] = post.get('emergency_phone')
-                
-                # Update employee record
+
+                # Dependent Details - Child 1
+                if post.get('dependent_child_name_1') is not None:
+                    vals['dependent_child_name_1'] = post.get('dependent_child_name_1', '').strip()
+
+                if post.get('dependent_child_dob_1'):
+                    vals['dependent_child_dob_1'] = post.get('dependent_child_dob_1')
+
+                if post.get('dependent_child_gender_1'):
+                    vals['dependent_child_gender_1'] = post.get('dependent_child_gender_1')
+
+                if post.get('dependent_child_passport_no') is not None:
+                    vals['dependent_child_passport_no'] = post.get('dependent_child_passport_no', '').strip()
+
+                if post.get('dependent_child_passport_issue_date_1'):
+                    vals['dependent_child_passport_issue_date_1'] = post.get('dependent_child_passport_issue_date_1')
+
+                if post.get('dependent_child_passport_expiry_date_1'):
+                    vals['dependent_child_passport_expiry_date_1'] = post.get('dependent_child_passport_expiry_date_1')
+
+                # General Information
+                if post.get('u_private_city'):
+                    vals['u_private_city'] = post.get('u_private_city')
+                if post.get('industry_start_date'):
+                    vals['industry_start_date'] = post.get('industry_start_date')
+                if post.get('experience'):
+                    vals['experience'] = post.get('experience')
+                if post.get('current_role'):
+                    vals['current_role'] = post.get('current_role')
+                if post.get('current_address'):
+                    vals['current_address'] = post.get('current_address')
+                if post.get('phone_code_1'):
+                    vals['phone_code_1'] = post.get('phone_code_1')
+
+                # Emergency Contact UAE
+                if post.get('emergency_contact_person_name'):
+                    vals['emergency_contact_person_name'] = post.get('emergency_contact_person_name')
+                if post.get('emergency_contact_person_phone'):
+                    vals['emergency_contact_person_phone'] = post.get('emergency_contact_person_phone')
+                if post.get('alternate_mobile_number'):
+                    vals['alternate_mobile_number'] = post.get('alternate_mobile_number')
+                if post.get('emergency_contact_person_name_1'):
+                    vals['emergency_contact_person_name_1'] = post.get('emergency_contact_person_name_1')
+                if post.get('emergency_contact_person_phone_1'):
+                    vals['emergency_contact_person_phone_1'] = post.get('emergency_contact_person_phone_1')
+                if post.get('second_alternative_number'):
+                    vals['second_alternative_number'] = post.get('second_alternative_number')
+                if post.get('home_land_line_no'):
+                    vals['home_land_line_no'] = post.get('home_land_line_no')
+
+                # Spouse Info
+                if post.get('spouse_passport_no'):
+                    vals['spouse_passport_no'] = post.get('spouse_passport_no')
+                if post.get('spouse_passport_issue_date'):
+                    vals['spouse_passport_issue_date'] = post.get('spouse_passport_issue_date')
+                if post.get('spouse_passport_expiry_date'):
+                    vals['spouse_passport_expiry_date'] = post.get('spouse_passport_expiry_date')
+                if post.get('spouse_visa_no'):
+                    vals['spouse_visa_no'] = post.get('spouse_visa_no')
+                if post.get('spouse_visa_expire_date'):
+                    vals['spouse_visa_expire_date'] = post.get('spouse_visa_expire_date')
+                if post.get('spouse_emirates_id_no'):
+                    vals['spouse_emirates_id_no'] = post.get('spouse_emirates_id_no')
+                if post.get('spouse_emirates_issue_date'):
+                    vals['spouse_emirates_issue_date'] = post.get('spouse_emirates_issue_date')
+                if post.get('spouse_emirates_id_expiry_date'):
+                    vals['spouse_emirates_id_expiry_date'] = post.get('spouse_emirates_id_expiry_date')
+                if post.get('spouse_aadhar_no'):
+                    vals['spouse_aadhar_no'] = post.get('spouse_aadhar_no')
+
+                # Father Mother Info
+                if post.get('father_name'):
+                    vals['father_name'] = post.get('father_name')
+                if post.get('father_dob'):
+                    vals['father_dob'] = post.get('father_dob')
+                if post.get('mother_name'):
+                    vals['mother_name'] = post.get('mother_name')
+                if post.get('mother_dob'):
+                    vals['mother_dob'] = post.get('mother_dob')
+
+                # Employee Details
+                if post.get('employee_nominee_name'):
+                    vals['employee_nominee_name'] = post.get('employee_nominee_name')
+                if post.get('employee_nominee_contact_no'):
+                    vals['employee_nominee_contact_no'] = post.get('employee_nominee_contact_no')
+                if post.get('domain_worked'):
+                    vals['domain_worked'] = post.get('domain_worked')
+                if post.get('primary_skill'):
+                    vals['primary_skill'] = post.get('primary_skill')
+                if post.get('secondary_skill'):
+                    vals['secondary_skill'] = post.get('secondary_skill')
+                if post.get('tool_used'):
+                    vals['tool_used'] = post.get('tool_used')
+
+                # Many2one - Passport Issuing Country
+                # Child 1 Passport Issuing Country - Many2one res.country
+                if post.get('dependent_child_passport_issuing_countries_1_id'):
+                    try:
+                        vals['dependent_child_passport_issuing_countries_1_id'] = int(
+                            post.get('dependent_child_passport_issuing_countries_1_id')
+                        )
+                    except (ValueError, TypeError):
+                        country = request.env['res.country'].sudo().search([
+                            ('name', '=', post.get('dependent_child_passport_issuing_countries_1_id'))
+                        ], limit=1)
+                        if country:
+                            vals['dependent_child_passport_issuing_countries_1_id'] = country.id
+
+                if post.get('dependent_child_visa_no_1') is not None:
+                    vals['dependent_child_visa_no_1'] = post.get('dependent_child_visa_no_1', '').strip()
+
+                if post.get('dependent_child_visa_expiration_date_1'):
+                    vals['dependent_child_visa_expiration_date_1'] = post.get('dependent_child_visa_expiration_date_1')
+
+                if post.get('dependent_child_emirates_id_no_1') is not None:
+                    vals['dependent_child_emirates_id_no_1'] = post.get('dependent_child_emirates_id_no_1', '').strip()
+
+                if post.get('dependent_child_emirates_id_issue_date_1'):
+                    vals['dependent_child_emirates_id_issue_date_1'] = post.get(
+                        'dependent_child_emirates_id_issue_date_1')
+
+                if post.get('dependent_child_emirates_id_expiry_date_1'):
+                    vals['dependent_child_emirates_id_expiry_date_1'] = post.get(
+                        'dependent_child_emirates_id_expiry_date_1')
+
+                if post.get('dependent_child_aadhar_no_1') is not None:
+                    vals['dependent_child_aadhar_no_1'] = post.get('dependent_child_aadhar_no_1', '').strip()
+
+                # Personal information
+                if post.get('legal_name'):
+                    vals['legal_name'] = post.get('legal_name')
+                if post.get('place_of_birth'):
+                    vals['place_of_birth'] = post.get('place_of_birth')
+
+                # Document and personal details
+                if post.get('whatsapp'):
+                    vals['whatsapp'] = post.get('whatsapp')
+                if post.get('house_no'):
+                    vals['house_no'] = post.get('house_no')
+                if post.get('area_name'):
+                    vals['area_name'] = post.get('area_name')
+                if post.get('city'):
+                    vals['city'] = post.get('city')
+                if post.get('zip_code'):
+                    vals['zip_code'] = post.get('zip_code')
+                if post.get('linkedin'):
+                    vals['linkedin'] = post.get('linkedin')
+
+                # Visa and work permit
+                if post.get('visa_no'):
+                    vals['visa_no'] = post.get('visa_no')
+                if post.get('permit_no'):
+                    vals['permit_no'] = post.get('permit_no')
+
+                # Social Media Details
+                if post.get('facebook_profile') is not None:
+                    vals['facebook_profile'] = post.get('facebook_profile', '').strip()
+                if post.get('insta_profile') is not None:
+                    vals['insta_profile'] = post.get('insta_profile', '').strip()
+                if post.get('twitter_profile') is not None:
+                    vals['twitter_profile'] = post.get('twitter_profile', '').strip()
+
+                # Career Details
+                if post.get('career_break_detail') is not None:
+                    vals['career_break_detail'] = post.get('career_break_detail', '').strip()
+
+                # Industry Details
+                if post.get('industry_ref_name') is not None:
+                    vals['industry_ref_name'] = post.get('industry_ref_name', '').strip()
+                if post.get('industry_ref_email') is not None:
+                    vals['industry_ref_email'] = post.get('industry_ref_email', '').strip()
+                if post.get('industry_ref_mob_no') is not None:
+                    vals['industry_ref_mob_no'] = post.get('industry_ref_mob_no', '').strip()
+                if post.get('home_country_id_name') is not None:
+                    vals['home_country_id_name'] = post.get('home_country_id_name', '').strip()
+                if post.get('home_country_id_number') is not None:
+                    vals['home_country_id_number'] = post.get('home_country_id_number', '').strip()
+
+                # Citizenship
+                if post.get('identification_id'):
+                    vals['identification_id'] = post.get('identification_id')
+                if post.get('passport_id'):
+                    vals['passport_id'] = post.get('passport_id')
+                if post.get('mother_tongue_name'):
+                    vals['mother_tongue_name'] = post.get('mother_tongue_name')
+                if post.get('language_known_name') is not None:
+                    vals['language_known_name'] = post.get('language_known_name', '').strip()
+
+                #  Certificate - selection field with validation
+                allowed_certificates = ['graduate', 'bachelor', 'master', 'doctor', 'other']
+                if post.get('certificate') and post.get('certificate') in allowed_certificates:
+                    vals['certificate'] = post.get('certificate')
+
+
+                #  Checkbox field - always set True or False
+                vals['is_non_resident'] = True if post.get('is_non_resident') == 'on' else False
+
+                #  Single write call - all fields together
+                _logger.info("Writing vals to employee %s: %s", employee.id, list(vals.keys()))
                 employee.sudo().write(vals)
-                
+                _logger.info("Successfully wrote vals for employee %s", employee.id)
+
                 # Handle document uploads
                 self._handle_document_uploads(employee, request.httprequest.files)
-                
+
                 return request.make_json_response({
                     'success': True,
                     'message': 'Personal details updated successfully'
                 })
-                
+
             except Exception as e:
+                _logger.error("Error in portal_employee_personal POST: %s", str(e))
+                import traceback
+                _logger.error("Traceback: %s", traceback.format_exc())
                 return request.make_json_response({
                     'success': False,
                     'error': str(e)
                 })
+
+
+        #  GET - pass all required variables to template
+        return request.render('employee_self_service_portal.portal_employee_profile_personal', {
+            'employee': employee,
+            'section': 'personal',
+            'countries': countries,
+        })
         
         return request.render('employee_self_service_portal.portal_employee_profile_personal', {
             'employee': employee,
             'section': 'personal',
         })
 
-    @http.route(MY_EMPLOYEE_URL + '/upload-photo', type='http', auth='user', website=True, methods=['POST'])
+    @http.route(MY_EMPLOYEE_URL + '/upload-photo', type='http', auth='user', website=True, methods=['POST'], csrf=False)
     def portal_employee_upload_photo(self, **post):
         """Handle employee photo upload"""
         try:
@@ -1558,25 +1921,36 @@ class PortalEmployee(http.Controller):
         """Handle document file uploads"""
         try:
             import base64
-            
+
             # Handle Emirates ID file
             emirates_file = files.get('emirates_id_file')
             if emirates_file and emirates_file.filename:
-                self._save_employee_document(employee, emirates_file, 'Emirates ID')
-            
+                file_data = base64.b64encode(emirates_file.read())
+                employee.sudo().write({
+                    'emirates_id_file': file_data,
+                    'emirates_id_filename': emirates_file.filename,
+                })
+
             # Handle Passport file
             passport_file = files.get('passport_file')
             if passport_file and passport_file.filename:
-                self._save_employee_document(employee, passport_file, 'Passport')
-            
-            # Handle other documents
-            other_files = files.getlist('other_documents')
-            for file in other_files:
-                if file and file.filename:
-                    self._save_employee_document(employee, file, 'Other Document')
-                    
+                file_data = base64.b64encode(passport_file.read())
+                employee.sudo().write({
+                    'passport_file': file_data,
+                    'passport_filename': passport_file.filename,
+                })
+
+            # Handle Other Documents
+            other_file = files.get('other_documents')
+            if other_file and other_file.filename:
+                file_data = base64.b64encode(other_file.read())
+                employee.sudo().write({
+                    'other_documents': file_data,
+                    'other_documents_filename': other_file.filename,
+                })
+
         except Exception as e:
-            _logger.error(f"Error handling document uploads: {str(e)}")
+            _logger.error("Error handling document uploads: %s", str(e))
 
     def _save_employee_document(self, employee, file, doc_type):
         """Save individual document file"""
@@ -1617,50 +1991,37 @@ class PortalEmployee(http.Controller):
         if request.httprequest.method == 'POST':
             try:
                 vals = {}
-                
-                # Validate and update experience
-                experience = post.get('x_experience', '').strip()
-                if experience:
-                    # Basic validation - minimum word count
-                    word_count = len(experience.split())
-                    if word_count < 10:
-                        return request.make_json_response({
-                            'success': False,
-                            'error': 'Experience description should be at least 10 words.'
-                        })
-                    vals['x_experience'] = experience
-                
-                # Validate and update skills
-                skills = post.get('x_skills', '').strip()
-                if skills:
-                    # Clean up skills - remove extra spaces and normalize
-                    skills_list = [skill.strip() for skill in skills.split(',') if skill.strip()]
-                    if len(skills_list) < 3:
-                        return request.make_json_response({
-                            'success': False,
-                            'error': 'Please add at least 3 skills.'
-                        })
-                    vals['x_skills'] = ', '.join(skills_list)
-                
-                # Experience field is already handled above
-                
-                # Update employee record
-                employee.sudo().write(vals)
-                
-                # Handle document uploads for experience section
+
+                #  No validation - just save whatever is provided
+                if post.get('x_experience') is not None:
+                    vals['x_experience'] = post.get('x_experience', '').strip()
+
+                if post.get('x_skills') is not None:
+                    vals['x_skills'] = post.get('x_skills', '').strip()
+
+                #  Write only if there are values to write
+                if vals:
+                    _logger.info("Experience - Writing vals to employee %s: %s", employee.id, list(vals.keys()))
+                    employee.sudo().write(vals)
+                    _logger.info("Experience - Successfully wrote for employee %s", employee.id)
+
+                # Handle document uploads
                 self._handle_experience_documents(employee, request.httprequest.files)
-                
+
                 return request.make_json_response({
                     'success': True,
                     'message': 'Experience and skills updated successfully'
                 })
-                
+
             except Exception as e:
+                _logger.error("Error in portal_employee_experience POST: %s", str(e))
+                import traceback
+                _logger.error("Traceback: %s", traceback.format_exc())
                 return request.make_json_response({
                     'success': False,
                     'error': str(e)
                 })
-        
+
         return request.render('employee_self_service_portal.portal_employee_profile_experience', {
             'employee': employee,
             'section': 'experience',
@@ -1669,34 +2030,97 @@ class PortalEmployee(http.Controller):
     def _handle_experience_documents(self, employee, files):
         """Handle experience-related document uploads"""
         try:
-            # Handle Resume/CV
+            import base64
+
+            # Handle Resume/ CV
             resume_file = files.get('resume_file')
             if resume_file and resume_file.filename:
-                self._save_employee_document(employee, resume_file, 'Resume/CV')
-            
-            # Handle Training Certificates
-            training_files = files.getlist('training_certificates')
-            for file in training_files:
-                if file and file.filename:
-                    self._save_employee_document(employee, file, 'Training Certificate')
-            
-            # Handle Awards
-            award_files = files.getlist('awards_files')
-            for file in award_files:
-                if file and file.filename:
-                    self._save_employee_document(employee, file, 'Award/Recognition')
-                    
+                file_data = base64.b64encode(resume_file.read())
+                employee.sudo().write({
+                    'resume_file': file_data,
+                    'resume_file_filename': resume_file.filename,
+                })
+                _logger.info("Resume file saved: %s", resume_file.filename)
+
+            # Handle Training  Certificates
+            training_file = files.get('training_certificates')
+            if training_file and training_file.filename:
+                file_data = base64.b64encode(training_file.read())
+                employee.sudo().write({
+                    'training_certificates': file_data,
+                    'training_certificates_filename': training_file.filename,
+                })
+                _logger.info("Training certificate saved: %s", training_file.filename)
+
+            # Handle Awards & Recognition
+            awards_file = files.get('awards_files')
+            if awards_file and awards_file.filename:
+                file_data = base64.b64encode(awards_file.read())
+                employee.sudo().write({
+                    'awards_files': file_data,
+                    'awards_files_filename': awards_file.filename,
+                })
+                _logger.info("Awards file saved: %s", awards_file.filename)
+
         except Exception as e:
-            _logger.error(f"Error handling experience documents: {str(e)}")
+            _logger.error("Error handling experience documents: %s", str(e))
+            import traceback
+            _logger.error("Traceback: %s", traceback.format_exc())
 
     @http.route(MY_EMPLOYEE_URL + '/certification', type='http', auth='user', website=True, methods=['GET', 'POST'])
     def portal_employee_certification(self, **post):
         employee = self._get_employee()
         if request.httprequest.method == 'POST':
-            vals = {
-                'x_certifications': post.get('x_certifications'),
-            }
-            employee.sudo().write({k: v for k, v in vals.items() if v is not None})
+            try:
+                vals = {}
+
+                # Certifications text
+                if post.get('x_certifications') is not None:
+                    vals['x_certifications'] = post.get('x_certifications', '').strip()
+
+                #  Write text fields
+                if vals:
+                    _logger.info("Certification - Writing vals to employee %s: %s", employee.id, list(vals.keys()))
+                    employee.sudo().write(vals)
+
+                #  Handle files uploads
+                import base64
+                files = request.httprequest.files
+
+                training_file = files.get('training_certificates')
+                if training_file and training_file.filename:
+                    file_data = base64.b64encode(training_file.read())
+                    employee.sudo().write({
+                        'training_certificates': file_data,
+                        'training_certificates_filename': training_file.filename,
+                    })
+                    _logger.info("Training certificate saved: %s", training_file.filename)
+
+                awards_file = files.get('awards_files')
+                if awards_file and awards_file.filename:
+                    file_data = base64.b64encode(awards_file.read())
+                    employee.sudo().write({
+                        'awards_files': file_data,
+                        'awards_files_filename': awards_file.filename,
+                    })
+                    _logger.info("Awards file saved: %s", awards_file.filename)
+
+                _logger.info("Certification - Successfully saved for employee %s", employee.id)
+
+                return request.make_json_response({
+                    'success': True,
+                    'message': 'Certifications updated successfully'
+                })
+
+            except Exception as e:
+                _logger.error("Error in portal_employee_certification POST: %s", str(e))
+                import traceback
+                _logger.error("Traceback: %s", traceback.format_exc())
+                return request.make_json_response({
+                    'success': False,
+                    'error': str(e)
+                })
+
         return request.render('employee_self_service_portal.portal_employee_profile_certification', {
             'employee': employee,
             'section': 'certification',
@@ -2562,7 +2986,7 @@ class PortalEmployee(http.Controller):
         errors = []
         
         # Get employee for company-specific validations
-        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.uid)], limit=1)
+        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.env.uid)], limit=1)
         currency_symbol = employee.company_id.currency_id.symbol or '$'
         
         # Required field validation
@@ -2601,7 +3025,7 @@ class PortalEmployee(http.Controller):
         # Duplicate expense detection
         if post.get('date') and post.get('total_amount') and post.get('category_id'):
             try:
-                employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.uid)], limit=1)
+                employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.env.uid)], limit=1)
                 existing_expense = request.env['hr.expense'].sudo().search([
                     ('employee_id', '=', employee.id),
                     ('date', '=', post.get('date')),
@@ -2731,7 +3155,7 @@ class PortalEmployee(http.Controller):
         import logging
         _logger = logging.getLogger(__name__)
         
-        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.uid)], limit=1)
+        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.env.uid)], limit=1)
         if not employee:
             return request.redirect(MY_EMPLOYEE_URL)
             
@@ -2791,19 +3215,19 @@ class PortalEmployee(http.Controller):
         
         try:
             payslip = request.env['hr.payslip'].sudo().browse(payslip_id)
-            employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.uid)], limit=1)
+            employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.env.uid)], limit=1)
             
             # Security check - only allow access to own payslips
             if not payslip.exists() or not employee or payslip.employee_id.id != employee.id:
-                _logger.warning("Unauthorized payslip access attempt by user %s for payslip %s", request.uid, payslip_id)
+                _logger.warning("Unauthorized payslip access attempt by user %s for payslip %s", request.env.uid, payslip_id)
                 return request.redirect(MY_EMPLOYEE_URL + '/payslips?error=access_denied')
             
             # Only allow download of confirmed payslips
             if payslip.state not in ['validated','done', 'paid']:
-                _logger.warning("Download attempt for unconfirmed payslip %s by user %s", payslip_id, request.uid)
+                _logger.warning("Download attempt for unconfirmed payslip %s by user %s", payslip_id, request.env.uid)
                 return request.redirect(MY_EMPLOYEE_URL + '/payslips?error=not_confirmed')
             
-            _logger.info("Attempting to download payslip %s for user %s", payslip_id, request.uid)
+            _logger.info("Attempting to download payslip %s for user %s", payslip_id, request.env.uid)
             
             # Try to find the payslip report - multiple approaches with detailed logging
             report_ref = None
@@ -3042,7 +3466,7 @@ Payslip Details:
                             ('Pragma', 'no-cache')
                         ]
                         
-                        _logger.info("Payslip %s downloaded as text file by user %s", payslip_id, request.uid)
+                        _logger.info("Payslip %s downloaded as text file by user %s", payslip_id, request.env.uid)
                         return request.make_response(simple_content.encode('utf-8'), headers=headers)
                         
                 except Exception as fallback_error:
@@ -3074,7 +3498,7 @@ Payslip Details:
             ]
             
             _logger.info("Payslip %s downloaded successfully by user %s, file size: %d bytes", 
-                        payslip_id, request.uid, len(pdf_content))
+                        payslip_id, request.env.uid, len(pdf_content))
             
             return request.make_response(pdf_content, headers=pdfhttpheaders)
             
@@ -3088,7 +3512,7 @@ Payslip Details:
     def portal_payslip_view(self, payslip_id, **kwargs):
         """View payslip details"""
         payslip = request.env['hr.payslip'].sudo().browse(payslip_id)
-        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.uid)], limit=1)
+        employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.env.uid)], limit=1)
         
         # Security check - only allow access to own payslips
         if not payslip or not employee or payslip.employee_id.id != employee.id:
