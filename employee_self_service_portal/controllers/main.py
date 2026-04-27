@@ -1698,6 +1698,37 @@ class PortalEmployee(http.Controller):
                 if post.get('tool_used'):
                     vals['tool_used'] = post.get('tool_used')
 
+                    # Last Organisation Info
+                    if post.get('last_organisation_name'):
+                        vals['last_organisation_name'] = post.get('last_organisation_name')
+                    if post.get('last_location'):
+                        vals['last_location'] = post.get('last_location')
+                    if post.get('last_salary_per_annum_currency'):
+                        vals['last_salary_per_annum_currency'] = post.get('last_salary_per_annum_currency')
+                    if post.get('last_salary_per_annum_amt'):
+                        try:
+                            vals['last_salary_per_annum_amt'] = float(post.get('last_salary_per_annum_amt'))
+                        except (ValueError, TypeError):
+                            pass
+                    if post.get('reason_for_leaving'):
+                        vals['reason_for_leaving'] = post.get('reason_for_leaving')
+                    if post.get('last_report_manager_name'):
+                        vals['last_report_manager_name'] = post.get('last_report_manager_name')
+                    if post.get('last_report_manager_designation'):
+                        vals['last_report_manager_designation'] = post.get('last_report_manager_designation')
+                    if post.get('last_report_manager_mob_no'):
+                        vals['last_report_manager_mob_no'] = post.get('last_report_manager_mob_no')
+                    if post.get('last_report_manager_mail'):
+                        import re
+                        email_pattern = r'^[^\s@]+@[^\s@]+\.[^\s@]+$'
+                        if re.match(email_pattern, post.get('last_report_manager_mail')):
+                            vals['last_report_manager_mail'] = post.get('last_report_manager_mail')
+                        else:
+                            return request.make_json_response({
+                                'success': False,
+                                'error': 'Invalid Reporting Manager email format'
+                            })
+
                 # Many2one - Passport Issuing Country
                 # Child 1 Passport Issuing Country - Many2one res.country
                 if post.get('dependent_child_passport_issuing_countries_1_id'):
@@ -1791,6 +1822,26 @@ class PortalEmployee(http.Controller):
                     vals['mother_tongue_name'] = post.get('mother_tongue_name')
                 if post.get('language_known_name') is not None:
                     vals['language_known_name'] = post.get('language_known_name', '').strip()
+                # Distance - only save if BOTH fields have valid values
+                # distance_raw = post.get('distance_home_work', '').strip()
+                # if distance_raw and distance_raw not in ['km', 'mi', '']:
+                #     try:
+                #         vals['distance_home_work'] = int(distance_raw)
+                #     except (ValueError, TypeError):
+                #         pass  # skip silently if not a valid integer
+                #
+                # # Unit - only km or mi allowed
+                # km_val = post.get('km_home_work', '').strip()
+                # if km_val in ['km', 'mi']:
+                #     vals['km_home_work'] = km_val
+
+
+
+                # Selection field with validation
+                allowed_blood_groups = ['a_pos', 'a_neg', 'b_pos', 'b_neg', 'ab_pos', 'ab_neg', 'o_pos', 'o_neg',
+                                        'unknown']
+                if post.get('blood_group') and post.get('blood_group') in allowed_blood_groups:
+                    vals['blood_group'] = post.get('blood_group')
 
                 #  Certificate - selection field with validation
                 allowed_certificates = ['graduate', 'bachelor', 'master', 'doctor', 'other']
@@ -1841,7 +1892,7 @@ class PortalEmployee(http.Controller):
         """Handle employee photo upload"""
         try:
             employee = self._get_employee()
-            
+
             # Get uploaded file
             photo_file = request.httprequest.files.get('photo')
             if not photo_file:
@@ -1849,7 +1900,7 @@ class PortalEmployee(http.Controller):
                     'success': False,
                     'error': 'No photo file provided'
                 })
-            
+
             # Validate file type
             allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif']
             if photo_file.content_type not in allowed_types:
@@ -1857,34 +1908,34 @@ class PortalEmployee(http.Controller):
                     'success': False,
                     'error': 'Invalid file type. Please upload JPG, PNG, or GIF only.'
                 })
-            
+
             # Validate file size (5MB max)
             max_size = 5 * 1024 * 1024  # 5MB
             photo_file.seek(0, 2)  # Seek to end
             file_size = photo_file.tell()
             photo_file.seek(0)  # Seek back to beginning
-            
+
             if file_size > max_size:
                 return request.make_json_response({
                     'success': False,
                     'error': 'File too large. Maximum size is 5MB.'
                 })
-            
+
             # Read and encode image
             import base64
             photo_data = base64.b64encode(photo_file.read())
-            
+
             # Update employee image
             employee.sudo().write({
                 'image_1920': photo_data
             })
-            
+
             return request.make_json_response({
                 'success': True,
                 'message': 'Photo uploaded successfully',
                 'image_url': f'/web/image/hr.employee/{employee.id}/image_1920/150x150'
             })
-            
+
         except Exception as e:
             return request.make_json_response({
                 'success': False,
