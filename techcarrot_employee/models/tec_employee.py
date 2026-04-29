@@ -10,8 +10,16 @@ import phonenumbers
 class HrEmployeeInherit(models.Model):
     _inherit = 'hr.employee'
 
+    hr_manager_id = fields.Many2one(
+        comodel_name='hr.employee',
+        string='Assigned HR Manager',
+        help='The HR person responsible for reviewing this employee profile change requests.',
+        tracking=True,
+    )
+
     mother_tongue_name = fields.Char(string='Mother Tongue')
     language_known_name = fields.Char(string='language known')
+    spouse_passport_expiry_date = fields.Datetime(string='Spouse Passport Expiry Date')
 
     bank_account_no = fields.Char(string='Bank Account Number')
 
