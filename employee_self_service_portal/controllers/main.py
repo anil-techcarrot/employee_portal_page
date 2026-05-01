@@ -3310,7 +3310,7 @@ class PortalEmployee(http.Controller):
         # Only show confirmed payslips - no status filter needed
         domain = [
             ('employee_id', '=', employee.id),
-            ('state', 'in', ['validated', 'done', 'paid'])
+            ('state', 'in', ['paid'])
         ]
 
         # Only month/year filtering allowed
