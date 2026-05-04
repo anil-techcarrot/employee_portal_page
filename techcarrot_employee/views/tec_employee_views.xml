@@ -91,6 +91,8 @@
                 <page string="techcarrot" name="Tec Employee Settings">
                     <group>
                         <group string="Emergency Contact Person Address">
+                            <field name="emergency_contact_person_name" string="Contact Person Name"/>
+                            <field name="emergency_contact_person_phone" string="Contact Person Phone Number"/>
                             <label for="e_private_street" string="Emergency Address"/>
                             <div class="o_address_format">
                                 <field name="e_private_street" placeholder="Street..." class="o_address_street"/>
@@ -239,18 +241,23 @@
                             <field name="lwd" string="LWD"/>
                         </group>
 
-                        <group string="Emergency Contact Person Address Inside UAE">
+                        <group string="Emergency Contact Person Number 1 Address Inside UAE">
                             <field name="emergency_contact_person_name" string="Contact Person Name"/>
                             <field name="relationship_with_emp_id" string="Relationship with Employee"/>
                             <field name="emergency_contact_person_phone" string="Contact Person Phone Number"/>
                             <field name="alternate_mobile_number"/>
-                            <field name="emergency_contact_person_name_1" string="Contact Person Name(1)"/>
-                            <field name="second_relation_with_employee" string="Relationship with Employee (1)"/>
-                            <field name="emergency_contact_person_phone_1" string="Contact Person Phone Number(1)"/>
-                            <field name="second_alternative_number"/>
-
-                            <field name="phone_code" string="Countrycode"/>
+                            
+                                <field name="phone_code" string="Countrycode"/>
                             <field name="home_land_line_no" string="Home Land Line Number"/>
+                        </group>
+                        <group string="Emergency Contact Person Number 2 Address Inside UAE">
+                            <field name="emergency_contact_person_name_1" string="Contact Person Name"/>
+                            <field name="second_relation_with_employee" string="Relationship with Employee"/>
+                            <field name="emergency_contact_person_phone_1" string="Contact Person Phone Number"/>
+                            <field name="second_alternative_number"/>
+                            
+                                <field name="phone_code_of_second_person" string="Countrycode"/>
+                            <field name="home_land_line_no_1" string="Home Land Line Number"/>
                         </group>
 
                         <group string="Passport, Visa and Emirates Info">
@@ -349,6 +356,20 @@
                             <field name="home_country_id_name" string="Home Country ID Name"/>
                             <field name="home_country_id_number" string="Home Country ID Number"/>
                         </group>
+                        <!-- <group string="Industry Details Reference 2">
+                            <field name="industry_ref_name_1" string="Reference Name"/>
+                            <field name="industry_ref_email_1" string="Reference Email"/>
+                            <field name="industry_ref_mob_no_1" string="Reference Mobile Number"/>
+                            <field name="country_code_for_industry" string="Country Code"/>
+                            <field name="previous_company_name_1" string="Previous Company Name"/>
+                            <field name="designation_1" string="Designation"/>
+                            <field name="period_in_company_1" string="Period in Company"/>
+                            <field name="reason_of_leaving_1" string="Reason of Leaving"/>
+                            <field name="exit_type_id_1" string="Exit Type"/>
+                            <field name="exit_reason_id_1" string="Exit Reason"/>
+                            <field name="home_country_id_name_1" string="Home Country ID Name"/>
+                            <field name="home_country_id_number_1" string="Home Country ID Number"/>
+                        </group> -->
                     </group>
                 </page>
             </page>
