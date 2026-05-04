@@ -71,7 +71,7 @@ class HrEmployeeInherit(models.Model):
     #Notebook Pages Field
     home_land_line_no = fields.Char('Home Land Line Number', copy=False)
     home_land_line_no_1 = fields.Char('Home Land Line Number', copy=False)
-    phone_code_of_second_person = fields.Selection(string="Countrycode", selection=_country_code_get, copy=False)
+    # phone_code_of_second_person = fields.Selection(string="Countrycode", selection=_country_code_get, copy=False)
     relationship_with_emp_id = fields.Many2one('employee.relationship', string= "Relationship with Employee", copy=False)
     emergency_contact_person_name = fields.Char('Emergency Contact Person Name', copy=False)
     emergency_contact_person_name_1 = fields.Char('Emergency Contact Person Name(1)', copy=False)

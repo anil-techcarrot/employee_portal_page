@@ -246,8 +246,7 @@
                             <field name="relationship_with_emp_id" string="Relationship with Employee"/>
                             <field name="emergency_contact_person_phone" string="Contact Person Phone Number"/>
                             <field name="alternate_mobile_number"/>
-                            
-                                <field name="phone_code" string="Countrycode"/>
+                            <field name="phone_code" string="Countrycode"/>
                             <field name="home_land_line_no" string="Home Land Line Number"/>
                         </group>
                         <group string="Emergency Contact Person Number 2 Address Inside UAE">
@@ -255,8 +254,7 @@
                             <field name="second_relation_with_employee" string="Relationship with Employee"/>
                             <field name="emergency_contact_person_phone_1" string="Contact Person Phone Number"/>
                             <field name="second_alternative_number"/>
-                            
-                                <field name="phone_code_of_second_person" string="Countrycode"/>
+                            <field name="phone_code" string="Countrycode"/>
                             <field name="home_land_line_no_1" string="Home Land Line Number"/>
                         </group>
 
