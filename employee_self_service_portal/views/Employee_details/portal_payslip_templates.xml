@@ -55,6 +55,14 @@
                         </form>
                     </div>
                 </div>
+                                <!-- PDF Password Info -->
+<div class="alert alert-info alert-dismissible fade show" role="alert">
+    <i class="fa fa-lock mr-2"></i>
+    <strong>PDF Password:</strong>
+    Your payslip PDF is password protected.
+    Please use your <b>Date of Birth (DDMMYYYY)</b> as the password to open it.
+    
+</div>
 
                 <!-- Error Messages -->
                 <t t-if="request.params.get('error') == 'download_failed'">
