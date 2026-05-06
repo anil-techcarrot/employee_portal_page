@@ -12,7 +12,9 @@
         'employee_self_service_portal',
     ],
     'data': [
+        'security/hr_profile_change_groups.xml',
         'security/ir.model.access.csv',
+        'security/security_record_rules.xml',
         'data/sequence_data.xml',
         'data/mail_template_data.xml',
         # 'views/email_templates.xml',
