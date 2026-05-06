@@ -29,30 +29,18 @@
                                     <tr>
                                         <td style="font-size:13px; line-height:1.6;">
                                             <div>
-                                                Dear <t t-out="object.name or ''"/> ,
+                                                Dear <t t-out="object.name or ''"/> ,<br/><br/>
 
+                                                Welcome to <b><span style="border-radius:0px;border-style:none;padding:0px;margin:0px;box-sizing:border-box;border-left-color:#008000;border-bottom-color:#008000;border-right-color:#008000;border-top-color:#008000;border-left-width:0px;border-bottom-width:0px;border-right-width:0px;border-top-width:0px;color: green; font-weight: bold;">tech</span><span style="border-radius:0px;border-style:none;padding:0px;margin:0px;box-sizing:border-box;border-left-color:#ff0000;border-bottom-color:#ff0000;border-right-color:#ff0000;border-top-color:#ff0000;border-left-width:0px;border-bottom-width:0px;border-right-width:0px;border-top-width:0px;color: red; font-weight: bold;">carrot</span>’s Employee Self Service Portal!</b><br/><br/>
 
-
-                                                Welcome to <b><span style="border-radius:0px;border-style:none;padding:0px;margin:0px;box-sizing:border-box;border-left-color:#008000;border-bottom-color:#008000;border-right-color:#008000;border-top-color:#008000;border-left-width:0px;border-bottom-width:0px;border-right-width:0px;border-top-width:0px;color: green; font-weight: bold;">tech</span><span style="border-radius:0px;border-style:none;padding:0px;margin:0px;box-sizing:border-box;border-left-color:#ff0000;border-bottom-color:#ff0000;border-right-color:#ff0000;border-top-color:#ff0000;border-left-width:0px;border-bottom-width:0px;border-right-width:0px;border-top-width:0px;color: red; font-weight: bold;">carrot</span>’s Employee Self Service Portal!</b>
-
-
-
-                                                This is an advance notification to inform you that your account is in the process of being created on our newly launched HRIS platform.
-
-
+                                                This is an advance notification to inform you that your account is in the process of being created on our newly launched HRIS platform.<br/><br/>
 
                                                 Your access to the new HRIS platform is SSO-enabled and your login ID is
-                                                <b><t t-out="object.email or ''"/></b>
+                                                <b><t t-out="object.email or ''"/></b><br/><br/>
 
+                                                You will receive a follow-up email from Team HR with detailed instructions on how to access the portal.<br/><br/>
 
-
-                                                You will receive a follow-up email from Team HR with detailed instructions on how to access the portal.
-
-
-
-                                                Thank you for your patience and cooperation.
-
-
+                                                Thank you for your patience and cooperation.<br/><br/>
                                             </div>
                                         </td>
                                     </tr>
