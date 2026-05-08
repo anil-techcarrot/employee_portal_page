@@ -48,7 +48,7 @@
                                 <button type="submit" class="btn btn-primary mr-2">
                                     <i class="fa fa-search mr-1"></i>Filter
                                 </button>
-                                <a href="/my/employee/payslips" class="btn btn-secondary">
+                                <a href="/my/employee/payslips" class="btn btn-secondary ml-2">
                                     <i class="fa fa-refresh mr-1"></i>Clear
                                 </a>
                             </div>
