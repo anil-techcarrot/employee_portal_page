@@ -29,47 +29,59 @@
 
                     </div>
                     <div class="col-md-4 text-end">
-                        <div class="d-flex justify-content-end align-items-center gap-2">
-                            <a href="/my/ess/classic" class="btn btn-outline-secondary btn-sm">
-                                <i class="fa fa-arrow-left"></i>
-                                Classic View
-                            </a>
-                            <button class="btn btn-outline-secondary btn-sm" onclick="refreshDashboard()">
-                                <i class="fa fa-refresh"></i>
-                                Refresh
-                            </button>
-                            <div class="dropdown">
-                                <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button"
-                                        data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="fa fa-cog"></i>
-                                    Settings
-                                </button>
-                                <ul class="dropdown-menu">
-                                    <li>
-                                        <a class="dropdown-item" href="#" onclick="toggleTheme()">
-                                            <i class="fa fa-moon-o"></i>
-                                            Dark Mode
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="#" onclick="exportDashboard()">
-                                            <i class="fa fa-download"></i>
-                                            Export Data
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <hr class="dropdown-divider"/>
-                                    </li>
-                                    <!--                                    <li>-->
-                                    <!--                                        <a class="dropdown-item" href="/my/employee">-->
-                                    <!--                                            <i class="fa fa-user"></i>-->
-                                    <!--                                            Profile Settings-->
-                                    <!--                                        </a>-->
-                                    <!--                                    </li>-->
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
+    <div class="d-flex justify-content-end align-items-center gap-2">
+
+<!--        <a href="/my/ess/classic"-->
+<!--           class="btn btn-outline-secondary btn-sm d-flex align-items-center">-->
+<!--            <i class="fa fa-arrow-left me-1"></i>-->
+<!--            Classic View-->
+<!--        </a>-->
+
+        <a href="/employee_self_service_portal/static/docs/user_guide.pdf"
+           target="_blank"
+           class="btn btn-outline-info btn-sm d-flex align-items-center">
+            <i class="fa fa-book me-1"></i>
+            User Guide
+        </a>
+
+<!--        <button class="btn btn-outline-secondary btn-sm d-flex align-items-center"-->
+<!--                onclick="refreshDashboard()">-->
+<!--            <i class="fa fa-refresh me-1"></i>-->
+<!--            Refresh-->
+<!--        </button>-->
+
+<!--        <div class="dropdown">-->
+<!--            <button class="btn btn-outline-primary btn-sm dropdown-toggle d-flex align-items-center"-->
+<!--                    type="button"-->
+<!--                    data-bs-toggle="dropdown"-->
+<!--                    aria-expanded="false">-->
+<!--                <i class="fa fa-cog me-1"></i>-->
+<!--                Settings-->
+<!--            </button>-->
+
+<!--            <ul class="dropdown-menu">-->
+<!--                <li>-->
+<!--                    <a class="dropdown-item" href="#" onclick="toggleTheme()">-->
+<!--                        <i class="fa fa-moon-o me-2"></i>-->
+<!--                        Dark Mode-->
+<!--                    </a>-->
+<!--                </li>-->
+
+<!--                <li>-->
+<!--                    <a class="dropdown-item" href="#" onclick="exportDashboard()">-->
+<!--                        <i class="fa fa-download me-2"></i>-->
+<!--                        Export Data-->
+<!--                    </a>-->
+<!--                </li>-->
+
+<!--                <li>-->
+<!--                    <hr class="dropdown-divider"/>-->
+<!--                </li>-->
+<!--            </ul>-->
+<!--        </div>-->
+
+    </div>
+</div>
                 </div>
 
                 <!-- Quick Stats Row -->
@@ -213,7 +225,7 @@
                 <!-- Main Content Row -->
                 <div class="row">
                     <!-- Left Column -->
-                    <div class="col-lg-8">
+                    <div class="col-lg-12">
                         <!-- Quick Actions Card -->
                         <!-- <div class="card border-0 shadow-sm mb-4">
                             <div class="card-header bg-transparent border-0 pb-0">
@@ -635,219 +647,219 @@
                     </div>
 
                     <!-- Right Column -->
-                    <div class="col-lg-4">
-                        <!-- Recent Activity Card -->
-                        <div class="card border-0 shadow-sm mb-4">
-                            <div class="card-header bg-transparent border-0 pb-0">
-                                <h5 class="mb-0">
-                                    <i class="fa fa-bell text-info mr-2"></i>
-                                    Recent Activity
-                                </h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="activity-timeline">
-                                    <t t-if="today_attendances and len(today_attendances) > 0">
-                                        <div class="activity-item">
-                                            <div class="activity-icon bg-primary">
-                                                <i class="fa fa-clock-o"></i>
-                                            </div>
-                                            <div class="activity-content">
-                                                <t t-set="latest_attendance" t-value="today_attendances[0]"/>
-                                                <t t-if="latest_attendance.check_out">
-                                                    <h6 class="mb-1">Completed Work Day</h6>
-                                                    <p class="text-muted mb-0 small">
-                                                        Worked
-                                                        <t t-esc="'%.2f' % latest_attendance.worked_hours"/>
-                                                        hours
-                                                    </p>
-                                                </t>
-                                                <t t-else="">
-                                                    <h6 class="mb-1">Checked In</h6>
-                                                    <p class="text-muted mb-0 small">
-                                                        At
-                                                        <t t-esc="format_datetime(latest_attendance.check_in)"/>
-                                                    </p>
-                                                </t>
-                                            </div>
-                                        </div>
-                                    </t>
+<!--                    <div class="col-lg-4">-->
+<!--                        &lt;!&ndash; Recent Activity Card &ndash;&gt;-->
+<!--                        <div class="card border-0 shadow-sm mb-4">-->
+<!--                            <div class="card-header bg-transparent border-0 pb-0">-->
+<!--                                <h5 class="mb-0">-->
+<!--                                    <i class="fa fa-bell text-info mr-2"></i>-->
+<!--                                    Recent Activity-->
+<!--                                </h5>-->
+<!--                            </div>-->
+<!--                            <div class="card-body">-->
+<!--                                <div class="activity-timeline">-->
+<!--                                    <t t-if="today_attendances and len(today_attendances) > 0">-->
+<!--                                        <div class="activity-item">-->
+<!--                                            <div class="activity-icon bg-primary">-->
+<!--                                                <i class="fa fa-clock-o"></i>-->
+<!--                                            </div>-->
+<!--                                            <div class="activity-content">-->
+<!--                                                <t t-set="latest_attendance" t-value="today_attendances[0]"/>-->
+<!--                                                <t t-if="latest_attendance.check_out">-->
+<!--                                                    <h6 class="mb-1">Completed Work Day</h6>-->
+<!--                                                    <p class="text-muted mb-0 small">-->
+<!--                                                        Worked-->
+<!--                                                        <t t-esc="'%.2f' % latest_attendance.worked_hours"/>-->
+<!--                                                        hours-->
+<!--                                                    </p>-->
+<!--                                                </t>-->
+<!--                                                <t t-else="">-->
+<!--                                                    <h6 class="mb-1">Checked In</h6>-->
+<!--                                                    <p class="text-muted mb-0 small">-->
+<!--                                                        At-->
+<!--                                                        <t t-esc="format_datetime(latest_attendance.check_in)"/>-->
+<!--                                                    </p>-->
+<!--                                                </t>-->
+<!--                                            </div>-->
+<!--                                        </div>-->
+<!--                                    </t>-->
 
-                                    <t t-if="has_expenses_access and expense_stats and expense_stats['total_count'] > 0">
-                                        <div class="activity-item">
-                                            <div class="activity-icon bg-warning">
-                                                <i class="fa fa-money"></i>
-                                            </div>
-                                            <div class="activity-content">
-                                                <h6 class="mb-1">Expense Updates</h6>
-                                                <p class="text-muted mb-0 small">
-                                                    <t t-esc="expense_stats['total_count']"/>
-                                                    expenses this month
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </t>
+<!--                                    <t t-if="has_expenses_access and expense_stats and expense_stats['total_count'] > 0">-->
+<!--                                        <div class="activity-item">-->
+<!--                                            <div class="activity-icon bg-warning">-->
+<!--                                                <i class="fa fa-money"></i>-->
+<!--                                            </div>-->
+<!--                                            <div class="activity-content">-->
+<!--                                                <h6 class="mb-1">Expense Updates</h6>-->
+<!--                                                <p class="text-muted mb-0 small">-->
+<!--                                                    <t t-esc="expense_stats['total_count']"/>-->
+<!--                                                    expenses this month-->
+<!--                                                </p>-->
+<!--                                            </div>-->
+<!--                                        </div>-->
+<!--                                    </t>-->
 
-                                    <t t-if="has_crm_access and crm_leads_count and crm_leads_count > 0">
-                                        <div class="activity-item">
-                                            <div class="activity-icon bg-info">
-                                                <i class="fa fa-briefcase"></i>
-                                            </div>
-                                            <div class="activity-content">
-                                                <h6 class="mb-1">CRM Active</h6>
-                                                <p class="text-muted mb-0 small">
-                                                    <t t-esc="crm_leads_count"/>
-                                                    leads to manage
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </t>
+<!--                                    <t t-if="has_crm_access and crm_leads_count and crm_leads_count > 0">-->
+<!--                                        <div class="activity-item">-->
+<!--                                            <div class="activity-icon bg-info">-->
+<!--                                                <i class="fa fa-briefcase"></i>-->
+<!--                                            </div>-->
+<!--                                            <div class="activity-content">-->
+<!--                                                <h6 class="mb-1">CRM Active</h6>-->
+<!--                                                <p class="text-muted mb-0 small">-->
+<!--                                                    <t t-esc="crm_leads_count"/>-->
+<!--                                                    leads to manage-->
+<!--                                                </p>-->
+<!--                                            </div>-->
+<!--                                        </div>-->
+<!--                                    </t>-->
 
-                                    <div class="activity-item">
-                                        <div class="activity-icon bg-secondary">
-                                            <i class="fa fa-calendar"></i>
-                                        </div>
-                                        <div class="activity-content">
-                                            <h6 class="mb-1">Dashboard Loaded</h6>
-                                            <p class="text-muted mb-0 small">
-                                                Welcome to your ESS portal
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
+<!--                                    <div class="activity-item">-->
+<!--                                        <div class="activity-icon bg-secondary">-->
+<!--                                            <i class="fa fa-calendar"></i>-->
+<!--                                        </div>-->
+<!--                                        <div class="activity-content">-->
+<!--                                            <h6 class="mb-1">Dashboard Loaded</h6>-->
+<!--                                            <p class="text-muted mb-0 small">-->
+<!--                                                Welcome to your ESS portal-->
+<!--                                            </p>-->
+<!--                                        </div>-->
+<!--                                    </div>-->
+<!--                                </div>-->
 
-                                <div class="text-center mt-3">
-                                    <a href="#" class="btn btn-outline-secondary btn-sm" onclick="refreshActivity()">
-                                        <i class="fa fa-refresh"></i>
-                                        Refresh Activity
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
+<!--                                <div class="text-center mt-3">-->
+<!--                                    <a href="#" class="btn btn-outline-secondary btn-sm" onclick="refreshActivity()">-->
+<!--                                        <i class="fa fa-refresh"></i>-->
+<!--                                        Refresh Activity-->
+<!--                                    </a>-->
+<!--                                </div>-->
+<!--                            </div>-->
+<!--                        </div>-->
 
-                        <!-- Performance Metrics Card -->
-                        <!-- <div class="card border-0 shadow-sm mb-4">
-                            <div class="card-header bg-transparent border-0 pb-0">
-                                <h5 class="mb-0">
-                                    <i class="fa fa-chart-line text-info mr-2"></i>
-                                    Performance metrics
-                                </h5>
-                            </div>
-                            <div class="card-body">
-                                <t t-if="performance_metrics">
-                                    <div class="row g-3">
-                                        <div class="col-md-6">
-                                            <div class="metric-card p-3 border rounded">
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <div>
-                                                        <h6 class="text-muted mb-1">Attendance Rate</h6>
-                                                        <h4 class="text-success mb-0">
-                                                            <t t-esc="'%.1f' % performance_metrics['attendance_rate']"/>%
-                                                        </h4>
-                                                    </div>
-                                                    <i class="fa fa-calendar-check-o fa-2x text-success"></i>
-                                                </div>
-                                                <div class="progress mt-2" style="height: 4px;">
-                                                    <div class="progress-bar bg-success"
-                                                         t-attf-style="width: #{performance_metrics['attendance_rate']}%"></div>
-                                                </div>
-                                            </div>
-                                        </div>
+<!--                        &lt;!&ndash; Performance Metrics Card &ndash;&gt;-->
+<!--                        &lt;!&ndash; <div class="card border-0 shadow-sm mb-4">-->
+<!--                            <div class="card-header bg-transparent border-0 pb-0">-->
+<!--                                <h5 class="mb-0">-->
+<!--                                    <i class="fa fa-chart-line text-info mr-2"></i>-->
+<!--                                    Performance metrics-->
+<!--                                </h5>-->
+<!--                            </div>-->
+<!--                            <div class="card-body">-->
+<!--                                <t t-if="performance_metrics">-->
+<!--                                    <div class="row g-3">-->
+<!--                                        <div class="col-md-6">-->
+<!--                                            <div class="metric-card p-3 border rounded">-->
+<!--                                                <div class="d-flex justify-content-between align-items-center">-->
+<!--                                                    <div>-->
+<!--                                                        <h6 class="text-muted mb-1">Attendance Rate</h6>-->
+<!--                                                        <h4 class="text-success mb-0">-->
+<!--                                                            <t t-esc="'%.1f' % performance_metrics['attendance_rate']"/>%-->
+<!--                                                        </h4>-->
+<!--                                                    </div>-->
+<!--                                                    <i class="fa fa-calendar-check-o fa-2x text-success"></i>-->
+<!--                                                </div>-->
+<!--                                                <div class="progress mt-2" style="height: 4px;">-->
+<!--                                                    <div class="progress-bar bg-success"-->
+<!--                                                         t-attf-style="width: #{performance_metrics['attendance_rate']}%"></div>-->
+<!--                                                </div>-->
+<!--                                            </div>-->
+<!--                                        </div>-->
 
-                                        <div class="col-md-6">
-                                            <div class="metric-card p-3 border rounded">
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <div>
-                                                        <h6 class="text-muted mb-1">Weekly Hours</h6>
-                                                        <h4 class="text-primary mb-0">
-                                                            <t t-esc="'%.1f' % performance_metrics['weekly_hours']"/>h
-                                                        </h4>
-                                                    </div>
-                                                    <i class="fa fa-clock-o fa-2x text-primary"></i>
-                                                </div>
-                                                <small class="text-muted">
-                                                    Target: 40 hours
-                                                </small>
-                                            </div>
-                                        </div>
+<!--                                        <div class="col-md-6">-->
+<!--                                            <div class="metric-card p-3 border rounded">-->
+<!--                                                <div class="d-flex justify-content-between align-items-center">-->
+<!--                                                    <div>-->
+<!--                                                        <h6 class="text-muted mb-1">Weekly Hours</h6>-->
+<!--                                                        <h4 class="text-primary mb-0">-->
+<!--                                                            <t t-esc="'%.1f' % performance_metrics['weekly_hours']"/>h-->
+<!--                                                        </h4>-->
+<!--                                                    </div>-->
+<!--                                                    <i class="fa fa-clock-o fa-2x text-primary"></i>-->
+<!--                                                </div>-->
+<!--                                                <small class="text-muted">-->
+<!--                                                    Target: 40 hours-->
+<!--                                                </small>-->
+<!--                                            </div>-->
+<!--                                        </div>-->
 
-                                        <div class="col-md-6">
-                                            <div class="metric-card p-3 border rounded">
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <div>
-                                                        <h6 class="text-muted mb-1">CRM Conversion</h6>
-                                                        <h4 class="text-info mb-0">
-                                                            <t t-esc="'%.1f' % performance_metrics['crm_conversion_rate']"/>%
-                                                        </h4>
-                                                    </div>
-                                                    <i class="fa fa-trophy fa-2x text-info"></i>
-                                                </div>
-                                                <small class="text-muted">
-                                                    Lead to opportunity rate
-                                                </small>
-                                            </div>
-                                        </div>
+<!--                                        <div class="col-md-6">-->
+<!--                                            <div class="metric-card p-3 border rounded">-->
+<!--                                                <div class="d-flex justify-content-between align-items-center">-->
+<!--                                                    <div>-->
+<!--                                                        <h6 class="text-muted mb-1">CRM Conversion</h6>-->
+<!--                                                        <h4 class="text-info mb-0">-->
+<!--                                                            <t t-esc="'%.1f' % performance_metrics['crm_conversion_rate']"/>%-->
+<!--                                                        </h4>-->
+<!--                                                    </div>-->
+<!--                                                    <i class="fa fa-trophy fa-2x text-info"></i>-->
+<!--                                                </div>-->
+<!--                                                <small class="text-muted">-->
+<!--                                                    Lead to opportunity rate-->
+<!--                                                </small>-->
+<!--                                            </div>-->
+<!--                                        </div>-->
 
-                                        <div class="col-md-6">
-                                            <div class="metric-card p-3 border rounded">
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <div>
-                                                        <h6 class="text-muted mb-1">Avg Expense</h6>
-                                                        <h4 class="text-warning mb-0">
-                                                            <t t-esc="employee.company_id.currency_id.symbol"/><t t-esc="'%.0f' % performance_metrics['expense_avg_amount']"/>
-                                                        </h4>
-                                                    </div>
-                                                    <i class="fa fa-calculator fa-2x text-warning"></i>
-                                                </div>
-                                                <small class="text-muted">
-                                                    Monthly average
-                                                </small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </t>
-                                <t t-else="">
-                                    <div class="text-center text-muted">
-                                        <i class="fa fa-chart-bar fa-3x mb-3"></i>
-                                        <p>Performance metrics will appear here as you use the system.</p>
-                                    </div>
-                                </t>
-                            </div>
-                        </div> -->
+<!--                                        <div class="col-md-6">-->
+<!--                                            <div class="metric-card p-3 border rounded">-->
+<!--                                                <div class="d-flex justify-content-between align-items-center">-->
+<!--                                                    <div>-->
+<!--                                                        <h6 class="text-muted mb-1">Avg Expense</h6>-->
+<!--                                                        <h4 class="text-warning mb-0">-->
+<!--                                                            <t t-esc="employee.company_id.currency_id.symbol"/><t t-esc="'%.0f' % performance_metrics['expense_avg_amount']"/>-->
+<!--                                                        </h4>-->
+<!--                                                    </div>-->
+<!--                                                    <i class="fa fa-calculator fa-2x text-warning"></i>-->
+<!--                                                </div>-->
+<!--                                                <small class="text-muted">-->
+<!--                                                    Monthly average-->
+<!--                                                </small>-->
+<!--                                            </div>-->
+<!--                                        </div>-->
+<!--                                    </div>-->
+<!--                                </t>-->
+<!--                                <t t-else="">-->
+<!--                                    <div class="text-center text-muted">-->
+<!--                                        <i class="fa fa-chart-bar fa-3x mb-3"></i>-->
+<!--                                        <p>Performance metrics will appear here as you use the system.</p>-->
+<!--                                    </div>-->
+<!--                                </t>-->
+<!--                            </div>-->
+<!--                        </div> &ndash;&gt;-->
 
-                        <!-- Help &amp; Resources Card -->
-                        <!-- <div class="card border-0 shadow-sm">
-                            <div class="card-header bg-transparent border-0 pb-0">
-                                <h5 class="mb-0">
-                                    <i class="fa fa-question-circle text-success mr-2"></i>
-                                    Help &amp; Resources
-                                </h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="list-group list-group-flush">
-                                    <a href="#" class="list-group-item list-group-item-action border-0 px-0"
-                                       onclick="showHelp('attendance')">
-                                        <i class="fa fa-book text-primary mr-2"></i>
-                                        Attendance Guide
-                                    </a>
-                                    <a href="#" class="list-group-item list-group-item-action border-0 px-0"
-                                       onclick="showHelp('crm')">
-                                        <i class="fa fa-book text-info mr-2"></i>
-                                        CRM User Manual
-                                    </a>
-                                    <a href="#" class="list-group-item list-group-item-action border-0 px-0"
-                                       onclick="showHelp('expenses')">
-                                        <i class="fa fa-book text-warning mr-2"></i>
-                                        Expense Guidelines
-                                    </a>
-                                    <a href="#" class="list-group-item list-group-item-action border-0 px-0"
-                                       onclick="contactSupport()">
-                                        <i class="fa fa-support text-success mr-2"></i>
-                                        Contact Support
-                                    </a>
-                                </div>
-                            </div>
-                        </div> -->
-                    </div>
+<!--                        &lt;!&ndash; Help &amp; Resources Card &ndash;&gt;-->
+<!--                        &lt;!&ndash; <div class="card border-0 shadow-sm">-->
+<!--                            <div class="card-header bg-transparent border-0 pb-0">-->
+<!--                                <h5 class="mb-0">-->
+<!--                                    <i class="fa fa-question-circle text-success mr-2"></i>-->
+<!--                                    Help &amp; Resources-->
+<!--                                </h5>-->
+<!--                            </div>-->
+<!--                            <div class="card-body">-->
+<!--                                <div class="list-group list-group-flush">-->
+<!--                                    <a href="#" class="list-group-item list-group-item-action border-0 px-0"-->
+<!--                                       onclick="showHelp('attendance')">-->
+<!--                                        <i class="fa fa-book text-primary mr-2"></i>-->
+<!--                                        Attendance Guide-->
+<!--                                    </a>-->
+<!--                                    <a href="#" class="list-group-item list-group-item-action border-0 px-0"-->
+<!--                                       onclick="showHelp('crm')">-->
+<!--                                        <i class="fa fa-book text-info mr-2"></i>-->
+<!--                                        CRM User Manual-->
+<!--                                    </a>-->
+<!--                                    <a href="#" class="list-group-item list-group-item-action border-0 px-0"-->
+<!--                                       onclick="showHelp('expenses')">-->
+<!--                                        <i class="fa fa-book text-warning mr-2"></i>-->
+<!--                                        Expense Guidelines-->
+<!--                                    </a>-->
+<!--                                    <a href="#" class="list-group-item list-group-item-action border-0 px-0"-->
+<!--                                       onclick="contactSupport()">-->
+<!--                                        <i class="fa fa-support text-success mr-2"></i>-->
+<!--                                        Contact Support-->
+<!--                                    </a>-->
+<!--                                </div>-->
+<!--                            </div>-->
+<!--                        </div> &ndash;&gt;-->
+<!--                    </div>-->
                 </div>
             </div>
 

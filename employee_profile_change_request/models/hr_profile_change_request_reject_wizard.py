@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
@@ -62,3 +63,11 @@ class HrProfileChangeRequestRejectWizard(models.TransientModel):
             req._send_mail_to_employee('rejected')
 
         return {'type': 'ir.actions.act_window_close'}
+
+
+
+
+
+
+
+
