@@ -30,48 +30,59 @@
                     </div>
                     <div class="col-md-4 text-end">
                         <div class="d-flex justify-content-end align-items-center gap-2">
-                            <a href="/my/ess/classic" class="btn btn-outline-secondary btn-sm">
-                                <i class="fa fa-arrow-left"></i>
+                    
+                            <a href="/my/ess/classic"
+                               class="btn btn-outline-secondary btn-sm d-flex align-items-center">
+                                <i class="fa fa-arrow-left me-1"></i>
                                 Classic View
                             </a>
-                            <button class="btn btn-outline-secondary btn-sm" onclick="refreshDashboard()">
-                                <i class="fa fa-refresh"></i>
+                    
+                            <a href="/employee_self_service_portal/static/docs/user_guide.pdf"
+                               target="_blank"
+                               class="btn btn-outline-info btn-sm d-flex align-items-center">
+                                <i class="fa fa-book me-1"></i>
+                                User Guide
+                            </a>
+                    
+                            <button class="btn btn-outline-secondary btn-sm d-flex align-items-center"
+                                    onclick="refreshDashboard()">
+                                <i class="fa fa-refresh me-1"></i>
                                 Refresh
                             </button>
+                    
                             <div class="dropdown">
-                                <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button"
-                                        data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="fa fa-cog"></i>
+                                <button class="btn btn-outline-primary btn-sm dropdown-toggle d-flex align-items-center"
+                                        type="button"
+                                        data-bs-toggle="dropdown"
+                                        aria-expanded="false">
+                                    <i class="fa fa-cog me-1"></i>
                                     Settings
                                 </button>
+                    
                                 <ul class="dropdown-menu">
                                     <li>
                                         <a class="dropdown-item" href="#" onclick="toggleTheme()">
-                                            <i class="fa fa-moon-o"></i>
+                                            <i class="fa fa-moon-o me-2"></i>
                                             Dark Mode
                                         </a>
                                     </li>
+                    
                                     <li>
                                         <a class="dropdown-item" href="#" onclick="exportDashboard()">
-                                            <i class="fa fa-download"></i>
+                                            <i class="fa fa-download me-2"></i>
                                             Export Data
                                         </a>
                                     </li>
+                    
                                     <li>
                                         <hr class="dropdown-divider"/>
                                     </li>
-                                    <!--                                    <li>-->
-                                    <!--                                        <a class="dropdown-item" href="/my/employee">-->
-                                    <!--                                            <i class="fa fa-user"></i>-->
-                                    <!--                                            Profile Settings-->
-                                    <!--                                        </a>-->
-                                    <!--                                    </li>-->
                                 </ul>
                             </div>
+                    
                         </div>
                     </div>
                 </div>
-
                 <!-- Quick Stats Row -->
                 <div class="row mb-4" id="quickStatsRow">
                     <!-- ESS Snapshot Heading -->
