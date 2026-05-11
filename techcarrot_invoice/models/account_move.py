@@ -17,6 +17,34 @@ class AccountMove(models.Model):
             for line in self.invoice_line_ids:
                 if not line.project_code:
                     line.project_code = self.project_id.project_code
+    def get_extra_print_items(self):
+        print_items = []
+        posted_moves = self.filtered(lambda move: move.state == 'posted')
+
+        can_export_xml = any(
+            (
+                    move.ubl_cii_xml_id
+                    or (
+                            move.commercial_partner_id
+                            and (
+                                    (edi_format := move.commercial_partner_id.with_company(
+                                        move.company_id)._get_ubl_cii_edi_format())
+                                    and move._need_ubl_cii_xml(edi_format)
+                            )
+                    )
+            )
+            for move in posted_moves
+        )
+
+        if can_export_xml:
+            print_items.append({
+                'key': 'download_ubl',
+                'description': _('Export XML'),
+                **posted_moves.action_invoice_download_ubl(),
+            })
+        return print_items
+
+
     
     def action_update_project_codes(self):
         """Update all invoice lines with the selected project code"""
@@ -81,6 +109,7 @@ class AccountMove(models.Model):
         else:
             partner_shipping_id = False
         return partner_shipping_id
+
 
 
 class AccountMoveSend(models.AbstractModel):
@@ -154,22 +183,24 @@ class AccountMoveLine(models.Model):
                     emp_product = self.env['product.product'].sudo().search([('employee_id', '=', employee.id)], limit=1)
                     if emp_product:
                         val['product_id'] = emp_product.id
-                # While running payroll a check is implemented which is checking availability of emp product in Dubai company. it is commented and will be checked later for introduction
                 #     else:
                 #         raise ValidationError(_('Employee master not found. Employee ID: %s', emp_code))
                 # else:
                 #     raise ValidationError(_('Employee master not found. Employee ID: %s', emp_code))
 
         res = super(AccountMoveLine, self).create(vals)
-        
+
         # Set project code automatically from linked sale order
         for line in res:
             if line.sale_line_ids and not line.project_code:
                 sale_line = line.sale_line_ids[0]
                 if sale_line.order_id.project_id and sale_line.order_id.project_id.project_code:
                     line.project_code = sale_line.order_id.project_id.project_code
-                    
+
         return res
+
+
+    # //////////////////////////////////////////////
 
     # domain_project_ids = fields.Many2many('project.project', compute='_compute_project_ids')
 

@@ -386,6 +386,13 @@ class Rentals(models.Model):
                                 planned_worked = \
                                 line.product_id.sudo().employee_id._get_work_days_data_batch(range_start, range_end, calendar=line.product_id.sudo().employee_id.resource_calendar_id) \
                                                         [line.product_id.sudo().employee_id.id]['days']
+
+                                total_weekends = sum(
+                                    1 for i in range((range_end - range_start).days + 1)
+                                    if (range_start + timedelta(days=i)).weekday() >= 5
+                                )
+                                planned_worked-=total_weekends
+
                                 if planned_worked > 0:
                                     uom = 'days'
                                     if line.product_uom_id.name == 'Days':

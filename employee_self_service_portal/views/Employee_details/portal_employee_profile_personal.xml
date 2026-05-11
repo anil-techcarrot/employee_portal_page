@@ -339,40 +339,45 @@
                                            t-att-value="employee.lang or ''"
                                            data-always-readonly="1" readonly="readonly"/>
                                 </div>
+
+                                <!-- ══════════════════════════════════════════════════════ -->
+                                <!-- BLOOD GROUP FIX: option values changed from           -->
+                                <!-- a_pos/b_pos/etc → a+/b+/etc to match DB stored keys  -->
+                                <!-- ══════════════════════════════════════════════════════ -->
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Blood Group</label>
                                     <select name="blood_group" class="form-select" disabled="disabled">
                                         <option value="">-- Select Blood Group --</option>
-                                        <option value="a_pos"
-                                                t-att-selected="'selected' if employee.blood_group == 'a_pos' else None">
+                                        <option value="a+"
+                                                t-att-selected="'selected' if employee.blood_group == 'a+' else None">
                                             A+
                                         </option>
-                                        <option value="a_neg"
-                                                t-att-selected="'selected' if employee.blood_group == 'a_neg' else None">
+                                        <option value="a-"
+                                                t-att-selected="'selected' if employee.blood_group == 'a-' else None">
                                             A-
                                         </option>
-                                        <option value="b_pos"
-                                                t-att-selected="'selected' if employee.blood_group == 'b_pos' else None">
+                                        <option value="b+"
+                                                t-att-selected="'selected' if employee.blood_group == 'b+' else None">
                                             B+
                                         </option>
-                                        <option value="b_neg"
-                                                t-att-selected="'selected' if employee.blood_group == 'b_neg' else None">
+                                        <option value="b-"
+                                                t-att-selected="'selected' if employee.blood_group == 'b-' else None">
                                             B-
                                         </option>
-                                        <option value="ab_pos"
-                                                t-att-selected="'selected' if employee.blood_group == 'ab_pos' else None">
+                                        <option value="ab+"
+                                                t-att-selected="'selected' if employee.blood_group == 'ab+' else None">
                                             AB+
                                         </option>
-                                        <option value="ab_neg"
-                                                t-att-selected="'selected' if employee.blood_group == 'ab_neg' else None">
+                                        <option value="ab-"
+                                                t-att-selected="'selected' if employee.blood_group == 'ab-' else None">
                                             AB-
                                         </option>
-                                        <option value="o_pos"
-                                                t-att-selected="'selected' if employee.blood_group == 'o_pos' else None">
+                                        <option value="o+"
+                                                t-att-selected="'selected' if employee.blood_group == 'o+' else None">
                                             O+
                                         </option>
-                                        <option value="o_neg"
-                                                t-att-selected="'selected' if employee.blood_group == 'o_neg' else None">
+                                        <option value="o-"
+                                                t-att-selected="'selected' if employee.blood_group == 'o-' else None">
                                             O-
                                         </option>
                                         <option value="unknown"
@@ -381,6 +386,8 @@
                                         </option>
                                     </select>
                                 </div>
+                                <!-- ══ END BLOOD GROUP FIX ══ -->
+
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Religion</label>
                                     <input type="text" class="form-control"
@@ -534,7 +541,8 @@
                                             </a>
                                         </div>
                                     </t>
-                                    <input type="file" name="has_work_permit" class="form-control file-upload-input" disabled="disabled"/>
+                                    <input type="file" name="has_work_permit" class="form-control file-upload-input"
+                                           disabled="disabled"/>
                                 </div>
                             </div>
                         </div>
@@ -1286,7 +1294,8 @@
                                            t-att-value="portal_overlay.get('phone_code_1') or employee.phone_code_1 or ''"
                                            readonly="readonly"
                                            placeholder="+91, +971"
-                                           data-validation="phone"/>
+
+                                    />
                                     <div class="invalid-feedback"></div>
                                     <small class="text-muted">E.g. +91, +971</small>
                                 </div>
@@ -1849,7 +1858,7 @@
                         </div>
                         <div class="card-body">
                             <div class="row g-3">
-                                <!-- Issue 5 & 6: file inputs have data-prev-file and are disabled by default -->
+                                <!-- Issue 5 &amp; 6: file inputs have data-prev-file and are disabled by default -->
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">
                                         <i class="fa fa-id-card text-muted me-1"></i>Emirates ID Copy
@@ -1987,19 +1996,14 @@ let activeProfileTab = 'basic';
 
 /* ── Issue 8: display write_date in browser's local timezone ── */
 (function fixLastUpdatedTimezone() {
-    /* The server renders UTC time in the text; we convert it to the
-       browser's local timezone so the displayed time matches the user's clock. */
     var el = document.getElementById('profileLastUpdated');
     if (!el) return;
     var raw = el.textContent.trim();
     if (!raw || raw === 'Never') return;
-    /* Parse format: "28 Apr, 2025 at 03:45 PM"  (server UTC) */
     try {
-        /* Replace non-breaking spaces and normalise */
         raw = raw.replace(/\u00a0/g, ' ').trim();
         var dt = new Date(raw);
         if (isNaN(dt.getTime())) {
-            /* Try manual parse: "DD Mon, YYYY at HH:MM AM/PM" */
             var m = raw.match(/(\d{1,2})\s+(\w+),?\s+(\d{4})\s+at\s+(\d{1,2}):(\d{2})\s*(AM|PM)/i);
             if (m) {
                 var months = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
@@ -2008,7 +2012,6 @@ let activeProfileTab = 'basic';
                 var isPM = m[6].toUpperCase()==='PM';
                 if (isPM && hr < 12) hr += 12;
                 if (!isPM && hr === 12) hr = 0;
-                /* server stores UTC; construct a UTC date */
                 dt = new Date(Date.UTC(parseInt(m[3],10), monIdx, parseInt(m[1],10), hr, parseInt(m[5],10)));
             }
         }
@@ -2051,7 +2054,6 @@ function switchProfileTab(tabKey) {
 }
 
 function syncAndToggleEditMode(sourceCheckbox) {
-    /* Issue 4: block editing when pending */
     if (PENDING_LOCKED) {
         sourceCheckbox.checked = false;
         alert('Editing is disabled while your profile update is pending HR review.');
@@ -2062,7 +2064,6 @@ function syncAndToggleEditMode(sourceCheckbox) {
 }
 
 function enableEditMode() {
-    /* Issue 4: block editing when pending */
     if (PENDING_LOCKED) {
         alert('Editing is disabled while your profile update is pending HR review.');
         return;
@@ -2072,7 +2073,6 @@ function enableEditMode() {
     document.querySelectorAll('.edit-mode-toggle').forEach(t => t.checked = true);
     storeOriginalFormData();
 
-    /* Issue 10: change Edit Profile button appearance */
     var editBtn = document.getElementById('editProfileBtn');
     if (editBtn) {
         editBtn.classList.remove('btn-outline-primary');
@@ -2090,7 +2090,6 @@ function enableEditMode() {
             input.style.setProperty('background-color', '#e9ecef');
             return;
         }
-        /* Issue 6: enable file inputs in edit mode */
         if (input.type === 'file') {
             input.removeAttribute('disabled');
             return;
@@ -2108,12 +2107,9 @@ function enableEditMode() {
     const btn = document.getElementById('personalSaveBtn');
     if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
 
-    /* Issue 5: attach change listener to file inputs to prevent accidental clearing */
     document.querySelectorAll('#personalDetailsForm input[type="file"].file-upload-input').forEach(fileInput => {
         fileInput.addEventListener('change', function() {
-            /* If user cancels the file dialog, files list is empty — do nothing (keep previous) */
             if (this.files && this.files.length === 0) {
-                /* Reset the input to avoid sending an empty file that removes the previous one */
                 this.value = '';
             }
         });
@@ -2137,7 +2133,6 @@ function disableEditMode() {
     localStorage.removeItem('profileDraft');
     document.querySelectorAll('.edit-mode-toggle').forEach(t => t.checked = false);
 
-    /* Issue 10: restore Edit Profile button */
     var editBtn = document.getElementById('editProfileBtn');
     if (editBtn) {
         editBtn.classList.remove('btn-primary', 'edit-active');
@@ -2155,15 +2150,13 @@ function disableEditMode() {
             input.style.setProperty('background-color', '#e9ecef');
             return;
         }
-        /* Issue 6: disable file inputs in non-edit mode */
         if (input.type === 'file') {
             input.setAttribute('disabled', 'disabled');
-            input.value = ''; /* clear selection */
+            input.value = '';
             return;
         }
         input.setAttribute('readonly', 'readonly');
         if (input.tagName === 'SELECT' || input.type === 'checkbox') input.setAttribute('disabled', 'disabled');
-        /* Issue 7: remove is-valid class so green tick does not show in non-edit mode */
         input.classList.remove('is-valid', 'is-invalid');
         input.style.removeProperty('pointer-events');
         input.style.removeProperty('background-color');
@@ -2229,9 +2222,7 @@ function hideSaveError() {
     if (box) box.style.display = 'none';
 }
 
-/* Issue 7: validateField should NOT add is-valid in non-edit mode */
 function validateField(event) {
-    /* Skip validation entirely when not in edit mode — Issue 7 fix */
     if (!isEditMode) return true;
 
     const field = event.target;
@@ -2273,8 +2264,8 @@ function validateField(event) {
                 case 'isd-code':
                     const isdCleaned = val.replace(/\s/g, '');
                     if (!/^\+[1-9][0-9]{0,2}$/.test(isdCleaned)) {
-                      isValid = false;
-                      errorMessage = 'ISD code must start with + followed by 1-3 digits (e.g. +91, +971, +1, +44).';
+                        isValid = false;
+                        errorMessage = 'ISD code must start with + followed by 1-3 digits (e.g. +91, +971, +1, +44).';
                     }
                     break;
                 case 'digits-only':
@@ -2314,7 +2305,6 @@ function validateField(event) {
     }
     if (field.value.trim() || !isValid) {
         if (isValid) {
-            /* Issue 7: only add is-valid when in edit mode AND field has been touched */
             if (isEditMode) field.classList.add('is-valid');
         } else {
             field.classList.add('is-invalid');
@@ -2387,7 +2377,6 @@ function showTabMessage(tabKey, text, type) {
 document.getElementById('personalDetailsForm').addEventListener('submit', function(e) {
     e.preventDefault();
 
-    /* Issue 4: block submit when pending */
     if (PENDING_LOCKED) {
         showSaveError('<i class="fa fa-lock me-2"></i>Editing is locked while your submission is pending HR review.');
         return;
@@ -2473,13 +2462,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     switchProfileTab(activeProfileTab);
 
-    /* Always force edit mode OFF on every page load */
     document.querySelectorAll('.edit-mode-toggle').forEach(t => t.checked = false);
     document.getElementById('formActions').style.display = 'none';
     document.getElementById('viewActions').style.display = 'block';
     isEditMode = false;
 
-    /* Issue 6: Ensure all file inputs start disabled */
     document.querySelectorAll('#personalDetailsForm input[type="file"].file-upload-input').forEach(fi => {
         fi.setAttribute('disabled', 'disabled');
     });
@@ -2523,7 +2510,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    /* Issue 4: Hide edit toggles when pending */
     if (PENDING_LOCKED) {
         document.querySelectorAll('.edit-mode-toggle').forEach(t => {
             t.closest('.form-check.form-switch') && (t.closest('.form-check.form-switch').style.display = 'none');
@@ -2553,9 +2539,7 @@ document.addEventListener('DOMContentLoaded', function() {
 .form-switch .form-check-input { background-color: #6c757d; }
 .form-switch .form-check-input:checked { background-color: #0d6efd; border-color: #0d6efd; }
 .tab-message-box { border-radius: 0.5rem; font-weight: 500; }
-/* Issue 10: active edit button */
 #editProfileBtn.edit-active { box-shadow: 0 0 0 3px rgba(13,110,253,0.35); }
-/* Issue 6: disabled file input styling */
 input[type="file"]:disabled { background-color: #e9ecef; cursor: not-allowed; opacity: 0.65; }
 @media (max-width: 768px) { .card-body { padding: 1rem; } .row.g-3 > * { margin-bottom: 1rem; } .profile-tab-navigation .nav-link { font-size: 0.85rem; padding: 0.4rem 0.6rem; } }
                     ]]>
