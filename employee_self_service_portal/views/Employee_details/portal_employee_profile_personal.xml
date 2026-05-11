@@ -2272,7 +2272,10 @@ function validateField(event) {
                     break;
                 case 'isd-code':
                     const isdCleaned = val.replace(/\s/g, '');
-                    if (!/^\+?[0-9]+$/.test(isdCleaned)) { isValid = false; errorMessage = 'Phone number must contain digits only. A leading + is allowed.'; }
+                    if (!/^\+[1-9][0-9]{0,2}$/.test(isdCleaned)) {
+                      isValid = false;
+                      errorMessage = 'ISD code must start with + followed by 1-3 digits (e.g. +91, +971, +1, +44).';
+                    }
                     break;
                 case 'digits-only':
                     if (!/^[0-9]+$/.test(val)) { isValid = false; errorMessage = 'This field must contain digits only.'; }
