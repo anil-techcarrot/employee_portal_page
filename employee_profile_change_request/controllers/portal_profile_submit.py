@@ -2,12 +2,22 @@
 import json
 import logging
 import re
+import base64
+
 from odoo import http
 from odoo.http import request
 
 _logger = logging.getLogger(__name__)
 
-# ── ALL editable fields including ALL tabs ────────────────────────────────────
+# ── Many2one fields — submitted as integer IDs from country dropdowns ─────────
+MANY2ONE_FIELDS = {
+    'nationality_at_birth_id',
+    'country_id',
+    'issue_countries_id',
+    'countries_id',
+}
+
+# ── ALL editable text/select fields ───────────────────────────────────────────
 EDITABLE_FIELDS = [
     # Basic Info — Contact
     'work_phone', 'private_email', 'private_phone',
@@ -18,9 +28,17 @@ EDITABLE_FIELDS = [
 
     # Basic Info — Personal
     'blood_group',
+    'gender', 'birthday',
 
-    # Basic Info — Identity (editable ones)
+    # Basic Info — Identity
     'issue_date', 'expiry_date',
+    'emirates_id_number', 'emirates_expiry_date',
+    'passport_id', 'identification_id', 'ssnid', 'visa_no', 'permit_no',
+
+    # Basic Info — Country dropdowns (Many2one — sent as int IDs)
+    'nationality_at_birth_id',
+    'country_id',
+    'issue_countries_id',
 
     # Basic Info — Emergency
     'l10n_in_relationship', 'emergency_phone', 'e_private_city',
@@ -54,6 +72,7 @@ EDITABLE_FIELDS = [
     'father_name', 'father_dob',
     'mother_name', 'mother_dob',
     'children', 'career_break_detail',
+    'marital',
 
     # Professional — Nominee
     'employee_nominee_name', 'employee_nominee_contact_no',
@@ -68,7 +87,7 @@ EDITABLE_FIELDS = [
 
     # Professional — Work Location
     'u_private_city', 'current_address', 'phone_code_1',
-    'house_no', 'area_name', 'city', 'zip_code',
+    'house_no', 'area_name', 'city', 'zip_code', 'countries_id',
 
     # Professional — General
     'experience', 'current_role', 'industry_start_date',
@@ -80,15 +99,12 @@ EDITABLE_FIELDS = [
     'last_report_manager_designation', 'last_report_manager_mob_no',
     'last_report_manager_mail',
 
-    # Professional — Career
-    'career_break_detail',
-
     # Professional — Industry Details
     'previous_company_name', 'designation', 'period_in_company',
     'reason_of_leaving',
 ]
 
-# File upload fields — handled separately
+# File upload fields
 FILE_FIELDS = [
     'emirates_id_file',
     'passport_file',
@@ -97,6 +113,7 @@ FILE_FIELDS = [
 ]
 
 EMAIL_PATTERN = re.compile(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+ISD_PATTERN   = re.compile(r'^\+[1-9][0-9]{0,2}$')
 
 
 class EmployeePortalProfileSubmit(http.Controller):
@@ -182,7 +199,7 @@ class EmployeePortalProfileSubmit(http.Controller):
 
     def _handle_post(self, employee, post):
         try:
-            # ── Validate email fields ─────────────────────────────
+            # ── Email validation ──────────────────────────────────
             for field in ['private_email', 'industry_ref_email', 'last_report_manager_mail']:
                 val = post.get(field, '').strip()
                 if val and not EMAIL_PATTERN.match(val):
@@ -191,15 +208,22 @@ class EmployeePortalProfileSubmit(http.Controller):
                         'error': f'Invalid email format: {field}'
                     })
 
+            # ── ISD validation ────────────────────────────────────
+            isd_val = post.get('phone_code_1', '').strip()
+            if isd_val and not ISD_PATTERN.match(isd_val):
+                return request.make_json_response({
+                    'success': False,
+                    'error': 'ISD code must start with + followed by 1-3 digits (e.g. +91, +971)'
+                })
+
             # ── Collect text/select fields ────────────────────────
             submitted = {}
             for field in EDITABLE_FIELDS:
                 val = post.get(field)
-                if val is not None and str(val).strip():
+                if val is not None:
                     submitted[field] = str(val).strip()
 
-            # ── Collect uploaded file fields ──────────────────────
-            # Issue 20 fix: check request.httprequest.files for actual uploads
+            # ── File fields ───────────────────────────────────────
             files_submitted = {}
             for field in FILE_FIELDS:
                 file_obj = request.httprequest.files.get(field)
@@ -209,53 +233,68 @@ class EmployeePortalProfileSubmit(http.Controller):
             if not submitted and not files_submitted:
                 return request.make_json_response({
                     'success': False,
-                    'error': 'No data was submitted.'
+                    'error': 'No data submitted.'
                 })
 
-            # ── Compare text fields against current values ────────
-            # Issue 21 fix: include blood_group, issue_date, expiry_date
+            # ── Compare submitted vs current ──────────────────────
             changed = {}
+
             for field, new_val in submitted.items():
+                # ── Many2one fields (country dropdowns) ────────────
+                if field in MANY2ONE_FIELDS:
+                    try:
+                        new_id = int(new_val) if new_val else 0
+                        current_rec = getattr(employee, field, False)
+                        current_id = current_rec.id if current_rec else 0
+
+                        if new_id and new_id != current_id:
+                            # Get country name
+                            country = request.env['res.country'].sudo().browse(new_id)
+
+                            changed[field] = country.name or ''
+
+                    except (ValueError, TypeError):
+                        pass
+                    continue
+
+                # ── Regular string fields ──────────────────────────
                 try:
                     current = getattr(employee, field, None)
                     if hasattr(current, 'name'):
-                        current_str = str(current.name) if current else ''
-                    elif current is False or current is None:
+                        current_str = current.name or ''
+                    elif current in (False, None):
                         current_str = ''
                     else:
                         current_str = str(current)
                     if new_val.strip() != current_str.strip():
                         changed[field] = new_val
                 except Exception:
-                    changed[field] = new_val
+                    if new_val:
+                        changed[field] = new_val
 
-            # ── Write uploaded files directly to employee record ──
-            # Issue 20 fix: files are written immediately on submission
-            # They are stored as binary on the employee record
+            # ── File uploads ──────────────────────────────────────
             file_changed_fields = {}
             for field, file_obj in files_submitted.items():
                 try:
-                    import base64
                     file_data = base64.b64encode(file_obj.read()).decode('utf-8')
                     file_changed_fields[field] = file_data
-                    # Mark in submitted_data that a file was uploaded
                     changed[field] = f'[FILE:{file_obj.filename}]'
                 except Exception as e:
-                    _logger.warning('Failed to read uploaded file %s: %s', field, e)
+                    _logger.warning('File upload failed for %s: %s', field, e)
 
             if not changed and not file_changed_fields:
                 return request.make_json_response({
                     'success': True, 'reference': '',
-                    'message': 'No changes detected. Nothing was saved.',
                     'no_change': True,
+                    'message': 'No changes detected. Your profile is already up to date.',
                 })
 
             # ── Write files directly to employee ──────────────────
             if file_changed_fields:
                 employee.sudo().write(file_changed_fields)
 
-            # ── Create PCR for text field changes ─────────────────
-            # Include file upload markers in submitted_data
+            # ── Create PCR ────────────────────────────────────────
+            ref = ''
             if changed:
                 req = request.env['hr.profile.change.request'].sudo().create({
                     'employee_id':    employee.id,
@@ -264,17 +303,13 @@ class EmployeePortalProfileSubmit(http.Controller):
                 })
                 req.action_submit()
                 ref = req.name
-                _logger.info(
-                    'PCR %s created for %s — %d field(s), %d file(s)',
-                    ref, employee.name, len(changed), len(file_changed_fields)
-                )
-            else:
-                # Only files were uploaded, no text changes
-                ref = ''
+                _logger.info('PCR %s created for %s — %d fields changed',
+                             ref, employee.name, len(changed))
 
             return request.make_json_response({
                 'success':   True,
                 'reference': ref,
+                'no_change': False,
                 'message':   (
                     'Your changes have been submitted. HR will review and notify you.'
                     if ref else
@@ -283,11 +318,7 @@ class EmployeePortalProfileSubmit(http.Controller):
             })
 
         except Exception as e:
-            _logger.error(
-                'Error processing profile change for %s: %s',
-                employee.name, str(e)
-            )
+            _logger.error('Profile change error for %s: %s', employee.name, str(e))
             return request.make_json_response({'success': False, 'error': str(e)})
-
 
 
