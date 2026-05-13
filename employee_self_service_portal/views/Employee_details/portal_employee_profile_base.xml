@@ -13,12 +13,12 @@
                             <small style="color:rgba(255,255,255,0.8);">Manage your personal information and settings
                             </small>
                         </div>
-                        <div class="d-flex gap-2">
+                        <!-- <div class="d-flex gap-2">
                             <span class="badge" style="background:#ffffff;color:#2C5832;font-weight:600;">
                                 <i class="fa fa-chart-pie me-1"></i>
                                 Profile Management
                             </span>
-                        </div>
+                        </div> -->
                     </div>
                     <div class="card-body p-4" style="background:#ffffff;">
                         <div class="row align-items-center">

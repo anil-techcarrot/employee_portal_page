@@ -327,7 +327,7 @@
                         <div class="row g-4">
 
                             <!-- Profile Card -->
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="module-card card border-0 shadow-sm h-100">
                                     <div class="card-body">
                                         <div class="d-flex align-items-center mb-3">
@@ -407,7 +407,7 @@
 
                             <!-- Attendance Card -->
                             <t t-if="has_attendance_access">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <div class="module-card card border-0 shadow-sm h-100">
                                         <div class="card-body">
                                             <div class="d-flex align-items-center mb-3">
@@ -543,7 +543,7 @@
 
                             <!-- CRM Card -->
                             <t t-if="has_crm_access">
-                                <div class="col-md-6">
+                                <div class="4">
                                     <div class="module-card card border-0 shadow-sm h-100">
                                         <div class="card-body">
                                             <div class="d-flex align-items-center mb-3">
@@ -586,7 +586,7 @@
 
                             <!-- Expenses Card -->
                             <t t-if="has_expenses_access">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <div class="module-card card border-0 shadow-sm h-100">
                                         <div class="card-body">
                                             <div class="d-flex align-items-center mb-3">
@@ -641,7 +641,7 @@
 
                             <!-- Payslips Card -->
                             <t t-if="has_payslip_access">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <div class="module-card card border-0 shadow-sm h-100">
                                         <div class="card-body">
 
