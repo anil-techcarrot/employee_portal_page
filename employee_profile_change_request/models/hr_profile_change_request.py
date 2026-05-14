@@ -14,8 +14,15 @@ FIELD_LABELS = {
     'whatsapp': 'WhatsApp', 'linkedin': 'LinkedIn',
     'legal_name': 'Legal Name', 'facebook_profile': 'Facebook Profile',
     'insta_profile': 'Instagram Profile', 'twitter_profile': 'Twitter Profile',
-    'blood_group': 'Blood Group',
+    'blood_group': 'Blood Group', 'lang': 'Payslip Language',
     'issue_date': 'Passport Issue Date', 'expiry_date': 'Passport Expiry Date',
+    'emirates_id_number': 'Emirates ID', 'emirates_expiry_date': 'Emirates ID Expiry',
+    'passport_id': 'Passport Number', 'identification_id': 'Identification No',
+    'ssnid': 'SSN No', 'visa_no': 'Visa No', 'permit_no': 'Work Permit No',
+    'nationality_at_birth_id': 'Nationality At Birth',
+    'country_id': 'Nationality',
+    'issue_countries_id': 'Passport Issuing Country',
+    'countries_id': 'Country',
     'l10n_in_relationship': 'Emergency Relationship',
     'emergency_phone': 'Emergency Phone', 'e_private_city': 'Emergency Address',
     'emergency_contact_person_name': 'Emergency Contact Name',
@@ -47,6 +54,7 @@ FIELD_LABELS = {
     'father_name': 'Father Name', 'father_dob': 'Father DOB',
     'mother_name': 'Mother Name', 'mother_dob': 'Mother DOB',
     'children': 'No. of Children', 'career_break_detail': 'Career Break Detail',
+    'marital': 'Marital Status',
     'employee_nominee_name': 'Nominee Name',
     'employee_nominee_contact_no': 'Nominee Contact No',
     'domain_worked': 'Domains Worked', 'primary_skill': 'Primary Skills',
@@ -74,38 +82,80 @@ FIELD_LABELS = {
     'previous_company_name': 'Previous Company Name',
     'designation': 'Designation', 'period_in_company': 'Period in Company',
     'reason_of_leaving': 'Reason of Leaving',
-    # File fields
     'emirates_id_file': 'Emirates ID Copy',
     'passport_file': 'Passport Copy',
     'other_documents': 'Other Documents',
     'has_work_permit': 'Work Permit File',
-    'lang': 'Payslip Language',
+    'religion': 'Religion',
+    'country_residences_id': 'Country of Residency',
+    'states_id': 'State',
 }
 
-# Human-readable labels for coded selection/language values
+# ─────────────────────────────────────────────────────────────────────────────
+# MANY2ONE_FIELDS — stored as integer IDs in submitted_data
+# The controller stores the raw integer ID (e.g. "105")
+# action_approve must write int(v) for these fields
+# _compute_changed_fields_display must resolve int → country name for display
+# ─────────────────────────────────────────────────────────────────────────────
+MANY2ONE_FIELDS = {
+    'nationality_at_birth_id',
+    'country_id',
+    'issue_countries_id',
+    'countries_id',
+    'country_residences_id',
+    'states_id',
+}
+
+MANY2ONE_MODEL_MAP = {
+    'nationality_at_birth_id': 'res.country',
+    'country_id':              'res.country',
+    'issue_countries_id':      'res.country',
+    'countries_id':            'res.country',
+    'country_residences_id':   'res.country',
+    'states_id':               'res.country.state',
+}
+
+# Selection fields — value is the stored key string
+SELECTION_FIELDS = {
+    'blood_group', 'sex', 'marital', 'dependent_child_gender_1', 'religion',
+
+}
+
+# Skip these during approval write
+SKIP_ON_APPROVE = {
+    'csrf_token', 'submit',
+    'emirates_id_file', 'passport_file', 'other_documents', 'has_work_permit',
+}
+
+# Human-readable labels for selection coded values
 CODED_VALUE_LABELS = {
-    'lang': {
-        'en_US': 'English', 'ar_001': 'Arabic', 'fr_FR': 'French',
-        'de_DE': 'German', 'es_ES': 'Spanish', 'hi_IN': 'Hindi',
-        'ur_PK': 'Urdu', 'ml_IN': 'Malayalam', 'ta_IN': 'Tamil',
-        'tl_PH': 'Filipino',
+    'religion': {
+        'christianity': 'Christianity',
+        'islam': 'Islam',
+        'hinduism': 'Hinduism',
+        'buddhism': 'Buddhism',
+        'sikhism': 'Sikhism',
+        'judaism': 'Judaism',
+        'bahai': "Baha'i",
+        'jainism': 'Jainism',
+        'shinto': 'Shinto',
+        'taoism': 'Taoism',
+        'confucianism': 'Confucianism',
+        'zoroastrianism': 'Zoroastrianism',
     },
+
     'blood_group': {
         'a+': 'A+', 'a-': 'A-', 'b+': 'B+', 'b-': 'B-',
         'ab+': 'AB+', 'ab-': 'AB-', 'o+': 'O+', 'o-': 'O-',
         'unknown': 'Unknown',
     },
-    'sex': {
-        'male': 'Male', 'female': 'Female', 'other': 'Other',
-    },
+    'sex': {'male': 'Male', 'female': 'Female', 'other': 'Other'},
     'marital': {
         'single': 'Single', 'married': 'Married',
         'cohabitant': 'Legal Cohabitant',
         'widower': 'Widower', 'divorced': 'Divorced',
     },
-    'dependent_child_gender_1': {
-        'male': 'Male', 'female': 'Female', 'other': 'Other',
-    },
+    'dependent_child_gender_1': {'male': 'Male', 'female': 'Female', 'other': 'Other'},
 }
 
 
@@ -118,6 +168,7 @@ class HrProfileChangeRequest(models.Model):
 
     _check_company_auto = False
 
+    # ── Core fields ───────────────────────────────────────────────
     name = fields.Char(
         string='Reference', required=True, copy=False,
         readonly=True, default='New',
@@ -149,46 +200,36 @@ class HrProfileChangeRequest(models.Model):
         'res.company', string='Company',
         default=lambda self: self.env.company,
     )
-    submitted_data    = fields.Text(string='Submitted Data (JSON)', readonly=True)
+    submitted_data = fields.Text(string='Submitted Data (JSON)', readonly=True)
     changed_fields_display = fields.Html(
         string='Submitted Changes',
         compute='_compute_changed_fields_display',
         sanitize=False,
     )
-    submission_date   = fields.Datetime(string='Submitted On', default=fields.Datetime.now, readonly=True)
-    review_date       = fields.Datetime(string='Reviewed On', readonly=True)
-    reviewed_by       = fields.Many2one(comodel_name='res.users', string='Reviewed By', readonly=True)
-    rejection_reason  = fields.Text(string='Rejection Reason', tracking=True)
-    trail_ids         = fields.One2many(
+    submission_date = fields.Datetime(
+        string='Submitted On', default=fields.Datetime.now, readonly=True,
+    )
+    review_date     = fields.Datetime(string='Reviewed On', readonly=True)
+    reviewed_by     = fields.Many2one(comodel_name='res.users', string='Reviewed By', readonly=True)
+    rejection_reason = fields.Text(string='Rejection Reason', tracking=True)
+    trail_ids = fields.One2many(
         comodel_name='hr.profile.change.request.trail',
         inverse_name='request_id', string='Audit Trail', readonly=True,
     )
 
-    # ── Document upload tracking — Issue 20 fix ───────────────────
+    # ── Document upload tracking ──────────────────────────────────
     has_emirates_id_doc = fields.Boolean(
-        string='Emirates ID Uploaded',
-        compute='_compute_doc_flags', store=True,
-    )
+        string='Emirates ID Uploaded', compute='_compute_doc_flags', store=True)
     has_passport_doc = fields.Boolean(
-        string='Passport Uploaded',
-        compute='_compute_doc_flags', store=True,
-    )
+        string='Passport Uploaded', compute='_compute_doc_flags', store=True)
     has_other_doc = fields.Boolean(
-        string='Other Doc Uploaded',
-        compute='_compute_doc_flags', store=True,
-    )
+        string='Other Doc Uploaded', compute='_compute_doc_flags', store=True)
     has_work_permit_doc = fields.Boolean(
-        string='Work Permit Uploaded',
-        compute='_compute_doc_flags', store=True,
-    )
+        string='Work Permit Uploaded', compute='_compute_doc_flags', store=True)
     has_any_doc = fields.Boolean(
-        string='Has Any Document',
-        compute='_compute_doc_flags', store=True,
-    )
+        string='Has Any Document', compute='_compute_doc_flags', store=True)
     total_docs_uploaded = fields.Integer(
-        string='Total Documents Uploaded',
-        compute='_compute_doc_flags', store=True,
-    )
+        string='Total Documents', compute='_compute_doc_flags', store=True)
 
     @api.depends('submitted_data')
     def _compute_doc_flags(self):
@@ -224,9 +265,7 @@ class HrProfileChangeRequest(models.Model):
             if not hr_group:
                 return self.env['res.users']
             self.env.cr.execute(
-                'SELECT uid FROM res_groups_users_rel WHERE gid = %s',
-                [hr_group.id]
-            )
+                'SELECT uid FROM res_groups_users_rel WHERE gid = %s', [hr_group.id])
             user_ids = [row[0] for row in self.env.cr.fetchall()]
             if not user_ids:
                 return self.env['res.users']
@@ -256,8 +295,7 @@ class HrProfileChangeRequest(models.Model):
     def search(self, domain, offset=0, limit=None, order=None):
         if self._is_hr_reviewer() and not self.env.su:
             return super(HrProfileChangeRequest, self.sudo()).search(
-                domain, offset=offset, limit=limit, order=order,
-            )
+                domain, offset=offset, limit=limit, order=order)
         return super().search(domain, offset=offset, limit=limit, order=order)
 
     @api.model
@@ -270,8 +308,7 @@ class HrProfileChangeRequest(models.Model):
     def _search(self, domain, offset=0, limit=None, order=None, **kwargs):
         if self._is_hr_reviewer() and not self.env.su:
             return super(HrProfileChangeRequest, self.sudo())._search(
-                domain, offset=offset, limit=limit, order=order, **kwargs
-            )
+                domain, offset=offset, limit=limit, order=order, **kwargs)
         return super()._search(domain, offset=offset, limit=limit, order=order, **kwargs)
 
     def read_group(self, domain, fields, groupby, offset=0, limit=None,
@@ -279,12 +316,10 @@ class HrProfileChangeRequest(models.Model):
         if self._is_hr_reviewer() and not self.env.su:
             return super(HrProfileChangeRequest, self.sudo()).read_group(
                 domain, fields, groupby, offset=offset, limit=limit,
-                orderby=orderby, lazy=lazy,
-            )
+                orderby=orderby, lazy=lazy)
         return super().read_group(
             domain, fields, groupby, offset=offset, limit=limit,
-            orderby=orderby, lazy=lazy,
-        )
+            orderby=orderby, lazy=lazy)
 
     # ── Sequence ──────────────────────────────────────────────────
     @api.model_create_multi
@@ -293,8 +328,7 @@ class HrProfileChangeRequest(models.Model):
             name_val = vals.get('name', '')
             if not name_val or not name_val.startswith('PCR/'):
                 seq = self.env['ir.sequence'].sudo().next_by_code(
-                    'hr.profile.change.request'
-                )
+                    'hr.profile.change.request')
                 if seq:
                     vals['name'] = seq
                 else:
@@ -313,24 +347,43 @@ class HrProfileChangeRequest(models.Model):
                 rows = ''
                 for key, new_val in data.items():
                     label = FIELD_LABELS.get(key, key.replace('_', ' ').title())
-                    # Skip binary file data in display
+
+                    # ── File upload marker ─────────────────────────
                     if new_val and str(new_val).startswith('[FILE:'):
-                        current = '—'
-                        new_val_str = str(new_val)
+                        current_display = '—'
+                        new_val_display = str(new_val)
                         is_changed = True
+
+                    # ── Many2one country fields (stored as int ID) ─
+                        # ── Many2one fields (stored as int ID) ─
+                    elif key in MANY2ONE_FIELDS:
+                        try:
+                            current_rec = getattr(rec.employee_id, key, False)
+                            current_display = current_rec.name if current_rec else '—'
+                        except Exception:
+                            current_display = '—'
+                        try:
+                            model_name = MANY2ONE_MODEL_MAP.get(key, 'res.country')
+                            linked_rec = rec.env[model_name].sudo().browse(int(str(new_val)))
+                            new_val_display = linked_rec.name if linked_rec.exists() else str(new_val)
+                        except Exception:
+                            new_val_display = str(new_val)
+                        is_changed = (new_val_display != current_display)
+                    # ── Selection / coded fields ───────────────────
                     else:
                         try:
-                            current = getattr(rec.employee_id, key, '') or ''
-                            if hasattr(current, 'name'):
-                                current = current.name or ''
-                            current = str(current)
+                            current_raw = getattr(rec.employee_id, key, '') or ''
+                            if hasattr(current_raw, 'name'):
+                                current_display = current_raw.name or '—'
+                            else:
+                                current_display = str(current_raw)
                         except Exception:
-                            current = '—'
-                        # Resolve coded values to human-readable labels
+                            current_display = '—'
                         coded_map = CODED_VALUE_LABELS.get(key, {})
-                        new_val_str = coded_map.get(str(new_val), str(new_val)) if new_val else '—'
-                        current = coded_map.get(str(current), str(current)) if current else current
-                        is_changed = new_val_str != current
+                        new_val_display = coded_map.get(str(new_val), str(new_val)) if new_val else '—'
+                        current_display = coded_map.get(str(current_display), str(current_display))
+                        is_changed = (new_val_display != current_display)
+
                     row_style = 'background:#fffde7;' if is_changed else ''
                     badge = (
                         '<span style="background:#ff9800;color:white;padding:2px 6px;'
@@ -340,8 +393,8 @@ class HrProfileChangeRequest(models.Model):
                     rows += (
                         f'<tr style="{row_style}">'
                         f'<td style="padding:8px 12px;border:1px solid #ddd;"><strong>{label}</strong></td>'
-                        f'<td style="padding:8px 12px;border:1px solid #ddd;color:#888;">{current or "—"}</td>'
-                        f'<td style="padding:8px 12px;border:1px solid #ddd;color:#2e7d32;font-weight:600;">{new_val_str}</td>'
+                        f'<td style="padding:8px 12px;border:1px solid #ddd;color:#888;">{current_display or "—"}</td>'
+                        f'<td style="padding:8px 12px;border:1px solid #ddd;color:#2e7d32;font-weight:600;">{new_val_display}</td>'
                         f'<td style="padding:8px 12px;border:1px solid #ddd;text-align:center;">{badge}</td>'
                         f'</tr>'
                     )
@@ -372,8 +425,17 @@ class HrProfileChangeRequest(models.Model):
         self._send_mail_to_hr()
         return True
 
-    # ── Approve — Issue 21 fix: write ALL fields including blood_group etc ──
+    # ── Approve ───────────────────────────────────────────────────
     def action_approve(self):
+        """
+        KEY FIX for country/nationality fields:
+        The controller now stores integer IDs (e.g. "105") for
+        Many2one country fields in submitted_data.
+        We call int(v) here to write them correctly as Many2one.
+
+        Previously the controller stored country NAMES (e.g. "India")
+        which caused int("India") to fail → 0 fields written.
+        """
         self.ensure_one()
         if self.state != 'pending':
             raise UserError(_('Only pending requests can be approved.'))
@@ -382,33 +444,83 @@ class HrProfileChangeRequest(models.Model):
         except Exception:
             raise UserError(_('Submitted data is corrupted.'))
 
-        skip_fields = {'csrf_token', 'submit'}
         write_vals = {}
 
         for k, v in data.items():
-            if k in skip_fields:
+            if k in SKIP_ON_APPROVE:
                 continue
-            # Skip file marker entries — files already written at submission
             if v and str(v).startswith('[FILE:'):
                 continue
             if v is None or v == '':
                 continue
+
+            # ─────────────────────────────────────────────────────
+            # MANY2ONE FIX: value is stored as integer string "105"
+            # Must write as int so Odoo accepts it as Many2one
+            # ─────────────────────────────────────────────────────
+            if k in MANY2ONE_FIELDS:
+                try:
+                    int_val = int(str(v))
+                    model_name = MANY2ONE_MODEL_MAP.get(k, 'res.country')
+                    linked_rec = self.env[model_name].sudo().browse(int_val)
+                    if linked_rec.exists():
+                        write_vals[k] = int_val
+                        _logger.info('PCR %s: Many2one %s = %s (%s)',
+                                     self.name, k, int_val, linked_rec.name)
+                    else:
+                        _logger.warning('PCR %s: Many2one %s id %s not found in %s',
+                                        self.name, k, int_val, model_name)
+                except (ValueError, TypeError):
+                    _logger.warning('PCR %s: Cannot convert Many2one %s value: %r',
+                                    self.name, k, v)
+                continue
+
+            #  ── Selection field validation ────────────────────────
+            if k in SELECTION_FIELDS:
+                field_obj = self.employee_id._fields.get(k)
+                if field_obj and hasattr(field_obj, 'selection'):
+                    sel = field_obj.selection
+                    valid_keys = [
+                        s[0] for s in (sel(self.employee_id) if callable(sel) else sel)
+                    ]
+                    if v not in valid_keys:
+                        _logger.warning(
+                            'PCR %s: Skipping invalid selection %s=%r (valid: %s)',
+                            self.name, k, v, valid_keys
+                        )
+                        continue
+                write_vals[k] = v
+                continue
+
+            # ── Integer coercions ─────────────────────────────────
+            if k == 'children':
+                try:    write_vals[k] = int(v)
+                except: pass
+                continue
+
+            # ── Float coercions ───────────────────────────────────
+            if k == 'last_salary_per_annum_amt':
+                try:    write_vals[k] = float(v)
+                except: pass
+                continue
+
+            # ── Normal string field ───────────────────────────────
             write_vals[k] = v
 
-        # Type coercions
-        for f in {'children'}:
-            if f in write_vals:
-                try:    write_vals[f] = int(write_vals[f])
-                except: write_vals.pop(f, None)
-        for f in {'last_salary_per_annum_amt'}:
-            if f in write_vals:
-                try:    write_vals[f] = float(write_vals[f])
-                except: write_vals.pop(f, None)
-
         if write_vals:
-            self.employee_id.sudo().write(write_vals)
-        _logger.info('PCR %s approved — %d fields written to %s.',
-                     self.name, len(write_vals), self.employee_id.name)
+            try:
+                self.employee_id.sudo().write(write_vals)
+                _logger.info(
+                    'PCR %s approved — %d fields written to %s: %s',
+                    self.name, len(write_vals),
+                    self.employee_id.name, list(write_vals.keys())
+                )
+            except Exception as e:
+                _logger.error('PCR %s: write error: %s', self.name, e)
+                raise UserError(_(
+                    'Error writing approved data to employee record: %s\n'
+                    'Fields attempted: %s'
+                ) % (str(e), ', '.join(str(k) for k in write_vals.keys())))
 
         self.write({
             'state': 'approved',
@@ -456,13 +568,14 @@ class HrProfileChangeRequest(models.Model):
 
     def _add_trail(self, action, note, reason=None):
         self.env['hr.profile.change.request.trail'].sudo().create({
-            'request_id':  self.id, 'action': action,
-            'note':        note,    'reason': reason or '',
+            'request_id':  self.id,
+            'action':      action,
+            'note':        note,
+            'reason':      reason or '',
             'user_id':     self.env.user.id,
             'action_date': fields.Datetime.now(),
         })
 
-    # ── Mail to ALL HR Reviewers ──────────────────────────────────
     def _send_mail_to_hr(self):
         try:
             hr_users = self._get_hr_reviewer_users()
@@ -472,13 +585,11 @@ class HrProfileChangeRequest(models.Model):
             hr_emails, hr_names_list = [], []
             for u in hr_users:
                 email = u.work_email or u.partner_id.email or (
-                    u.login if '@' in (u.login or '') else None
-                )
+                    u.login if '@' in (u.login or '') else None)
                 if email:
                     hr_emails.append(email)
                     hr_names_list.append(u.name)
             if not hr_emails:
-                _logger.warning('PCR %s: HR Reviewers have no email.', self.name)
                 return
             email_to = ', '.join(hr_emails)
             hr_names = ', '.join(hr_names_list)
@@ -506,16 +617,22 @@ class HrProfileChangeRequest(models.Model):
                                 <td style="padding:10px 14px;border:1px solid #ddd;font-weight:bold;width:38%;">Reference</td>
                                 <td style="padding:10px 14px;border:1px solid #ddd;">{self.name}</td>
                             </tr>
-                            <tr><td style="padding:10px 14px;border:1px solid #ddd;font-weight:bold;">Employee</td>
-                                <td style="padding:10px 14px;border:1px solid #ddd;">{self.employee_id.name}</td></tr>
+                            <tr>
+                                <td style="padding:10px 14px;border:1px solid #ddd;font-weight:bold;">Employee</td>
+                                <td style="padding:10px 14px;border:1px solid #ddd;">{self.employee_id.name}</td>
+                            </tr>
                             <tr style="background:#eef2ff;">
                                 <td style="padding:10px 14px;border:1px solid #ddd;font-weight:bold;">Company</td>
-                                <td style="padding:10px 14px;border:1px solid #ddd;">{self.company_id.name if self.company_id else '—'}</td></tr>
-                            <tr><td style="padding:10px 14px;border:1px solid #ddd;font-weight:bold;">Department</td>
-                                <td style="padding:10px 14px;border:1px solid #ddd;">{self.department_id.name or '—'}</td></tr>
+                                <td style="padding:10px 14px;border:1px solid #ddd;">{self.company_id.name if self.company_id else '—'}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:10px 14px;border:1px solid #ddd;font-weight:bold;">Department</td>
+                                <td style="padding:10px 14px;border:1px solid #ddd;">{self.department_id.name or '—'}</td>
+                            </tr>
                             <tr style="background:#eef2ff;">
                                 <td style="padding:10px 14px;border:1px solid #ddd;font-weight:bold;">Submitted On</td>
-                                <td style="padding:10px 14px;border:1px solid #ddd;">{self.submission_date}</td></tr>
+                                <td style="padding:10px 14px;border:1px solid #ddd;">{self.submission_date}</td>
+                            </tr>
                         </table>
                         <p>Go to: <b>Profile Change Requests → Pending Review</b></p>
                         <p style="color:#999;font-size:11px;">Sent to: {hr_names}</p>
@@ -527,7 +644,6 @@ class HrProfileChangeRequest(models.Model):
         except Exception as e:
             _logger.warning('PCR %s: Failed to send HR notification: %s', self.name, e)
 
-    # ── Mail to Employee ──────────────────────────────────────────
     def _send_mail_to_employee(self, status):
         try:
             emp_user = self.employee_id.user_id
@@ -537,7 +653,6 @@ class HrProfileChangeRequest(models.Model):
                 or self.employee_id.private_email
             )
             if not emp_email:
-                _logger.warning('PCR %s: Employee has no email.', self.name)
                 return
             if status == 'approved':
                 subject = f'Profile Update Approved - {self.name}'
@@ -574,9 +689,7 @@ class HrProfileChangeRequest(models.Model):
                 'auto_delete': False, 'body_html': body,
             })
             mail.sudo().send()
-            _logger.info('PCR %s: Employee notification (%s) sent to %s', self.name, status, emp_email)
+            _logger.info('PCR %s: Employee notification (%s) sent to %s',
+                         self.name, status, emp_email)
         except Exception as e:
             _logger.warning('PCR %s: Failed to send employee notification: %s', self.name, e)
-
-
-
