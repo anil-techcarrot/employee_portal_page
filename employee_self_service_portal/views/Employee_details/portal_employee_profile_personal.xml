@@ -409,18 +409,18 @@
 
                                 <!-- ══ RELIGION FIX: was employee.religion.name — religion is a Selection field,
                                      not Many2one. Use employee.religion or '' directly. ══ -->
-                               <div class="col-md-6">
-    <label class="form-label fw-bold">Religion</label>
-    <select name="religion" class="form-select" disabled="disabled">
-        <option value="">-- Select Religion --</option>
-        <t t-foreach="religions" t-as="rel">
-            <option t-att-value="rel.id"
-                    t-att-selected="'selected' if rel.id == employee.religion.id else None">
-                <t t-esc="rel.name"/>
-            </option>
-        </t>
-    </select>
-</div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Religion</label>
+                                    <select name="religion" class="form-select" disabled="disabled">
+                                        <option value="">-- Select Religion --</option>
+                                        <t t-foreach="religions" t-as="rel">
+                                            <option t-att-value="rel.id"
+                                                    t-att-selected="'selected' if rel.id == employee.religion.id else None">
+                                                <t t-esc="rel.name"/>
+                                            </option>
+                                        </t>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -429,19 +429,19 @@
                     <div class="card mb-2 shadow-sm profile-tab-section" data-tab-group="basic">
                         <div class="card-body py-2">
                             <div class="d-flex align-items-center">
-                                <div class="form-check me-3">
-                                    <input type="checkbox" class="form-check-input" name="is_non_resident"
-                                           id="is_non_resident"
-                                           t-att-checked="'checked' if employee.is_non_resident else None"
-                                           disabled="disabled"/>
-                                    <label class="form-check-label fw-bold" for="is_non_resident">
-                                        Non Resident
-                                    </label>
-                                </div>
-                                <small class="text-muted">
-                                    <i class="fa fa-info-circle me-1"></i>
+                                <!--                                <div class="form-check me-3">-->
+                                <!--                                    <input type="checkbox" class="form-check-input" name="is_non_resident"-->
+                                <!--                                           id="is_non_resident"-->
+                                <!--                                           t-att-checked="'checked' if employee.is_non_resident else None"-->
+                                <!--                                           disabled="disabled"/>-->
+                                <!--                                    <label class="form-check-label fw-bold" for="is_non_resident">-->
+                                <!--                                        Non Resident-->
+                                <!--                                    </label>-->
+                                <!--                                </div>-->
+                                <!--                                <small class="text-muted">-->
+                                <!--                                    <i class="fa fa-info-circle me-1"></i>-->
 
-                                </small>
+                                <!--                                </small>-->
                             </div>
                         </div>
                     </div>
@@ -642,11 +642,34 @@
                                            t-att-value="portal_overlay.get('private_city') or employee.private_city or ''"
                                            readonly="readonly"/>
                                 </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Country of Residency</label>
+                                    <select name="country_residences_id" class="form-select" disabled="disabled"
+                                            onchange="loadContactStates(this.value)">
+                                        <option value="">-- Select Country --</option>
+                                        <t t-foreach="countries" t-as="country">
+                                            <option t-att-value="country.id"
+                                                    t-att-selected="'selected' if country.id == employee.country_residences_id.id else None">
+                                                <t t-esc="country.name"/>
+                                            </option>
+                                        </t>
+                                    </select>
+                                </div>
+
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">State/Province</label>
-                                    <input type="text" name="private_state_id" class="form-control"
-                                           t-att-value="portal_overlay.get('private_state_id') or employee.private_state_id.name or ''"
-                                           readonly="readonly"/>
+                                    <select name="private_state_id" id="contactStateDropdown"
+                                            class="form-select" disabled="disabled">
+                                        <option value="">-- Select State --</option>
+                                        <t t-if="employee.private_state_id">
+                                            <option t-att-value="employee.private_state_id.id"
+                                                    selected="selected">
+                                                <t t-esc="employee.private_state_id.name"/>
+                                            </option>
+                                        </t>
+                                    </select>
+                                    <small class="text-muted">Select Country of Residency first</small>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">ZIP/Postal Code</label>
@@ -770,12 +793,12 @@
                                            t-att-value="employee.work_location_id.name or ''" data-always-readonly="1"
                                            readonly="readonly"/>
                                 </div>
-<!--                                <div class="col-md-6">-->
-<!--                                    <label class="form-label fw-bold">Current Work Address</label>-->
-<!--                                    <input type="text" name="current_address" class="form-control"-->
-<!--                                           t-att-value="portal_overlay.get('current_address') or employee.current_address or ''"-->
-<!--                                           readonly="readonly"/>-->
-<!--                                </div>-->
+                                <!--                                <div class="col-md-6">-->
+                                <!--                                    <label class="form-label fw-bold">Current Work Address</label>-->
+                                <!--                                    <input type="text" name="current_address" class="form-control"-->
+                                <!--                                           t-att-value="portal_overlay.get('current_address') or employee.current_address or ''"-->
+                                <!--                                           readonly="readonly"/>-->
+                                <!--                                </div>-->
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">House Number and Building Name</label>
                                     <input type="text" name="house_no" class="form-control"
@@ -794,18 +817,18 @@
                                            t-att-value="portal_overlay.get('city') or employee.city or ''"
                                            readonly="readonly"/>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold">Country of Residency</label>
-                                    <select name="country_residences_id" class="form-select" disabled="disabled">
-                                        <option value="">-- Select Country --</option>
-                                        <t t-foreach="countries" t-as="country">
-                                            <option t-att-value="country.id"
-                                                    t-att-selected="'selected' if country.id == employee.country_residences_id.id else None">
-                                                <t t-esc="country.name"/>
-                                            </option>
-                                        </t>
-                                    </select>
-                                </div>
+                                <!--                                <div class="col-md-6">-->
+                                <!--                                    <label class="form-label fw-bold">Country of Residency</label>-->
+                                <!--                                    <select name="country_residences_id" class="form-select" disabled="disabled">-->
+                                <!--                                        <option value="">&#45;&#45; Select Country &#45;&#45;</option>-->
+                                <!--                                        <t t-foreach="countries" t-as="country">-->
+                                <!--                                            <option t-att-value="country.id"-->
+                                <!--                                                    t-att-selected="'selected' if country.id == employee.country_residences_id.id else None">-->
+                                <!--                                                <t t-esc="country.name"/>-->
+                                <!--                                            </option>-->
+                                <!--                                        </t>-->
+                                <!--                                    </select>-->
+                                <!--                                </div>-->
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Country</label>
                                     <select name="countries_id" class="form-select" disabled="disabled"
@@ -897,17 +920,17 @@
                                            t-att-value="portal_overlay.get('current_role') or employee.current_role or ''"
                                            readonly="readonly"/>
                                 </div>
-<!--                                <div class="col-md-6">-->
-<!--                                    <label class="form-label fw-bold">Payroll</label>-->
-<!--                                    <input type="text" class="form-control" t-att-value="employee.payroll or ''"-->
-<!--                                           data-always-readonly="1" readonly="readonly"/>-->
-<!--                                </div>-->
-<!--                                <div class="col-md-6">-->
-<!--                                    <label class="form-label fw-bold">Mentor Name</label>-->
-<!--                                    <input type="text" class="form-control"-->
-<!--                                           t-att-value="employee.mentor_names_id.name or ''" data-always-readonly="1"-->
-<!--                                           readonly="readonly"/>-->
-<!--                                </div>-->
+                                <!--                                <div class="col-md-6">-->
+                                <!--                                    <label class="form-label fw-bold">Payroll</label>-->
+                                <!--                                    <input type="text" class="form-control" t-att-value="employee.payroll or ''"-->
+                                <!--                                           data-always-readonly="1" readonly="readonly"/>-->
+                                <!--                                </div>-->
+                                <!--                                <div class="col-md-6">-->
+                                <!--                                    <label class="form-label fw-bold">Mentor Name</label>-->
+                                <!--                                    <input type="text" class="form-control"-->
+                                <!--                                           t-att-value="employee.mentor_names_id.name or ''" data-always-readonly="1"-->
+                                <!--                                           readonly="readonly"/>-->
+                                <!--                                </div>-->
                             </div>
                         </div>
                     </div>
@@ -1111,16 +1134,16 @@
                                     <div class="invalid-feedback"></div>
                                     <small class="text-muted">Letters and digits only</small>
                                 </div>
-<!--                                <div class="col-md-6">-->
-<!--                                    <label class="form-label fw-bold">Customer / Account Name</label>-->
-<!--                                    <input type="text" class="form-control"-->
-<!--                                           t-att-value="employee.customer_acc_name or ''" readonly="readonly"/>-->
-<!--                                </div>-->
-<!--                                <div class="col-md-6">-->
-<!--                                    <label class="form-label fw-bold">Candidate Source</label>-->
-<!--                                    <input type="text" class="form-control"-->
-<!--                                           t-att-value="employee.candidate_source or ''" readonly="readonly"/>-->
-<!--                                </div>-->
+                                <!--                                <div class="col-md-6">-->
+                                <!--                                    <label class="form-label fw-bold">Customer / Account Name</label>-->
+                                <!--                                    <input type="text" class="form-control"-->
+                                <!--                                           t-att-value="employee.customer_acc_name or ''" readonly="readonly"/>-->
+                                <!--                                </div>-->
+                                <!--                                <div class="col-md-6">-->
+                                <!--                                    <label class="form-label fw-bold">Candidate Source</label>-->
+                                <!--                                    <input type="text" class="form-control"-->
+                                <!--                                           t-att-value="employee.candidate_source or ''" readonly="readonly"/>-->
+                                <!--                                </div>-->
                             </div>
                         </div>
                     </div>
@@ -1141,6 +1164,20 @@
                         </div>
                         <div class="card-body">
                             <div class="row g-3">
+
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold">Country Code</label>
+                                    <select name="phone_code_1" class="form-select" disabled="disabled">
+                                        <option value="">-- Select --</option>
+                                        <t t-foreach="isd_codes" t-as="isd">
+                                            <option t-att-value="isd[0]"
+                                                    t-att-selected="'selected' if (portal_overlay.get('phone_code_1') or employee.phone_code_1 or '') == isd[0] else None">
+                                                <t t-esc="isd[1]"/>
+                                            </option>
+                                        </t>
+                                    </select>
+                                    <small class="text-muted">Select country dial code</small>
+                                </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">
                                         <i class="fa fa-phone text-muted me-1"></i>
@@ -1158,16 +1195,19 @@
                                            t-att-value="portal_overlay.get('e_private_city') or employee.e_private_city or ''"
                                            readonly="readonly"/>
                                 </div>
-                                <div class="col-md-3">
-                                    <label class="form-label fw-bold">Country Code</label>
-                                    <input type="text" class="form-control"
-                                           t-att-value="portal_overlay.get('phone_code_1') or employee.phone_code_1 or ''"
-                                           style="pointer-events:none;background-color:#e9ecef;"
-                                           placeholder="+91, +971"/>
-                                    <input type="hidden" name="phone_code_1"
-                                           t-att-value="portal_overlay.get('phone_code_1') or employee.phone_code_1 or ''"/>
-                                    <small class="text-muted">E.g. +91, +971</small>
-                                </div>
+                                <!--                                <div class="col-md-3">-->
+                                <!--                                    <label class="form-label fw-bold">Country Code</label>-->
+                                <!--                                    <select name="phone_code_1" class="form-select" disabled="disabled">-->
+                                <!--                                        <option value="">&#45;&#45; Select &#45;&#45;</option>-->
+                                <!--                                        <t t-foreach="isd_codes" t-as="isd">-->
+                                <!--                                            <option t-att-value="isd[0]"-->
+                                <!--                                                    t-att-selected="'selected' if (portal_overlay.get('phone_code_1') or employee.phone_code_1 or '') == isd[0] else None">-->
+                                <!--                                                <t t-esc="isd[1]"/>-->
+                                <!--                                            </option>-->
+                                <!--                                        </t>-->
+                                <!--                                    </select>-->
+                                <!--                                    <small class="text-muted">Select country dial code</small>-->
+                                <!--                                </div>-->
                             </div>
                         </div>
                     </div>
@@ -1175,7 +1215,7 @@
                     <div class="card mb-4 shadow-sm profile-tab-section" data-tab-group="family">
                         <div class="card-header bg-light">
                             <h5 class="mb-0"><i class="fa fa-ambulance text-primary me-2"></i>Emergency Contact Person
-                                Address Inside UAE
+
                             </h5>
                         </div>
                         <div class="card-body">
@@ -1506,16 +1546,18 @@
                                     </select>
                                 </div>
                                 <div class="col-md-6">
+                                    <label class="form-label fw-bold">Dependent Status</label>
+                                    <input type="text" class="form-control"
+                                           t-att-value="employee.dependent_status or ''" data-always-readonly="1"
+                                           readonly="readonly"/>
+                                </div>
+
+                                <!-- ── Father Group ── -->
+                                <div class="col-md-6">
                                     <label class="form-label fw-bold">Father Name</label>
                                     <input type="text" name="father_name" class="form-control"
                                            t-att-value="portal_overlay.get('father_name') or employee.father_name or ''"
                                            readonly="readonly"/>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold">Father Nationality</label>
-                                    <input type="text" class="form-control"
-                                           t-att-value="employee.father_nationalities_id.name if employee.father_nationalities_id else ''"
-                                           data-always-readonly="1" readonly="readonly"/>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Father DOB</label>
@@ -1525,11 +1567,19 @@
                                     <div class="invalid-feedback"></div>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label fw-bold">Dependent Status</label>
-                                    <input type="text" class="form-control"
-                                           t-att-value="employee.dependent_status or ''" data-always-readonly="1"
-                                           readonly="readonly"/>
+                                    <label class="form-label fw-bold">Father Nationality</label>
+                                    <select name="father_nationalities_id" class="form-select" disabled="disabled">
+                                        <option value="">-- Select Country --</option>
+                                        <t t-foreach="countries" t-as="country">
+                                            <option t-att-value="country.id"
+                                                    t-att-selected="'selected' if country.id == employee.father_nationalities_id.id else None">
+                                                <t t-esc="country.name"/>
+                                            </option>
+                                        </t>
+                                    </select>
                                 </div>
+
+                                <!-- ── Mother Group ── -->
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Mother Name</label>
                                     <input type="text" name="mother_name" class="form-control"
@@ -1537,17 +1587,23 @@
                                            readonly="readonly"/>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label fw-bold">Mother Nationality</label>
-                                    <input type="text" class="form-control"
-                                           t-att-value="employee.mother_nationalities_id.name if employee.mother_nationalities_id else ''"
-                                           data-always-readonly="1" readonly="readonly"/>
-                                </div>
-                                <div class="col-md-6">
                                     <label class="form-label fw-bold">Mother DOB</label>
                                     <input type="date" name="mother_dob" class="form-control"
                                            t-att-value="portal_overlay.get('mother_dob') or (employee.mother_dob.strftime('%Y-%m-%d') if employee.mother_dob else '')"
                                            readonly="readonly" data-validation="past-date"/>
                                     <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Mother Nationality</label>
+                                    <select name="mother_nationalities_id" class="form-select" disabled="disabled">
+                                        <option value="">-- Select Country --</option>
+                                        <t t-foreach="countries" t-as="country">
+                                            <option t-att-value="country.id"
+                                                    t-att-selected="'selected' if country.id == employee.mother_nationalities_id.id else None">
+                                                <t t-esc="country.name"/>
+                                            </option>
+                                        </t>
+                                    </select>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Dependent Status (1)</label>
@@ -1648,12 +1704,12 @@
                                            t-att-value="'Yes' if employee.degree_certificate_legal else 'No'"
                                            data-always-readonly="1" readonly="readonly"/>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold">Certification Obtained</label>
-                                    <input type="text" class="form-control"
-                                           t-att-value="employee.certification_obtained or ''" data-always-readonly="1"
-                                           readonly="readonly"/>
-                                </div>
+                                <!--                                <div class="col-md-6">-->
+                                <!--                                    <label class="form-label fw-bold">Certification Obtained</label>-->
+                                <!--                                    <input type="text" class="form-control"-->
+                                <!--                                           t-att-value="employee.certification_obtained or ''" data-always-readonly="1"-->
+                                <!--                                           readonly="readonly"/>-->
+                                <!--                                </div>-->
                             </div>
                         </div>
                     </div>
@@ -1792,9 +1848,11 @@
                 </form>
 
                 <!-- ===== JAVASCRIPT ===== -->
+                <!-- ===== JAVASCRIPT ===== -->
                 <script type="text/javascript">
                     <![CDATA[
-var PENDING_LOCKED = (function() {
+
+var PENDING_LOCKED = (function () {
     var banner = document.getElementById('pendingLockBanner');
     return !!banner;
 })();
@@ -1803,7 +1861,9 @@ let isEditMode = false;
 let originalFormData = {};
 let activeProfileTab = 'basic';
 
-/* ── Fix last updated timezone ── */
+/* =========================================================
+   FIX LAST UPDATED TIMEZONE
+========================================================= */
 (function fixLastUpdatedTimezone() {
     var el = document.getElementById('profileLastUpdated');
     if (!el) return;
@@ -1818,22 +1878,22 @@ let activeProfileTab = 'basic';
                 var months = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
                 var monIdx = months[m[2].toLowerCase().substring(0,3)];
                 var hr = parseInt(m[4],10);
-                var isPM = m[6].toUpperCase()==='PM';
+                var isPM = m[6].toUpperCase() === 'PM';
                 if (isPM && hr < 12) hr += 12;
                 if (!isPM && hr === 12) hr = 0;
                 dt = new Date(Date.UTC(parseInt(m[3],10), monIdx, parseInt(m[1],10), hr, parseInt(m[5],10)));
             }
         }
         if (!isNaN(dt.getTime())) {
-            var opts = { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', hour12:true };
+            var opts = {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', hour12:true};
             el.textContent = dt.toLocaleString(undefined, opts);
         }
     } catch(e) {}
 })();
 
-/* ══════════════════════════════════════════════════════
-   NON RESIDENT TOGGLE — shows/hides Identity Docs + Visa
-   ══════════════════════════════════════════════════════ */
+/* =========================================================
+   SHOW / HIDE NON RESIDENT SECTIONS
+========================================================= */
 function toggleNonResidentSections(checkbox) {
     var show = checkbox ? checkbox.checked : false;
     var identitySection = document.getElementById('identityDocsSection');
@@ -1842,6 +1902,9 @@ function toggleNonResidentSections(checkbox) {
     if (visaSection) visaSection.style.display = show ? '' : 'none';
 }
 
+/* =========================================================
+   AUTOSAVE DRAFT
+========================================================= */
 function autosaveDraftNow() {
     if (!isEditMode) return;
     try {
@@ -1856,59 +1919,74 @@ function autosaveDraftNow() {
             }
         });
         localStorage.setItem('profileDraft', JSON.stringify(draftData));
-    } catch(e) { console.error('autosave error', e); }
+    } catch(e) {
+        console.error('autosave error', e);
+    }
 }
 
+/* =========================================================
+   SWITCH TAB
+========================================================= */
 function switchProfileTab(tabKey) {
     const previousTab = activeProfileTab;
     activeProfileTab = tabKey;
     if (!isEditMode && previousTab && previousTab !== tabKey) {
         clearValidationStates(previousTab);
     }
-    document.querySelectorAll('#personalDetailsForm .profile-tab-section').forEach(card => {
+    document.querySelectorAll('#personalDetailsForm .profile-tab-section').forEach(function(card) {
         if (card.getAttribute('data-tab-group') === tabKey) {
-<!--            var sectionId = card.id;-->
-<!--            if (sectionId === 'identityDocsSection' || sectionId === 'visaWorkPermitSection') {-->
-<!--                var nr = document.getElementById('is_non_resident');-->
-<!--                card.style.display = (nr && nr.checked) ? '' : 'none';-->
-<!--            } else {-->
-<!--                card.style.display = '';-->
-<!--            }-->
-
-       card.style.display = '';
+            card.style.display = '';
         } else {
             card.style.display = 'none';
         }
     });
-    document.querySelectorAll('#personalDetailsForm .profile-tab-button').forEach(btn => {
+    document.querySelectorAll('#personalDetailsForm .profile-tab-button').forEach(function(btn) {
         const active = btn.getAttribute('data-tab-target') === tabKey;
         btn.classList.toggle('active', active);
         btn.setAttribute('aria-selected', active ? 'true' : 'false');
     });
 }
 
+/* =========================================================
+   EDIT MODE TOGGLE
+========================================================= */
 function syncAndToggleEditMode(sourceCheckbox) {
     if (PENDING_LOCKED) {
         sourceCheckbox.checked = false;
         alert('Editing is disabled while your profile update is pending HR review.');
         return;
     }
-    document.querySelectorAll('.edit-mode-toggle').forEach(t => { t.checked = sourceCheckbox.checked; });
-    sourceCheckbox.checked ? enableEditMode() : disableEditMode();
+    document.querySelectorAll('.edit-mode-toggle').forEach(function(t) {
+        t.checked = sourceCheckbox.checked;
+    });
+    if (sourceCheckbox.checked) {
+        enableEditMode();
+    } else {
+        disableEditMode();
+    }
 }
 
+/* =========================================================
+   ESCAPE HTML
+========================================================= */
 function escapeHtml(str) {
-    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    return str
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;');
 }
 
+/* =========================================================
+   ENABLE EDIT MODE
+========================================================= */
 function enableEditMode() {
     if (PENDING_LOCKED) {
         alert('Editing is disabled while your profile update is pending HR review.');
         return;
     }
-
     isEditMode = true;
-    document.querySelectorAll('.edit-mode-toggle').forEach(t => t.checked = true);
+    document.querySelectorAll('.edit-mode-toggle').forEach(function(t) { t.checked = true; });
     storeOriginalFormData();
 
     var editBtn = document.getElementById('editProfileBtn');
@@ -1918,7 +1996,7 @@ function enableEditMode() {
         editBtn.innerHTML = '<i class="fa fa-pencil me-1"></i>Editing Mode ON';
     }
 
-    document.querySelectorAll('#personalDetailsForm input, #personalDetailsForm select').forEach(input => {
+    document.querySelectorAll('#personalDetailsForm input, #personalDetailsForm select').forEach(function(input) {
         if (input.type === 'hidden') return;
         if (input.classList.contains('edit-mode-toggle')) return;
         if (input.hasAttribute('data-always-readonly')) {
@@ -1936,10 +2014,6 @@ function enableEditMode() {
             input.removeAttribute('disabled');
             return;
         }
-        var section = input.closest('#identityDocsSection, #visaWorkPermitSection');
-        if (section && section.style.display === 'none') {
-            return;
-        }
         input.removeAttribute('readonly');
         input.removeAttribute('disabled');
         input.style.removeProperty('pointer-events');
@@ -1948,12 +2022,14 @@ function enableEditMode() {
 
     document.getElementById('formActions').style.display = 'block';
     document.getElementById('viewActions').style.display = 'none';
+
     const disc = document.getElementById('personalDisclaimer');
     if (disc) disc.checked = false;
+
     const btn = document.getElementById('personalSaveBtn');
     if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
 
-    document.querySelectorAll('#personalDetailsForm input[type="file"].file-upload-input').forEach(fileInput => {
+    document.querySelectorAll('#personalDetailsForm input[type="file"].file-upload-input').forEach(function(fileInput) {
         fileInput.addEventListener('change', function() {
             if (this.files && this.files.length > 0) {
                 showFilePreview(this, this.files[0]);
@@ -1964,7 +2040,7 @@ function enableEditMode() {
         });
     });
 
-    document.querySelectorAll('#personalDetailsForm input:not([type="file"]), #personalDetailsForm select').forEach(input => {
+    document.querySelectorAll('#personalDetailsForm input:not([type="file"]), #personalDetailsForm select').forEach(function(input) {
         input.removeEventListener('input', validateField);
         input.removeEventListener('blur', validateField);
         input.removeEventListener('change', autosaveDraftNow);
@@ -1976,11 +2052,15 @@ function enableEditMode() {
     });
 }
 
+/* =========================================================
+   DISABLE EDIT MODE
+========================================================= */
 function disableEditMode() {
     isEditMode = false;
     localStorage.removeItem('profileEditActive');
     localStorage.removeItem('profileDraft');
-    document.querySelectorAll('.edit-mode-toggle').forEach(t => t.checked = false);
+
+    document.querySelectorAll('.edit-mode-toggle').forEach(function(t) { t.checked = false; });
 
     var editBtn = document.getElementById('editProfileBtn');
     if (editBtn) {
@@ -1989,7 +2069,7 @@ function disableEditMode() {
         editBtn.innerHTML = '<i class="fa fa-edit me-1"></i>Edit Profile';
     }
 
-    document.querySelectorAll('#personalDetailsForm input, #personalDetailsForm select').forEach(input => {
+    document.querySelectorAll('#personalDetailsForm input, #personalDetailsForm select').forEach(function(input) {
         if (input.type === 'hidden') return;
         if (input.classList.contains('edit-mode-toggle')) return;
         if (input.hasAttribute('data-always-readonly')) {
@@ -2017,14 +2097,23 @@ function disableEditMode() {
 
     document.getElementById('formActions').style.display = 'none';
     document.getElementById('viewActions').style.display = 'block';
-    ['basic', 'professional', 'family', 'education', 'documents'].forEach(t => clearValidationStates(t));
+
+    ['basic', 'professional', 'family', 'education', 'documents'].forEach(function(t) {
+        clearValidationStates(t);
+    });
+
     const disc = document.getElementById('personalDisclaimer');
     if (disc) disc.checked = false;
+
     const btn = document.getElementById('personalSaveBtn');
     if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
+
     hideSaveError();
 }
 
+/* =========================================================
+   TOGGLE SAVE BUTTON
+========================================================= */
 function toggleSaveBtn(checkboxId, btnId) {
     const checked = document.getElementById(checkboxId).checked;
     const btn = document.getElementById(btnId);
@@ -2032,9 +2121,12 @@ function toggleSaveBtn(checkboxId, btnId) {
     btn.style.opacity = checked ? '1' : '0.6';
 }
 
+/* =========================================================
+   STORE / CANCEL FORM DATA
+========================================================= */
 function storeOriginalFormData() {
     originalFormData = {};
-    document.querySelectorAll('#personalDetailsForm input, #personalDetailsForm select').forEach(input => {
+    document.querySelectorAll('#personalDetailsForm input, #personalDetailsForm select').forEach(function(input) {
         if (input.type === 'hidden' || input.type === 'file') return;
         if (!input.name) return;
         if (input.type === 'checkbox') {
@@ -2046,8 +2138,10 @@ function storeOriginalFormData() {
 }
 
 function cancelEdit() {
-    Object.entries(originalFormData).forEach(([key, value]) => {
-        const input = document.querySelector(`[name="${key}"]`);
+    Object.entries(originalFormData).forEach(function(entry) {
+        const key = entry[0];
+        const value = entry[1];
+        const input = document.querySelector('[name="' + key + '"]');
         if (!input || input.type === 'hidden' || input.type === 'file') return;
         if (input.type === 'checkbox') {
             input.checked = value;
@@ -2067,6 +2161,9 @@ function saveAsDraft() {
     showTabMessage(activeProfileTab, 'Profile saved as draft.', 'info');
 }
 
+/* =========================================================
+   SAVE ERROR BOX
+========================================================= */
 function showSaveError(html) {
     let box = document.getElementById('saveErrorBox');
     if (!box) {
@@ -2080,7 +2177,7 @@ function showSaveError(html) {
     }
     box.innerHTML = html;
     box.style.display = 'block';
-    setTimeout(() => box.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
+    setTimeout(function() { box.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 80);
 }
 
 function hideSaveError() {
@@ -2088,6 +2185,9 @@ function hideSaveError() {
     if (box) box.style.display = 'none';
 }
 
+/* =========================================================
+   VALIDATE FIELD
+========================================================= */
 function validateField(event) {
     if (!isEditMode) return true;
     const field = event.target;
@@ -2105,40 +2205,71 @@ function validateField(event) {
     const val = field.value ? field.value.trim() : '';
     if (!val) { updateTabErrorBadges(); return true; }
     switch (validationType) {
-        case 'email': if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) { isValid = false; errorMessage = 'Please enter a valid email address.'; } break;
-        case 'phone': const pc = val.replace(/\s/g, ''); if (!/^\+?[0-9]+$/.test(pc)) { isValid = false; errorMessage = 'Phone number must contain digits only. A leading + is allowed.'; } else { const d = pc.replace('+', ''); if (d.length < 7 || d.length > 15) { isValid = false; errorMessage = 'Phone number must be between 7 and 15 digits.'; } } break;
-        case 'isd-code': if (!/^\+[1-9][0-9]{0,2}$/.test(val.replace(/\s/g, ''))) { isValid = false; errorMessage = 'ISD code must start with + followed by 1-3 digits (e.g. +91, +971).'; } break;
-        case 'digits-only': if (!/^[0-9]+$/.test(val)) { isValid = false; errorMessage = 'This field must contain digits only.'; } break;
-        case 'alphanumeric': if (!/^[A-Za-z0-9]+$/.test(val)) { isValid = false; errorMessage = 'Letters and digits only (no spaces or special characters).'; } break;
+        case 'email':
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) { isValid = false; errorMessage = 'Please enter a valid email address.'; }
+            break;
+        case 'phone':
+            const pc = val.replace(/\s/g, '');
+            if (!/^\+?[0-9]+$/.test(pc)) { isValid = false; errorMessage = 'Phone number must contain digits only. A leading + is allowed.'; }
+            else { const d = pc.replace('+', ''); if (d.length < 7 || d.length > 15) { isValid = false; errorMessage = 'Phone number must be between 7 and 15 digits.'; } }
+            break;
+        case 'isd-code':
+            if (!/^\+[1-9][0-9]{0,2}$/.test(val.replace(/\s/g, ''))) { isValid = false; errorMessage = 'ISD code must start with + followed by 1-3 digits (e.g. +91, +971).'; }
+            break;
+        case 'digits-only':
+            if (!/^[0-9]+$/.test(val)) { isValid = false; errorMessage = 'This field must contain digits only.'; }
+            break;
+        case 'alphanumeric':
+            if (!/^[A-Za-z0-9]+$/.test(val)) { isValid = false; errorMessage = 'Letters and digits only (no spaces or special characters).'; }
+            break;
         case 'emirates-id':
             var eidClean = val.replace(/-/g, '');
-            if (!/^[0-9]{15}$/.test(eidClean)) {
-                isValid = false;
-                errorMessage = 'Please enter your unique 15-digit UAE Emirates ID number.';
-            }
+            if (!/^[0-9]{15}$/.test(eidClean)) { isValid = false; errorMessage = 'Please enter your unique 15-digit UAE Emirates ID number.'; }
             break;
-        case 'aadhar': if (!/^[0-9]{12}$/.test(val)) { isValid = false; errorMessage = 'Aadhar number must be exactly 12 digits.'; } break;
-        case 'pan': if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(val.toUpperCase())) { isValid = false; errorMessage = 'PAN must be in format: ABCDE1234F'; } break;
-        case 'past-date': const pd = new Date(val); const td1 = new Date(); td1.setHours(0,0,0,0); if (isNaN(pd.getTime())) { isValid = false; errorMessage = 'Please enter a valid date.'; } else if (pd > td1) { isValid = false; errorMessage = 'This date cannot be in the future.'; } break;
-        case 'future-date': const fd = new Date(val); const td2 = new Date(); td2.setHours(0,0,0,0); if (isNaN(fd.getTime())) { isValid = false; errorMessage = 'Please enter a valid date.'; } else if (fd <= td2) { isValid = false; errorMessage = 'Expiry date must be a future date.'; } break;
+        case 'aadhar':
+            if (!/^[0-9]{12}$/.test(val)) { isValid = false; errorMessage = 'Aadhar number must be exactly 12 digits.'; }
+            break;
+        case 'pan':
+            if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(val.toUpperCase())) { isValid = false; errorMessage = 'PAN must be in format: ABCDE1234F'; }
+            break;
+        case 'past-date':
+            const pd = new Date(val); const td1 = new Date(); td1.setHours(0,0,0,0);
+            if (isNaN(pd.getTime())) { isValid = false; errorMessage = 'Please enter a valid date.'; }
+            else if (pd > td1) { isValid = false; errorMessage = 'This date cannot be in the future.'; }
+            break;
+        case 'future-date':
+            const fd = new Date(val); const td2 = new Date(); td2.setHours(0,0,0,0);
+            if (isNaN(fd.getTime())) { isValid = false; errorMessage = 'Please enter a valid date.'; }
+            else if (fd <= td2) { isValid = false; errorMessage = 'Expiry date must be a future date.'; }
+            break;
     }
-    if (isValid) { if (isEditMode) field.classList.add('is-valid'); }
-    else {
+    if (isValid) {
+        if (isEditMode) field.classList.add('is-valid');
+    } else {
         field.classList.add('is-invalid');
         if (feedback) { feedback.textContent = errorMessage; feedback.style.display = 'block'; }
-        else { const errDiv = document.createElement('div'); errDiv.className = 'invalid-feedback dynamic-error'; errDiv.style.cssText = 'display:block;color:#dc3545;font-size:0.8rem;margin-top:3px;'; errDiv.textContent = errorMessage; field.insertAdjacentElement('afterend', errDiv); }
+        else {
+            const errDiv = document.createElement('div');
+            errDiv.className = 'invalid-feedback dynamic-error';
+            errDiv.style.cssText = 'display:block;color:#dc3545;font-size:0.8rem;margin-top:3px;';
+            errDiv.textContent = errorMessage;
+            field.insertAdjacentElement('afterend', errDiv);
+        }
     }
     updateTabErrorBadges();
     return isValid;
 }
 
+/* =========================================================
+   TAB ERROR BADGES
+========================================================= */
 function updateTabErrorBadges() {
-    ['basic', 'professional', 'family', 'education', 'documents'].forEach(tabKey => {
-        const tabBtn = document.querySelector(`.profile-tab-button[data-tab-target="${tabKey}"]`);
+    ['basic', 'professional', 'family', 'education', 'documents'].forEach(function(tabKey) {
+        const tabBtn = document.querySelector('.profile-tab-button[data-tab-target="' + tabKey + '"]');
         if (!tabBtn) return;
         const existing = tabBtn.querySelector('.tab-error-badge');
         if (existing) existing.remove();
-        const count = document.querySelectorAll(`.profile-tab-section[data-tab-group="${tabKey}"] .is-invalid`).length;
+        const count = document.querySelectorAll('.profile-tab-section[data-tab-group="' + tabKey + '"] .is-invalid').length;
         if (count > 0) {
             const badge = document.createElement('span');
             badge.className = 'tab-error-badge badge bg-danger ms-1';
@@ -2149,15 +2280,35 @@ function updateTabErrorBadges() {
 }
 
 function clearValidationStates(tabKey) {
-    const sections = document.querySelectorAll(`.profile-tab-section[data-tab-group="${tabKey}"]`);
-    sections.forEach(section => {
-        section.querySelectorAll('input, select').forEach(el => el.classList.remove('is-valid', 'is-invalid'));
-        section.querySelectorAll('.invalid-feedback').forEach(el => { el.textContent = ''; el.style.display = 'none'; });
-        section.querySelectorAll('.tab-message-box, .dynamic-error').forEach(el => el.remove());
+    const sections = document.querySelectorAll('.profile-tab-section[data-tab-group="' + tabKey + '"]');
+    sections.forEach(function(section) {
+        section.querySelectorAll('input, select').forEach(function(el) { el.classList.remove('is-valid', 'is-invalid'); });
+        section.querySelectorAll('.invalid-feedback').forEach(function(el) { el.textContent = ''; el.style.display = 'none'; });
+        section.querySelectorAll('.tab-message-box, .dynamic-error').forEach(function(el) { el.remove(); });
     });
     updateTabErrorBadges();
 }
 
+/* =========================================================
+   SHOW TAB MESSAGE
+========================================================= */
+function showTabMessage(tabKey, text, type) {
+    document.querySelectorAll('.tab-message-box').forEach(function(el) { el.remove(); });
+    const firstCard = document.querySelector('.profile-tab-section[data-tab-group="' + tabKey + '"]');
+    if (!firstCard) return;
+    const alertClass = type === 'success' ? 'alert-success' : type === 'info' ? 'alert-info' : 'alert-danger';
+    const icon = type === 'success' ? 'fa-check-circle' : type === 'info' ? 'fa-info-circle' : 'fa-exclamation-triangle';
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'tab-message-box alert ' + alertClass + ' alert-dismissible fade show mb-3';
+    msgDiv.innerHTML = '<i class="fa ' + icon + ' me-2"></i><span>' + text + '</span><button type="button" class="btn-close" onclick="this.parentNode.remove()"></button>';
+    firstCard.parentNode.insertBefore(msgDiv, firstCard);
+    msgDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(function() { if (msgDiv.parentNode) msgDiv.remove(); }, 5000);
+}
+
+/* =========================================================
+   FILE PREVIEW
+========================================================= */
 function clearFilePreview(inputEl) {
     const existing = inputEl.parentNode.querySelector('.file-preview-box');
     if (existing) {
@@ -2169,32 +2320,17 @@ function clearFilePreview(inputEl) {
 function viewUploadedFile(objectURL, fileType, fileName) {
     if (fileType.startsWith('image/')) {
         const overlay = document.createElement('div');
-        overlay.style.cssText = [
-            'position:fixed', 'inset:0', 'z-index:9999',
-            'background:rgba(0,0,0,0.75)',
-            'display:flex', 'flex-direction:column',
-            'align-items:center', 'justify-content:center', 'gap:12px'
-        ].join(';');
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.75);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;';
         overlay.innerHTML =
-            `<div style="position:relative;max-width:90vw;max-height:85vh;">
-                <img src="${objectURL}" alt="${escapeHtml(fileName)}"
-                     style="max-width:90vw;max-height:85vh;border-radius:8px;
-                            display:block;box-shadow:0 8px 32px rgba(0,0,0,0.4);"/>
-             </div>
-             <div style="display:flex;gap:12px;align-items:center;">
-                <span style="color:#fff;font-size:0.85rem;opacity:0.8;">${escapeHtml(fileName)}</span>
-                <button onclick="this.closest('div[style*=fixed]').remove()"
-                        style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.4);
-                               color:#fff;border-radius:6px;padding:5px 16px;cursor:pointer;font-size:0.85rem;">
-                    <i class="fa fa-times me-1"></i>Close
-                </button>
-             </div>`;
-        overlay.addEventListener('click', function(e) {
-            if (e.target === overlay) overlay.remove();
-        });
-        const escHandler = function(e) {
-            if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', escHandler); }
-        };
+            '<div style="position:relative;max-width:90vw;max-height:85vh;">' +
+            '<img src="' + objectURL + '" alt="' + escapeHtml(fileName) + '" style="max-width:90vw;max-height:85vh;border-radius:8px;display:block;box-shadow:0 8px 32px rgba(0,0,0,0.4);"/>' +
+            '</div>' +
+            '<div style="display:flex;gap:12px;align-items:center;">' +
+            '<span style="color:#fff;font-size:0.85rem;opacity:0.8;">' + escapeHtml(fileName) + '</span>' +
+            '<button onclick="this.closest(\'div[style*=fixed]\').remove()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.4);color:#fff;border-radius:6px;padding:5px 16px;cursor:pointer;font-size:0.85rem;"><i class="fa fa-times me-1"></i>Close</button>' +
+            '</div>';
+        overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+        const escHandler = function(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', escHandler); } };
         document.addEventListener('keydown', escHandler);
         document.body.appendChild(overlay);
     } else {
@@ -2206,89 +2342,39 @@ function cancelFileUpload(removeBtn) {
     const preview = removeBtn.closest('.file-preview-box');
     if (!preview) return;
     const inputEl = preview.previousElementSibling;
-    if (inputEl && inputEl.type === 'file') {
-        inputEl.value = '';
-    }
-    if (preview._objectURL) {
-        URL.revokeObjectURL(preview._objectURL);
-    }
+    if (inputEl && inputEl.type === 'file') inputEl.value = '';
+    if (preview._objectURL) URL.revokeObjectURL(preview._objectURL);
     preview.remove();
 }
 
 function showFilePreview(inputEl, file) {
     clearFilePreview(inputEl);
-    const sizeKB = (file.size / 1024).toFixed(1);
-    const sizeTxt = file.size > 1024 * 1024
-        ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
-        : sizeKB + ' KB';
+    const sizeTxt = file.size > 1024 * 1024 ? (file.size / (1024 * 1024)).toFixed(1) + ' MB' : (file.size / 1024).toFixed(1) + ' KB';
     const isImage = file.type.startsWith('image/');
-    const isPDF   = file.type === 'application/pdf';
+    const isPDF = file.type === 'application/pdf';
     const objectURL = URL.createObjectURL(file);
     const preview = document.createElement('div');
     preview.className = 'file-preview-box';
     let thumbHtml = '';
     if (isImage) {
-        thumbHtml = `<img src="${objectURL}" alt="preview"
-            style="width:40px;height:40px;object-fit:cover;border-radius:4px;
-                   border:0.5px solid #dee2e6;flex-shrink:0;"
-            onerror="this.style.display='none'"/>`;
+        thumbHtml = '<img src="' + objectURL + '" alt="preview" style="width:40px;height:40px;object-fit:cover;border-radius:4px;border:0.5px solid #dee2e6;flex-shrink:0;" onerror="this.style.display=\'none\'"/>';
     } else if (isPDF) {
-        thumbHtml = `<span style="width:40px;height:40px;display:flex;align-items:center;
-                          justify-content:center;background:#fff3f3;border-radius:4px;
-                          border:0.5px solid #f5c6cb;flex-shrink:0;">
-                       <i class="fa fa-file-pdf-o" style="color:#dc3545;font-size:1.3rem;"></i>
-                     </span>`;
+        thumbHtml = '<span style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:#fff3f3;border-radius:4px;border:0.5px solid #f5c6cb;flex-shrink:0;"><i class="fa fa-file-pdf-o" style="color:#dc3545;font-size:1.3rem;"></i></span>';
     } else {
-        thumbHtml = `<span style="width:40px;height:40px;display:flex;align-items:center;
-                          justify-content:center;background:#f8f9fa;border-radius:4px;
-                          border:0.5px solid #dee2e6;flex-shrink:0;">
-                       <i class="fa fa-file" style="color:#6c757d;font-size:1.3rem;"></i>
-                     </span>`;
+        thumbHtml = '<span style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:#f8f9fa;border-radius:4px;border:0.5px solid #dee2e6;flex-shrink:0;"><i class="fa fa-file" style="color:#6c757d;font-size:1.3rem;"></i></span>';
     }
-    preview.style.cssText = [
-        'display:flex', 'align-items:center', 'gap:10px',
-        'margin-top:8px', 'padding:8px 12px',
-        'border:1px solid #198754', 'border-radius:6px',
-        'background:#f0fdf4', 'font-size:0.85rem'
-    ].join(';');
-    preview.innerHTML =
-        thumbHtml +
-        `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#155724;">
-            <strong>${escapeHtml(file.name)}</strong>
-            <span style="margin-left:8px;color:#6c757d;font-size:0.78rem;">${sizeTxt}</span>
-         </span>
-         <button type="button"
-                 title="View file"
-                 onclick="viewUploadedFile('${objectURL}', '${escapeHtml(file.type)}', '${escapeHtml(file.name)}')"
-                 style="background:none;border:1px solid #0d6efd;color:#0d6efd;border-radius:5px;
-                        padding:3px 8px;font-size:0.78rem;cursor:pointer;white-space:nowrap;">
-             <i class="fa fa-eye me-1"></i>View
-         </button>
-         <button type="button"
-                 title="Remove file"
-                 class="btn btn-sm btn-outline-danger py-0 px-2"
-                 style="font-size:0.78rem;line-height:1.6;white-space:nowrap;"
-                 onclick="cancelFileUpload(this)">
-             <i class="fa fa-times me-1"></i>Remove
-         </button>`;
+    preview.style.cssText = 'display:flex;align-items:center;gap:10px;margin-top:8px;padding:8px 12px;border:1px solid #198754;border-radius:6px;background:#f0fdf4;font-size:0.85rem;';
+    preview.innerHTML = thumbHtml +
+        '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#155724;"><strong>' + escapeHtml(file.name) + '</strong><span style="margin-left:8px;color:#6c757d;font-size:0.78rem;">' + sizeTxt + '</span></span>' +
+        '<button type="button" title="View file" onclick="viewUploadedFile(\'' + objectURL + '\', \'' + escapeHtml(file.type) + '\', \'' + escapeHtml(file.name) + '\')" style="background:none;border:1px solid #0d6efd;color:#0d6efd;border-radius:5px;padding:3px 8px;font-size:0.78rem;cursor:pointer;white-space:nowrap;"><i class="fa fa-eye me-1"></i>View</button>' +
+        '<button type="button" title="Remove file" class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size:0.78rem;line-height:1.6;white-space:nowrap;" onclick="cancelFileUpload(this)"><i class="fa fa-times me-1"></i>Remove</button>';
     preview._objectURL = objectURL;
     inputEl.parentNode.insertBefore(preview, inputEl.nextSibling);
 }
 
-function showTabMessage(tabKey, text, type) {
-    document.querySelectorAll('.tab-message-box').forEach(el => el.remove());
-    const firstCard = document.querySelector(`.profile-tab-section[data-tab-group="${tabKey}"]`);
-    if (!firstCard) return;
-    const alertClass = type === 'success' ? 'alert-success' : type === 'info' ? 'alert-info' : 'alert-danger';
-    const icon = type === 'success' ? 'fa-check-circle' : type === 'info' ? 'fa-info-circle' : 'fa-exclamation-triangle';
-    const msgDiv = document.createElement('div');
-    msgDiv.className = `tab-message-box alert ${alertClass} alert-dismissible fade show mb-3`;
-    msgDiv.innerHTML = `<i class="fa ${icon} me-2"></i><span>${text}</span><button type="button" class="btn-close" onclick="this.parentNode.remove()"></button>`;
-    firstCard.parentNode.insertBefore(msgDiv, firstCard);
-    msgDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    setTimeout(() => { if (msgDiv.parentNode) msgDiv.remove(); }, 5000);
-}
-
+/* =========================================================
+   FORM SUBMIT
+========================================================= */
 document.getElementById('personalDetailsForm').addEventListener('submit', function(e) {
     e.preventDefault();
     if (PENDING_LOCKED) { showSaveError('<i class="fa fa-lock me-2"></i>Editing is locked while your submission is pending HR review.'); return; }
@@ -2298,30 +2384,32 @@ document.getElementById('personalDetailsForm').addEventListener('submit', functi
     const allTabs = ['basic', 'professional', 'family', 'education', 'documents'];
     const tabNames = {'basic': 'Basic Info', 'professional': 'Professional', 'family': 'Family', 'education': 'Education', 'documents': 'Documents'};
     const tabsWithErrors = [];
-    allTabs.forEach(tabKey => {
-        document.querySelectorAll(`.profile-tab-section[data-tab-group="${tabKey}"] input[data-validation], .profile-tab-section[data-tab-group="${tabKey}"] select[data-validation]`).forEach(input => {
-            if (!validateField({ target: input, type: 'submit' })) { if (!tabsWithErrors.includes(tabKey)) tabsWithErrors.push(tabKey); }
+    allTabs.forEach(function(tabKey) {
+        document.querySelectorAll('.profile-tab-section[data-tab-group="' + tabKey + '"] input[data-validation], .profile-tab-section[data-tab-group="' + tabKey + '"] select[data-validation]').forEach(function(input) {
+            if (!validateField({ target: input, type: 'submit' })) {
+                if (!tabsWithErrors.includes(tabKey)) tabsWithErrors.push(tabKey);
+            }
         });
     });
     updateTabErrorBadges();
     if (tabsWithErrors.length > 0) {
-        const tabLabels = tabsWithErrors.map(t => `<strong style="color:#721c24;">${tabNames[t] || t}</strong>`).join(', ');
-        showSaveError(`<i class="fa fa-exclamation-triangle me-2"></i>Please fix errors in the following tab(s) before saving: ${tabLabels}`);
+        const tabLabels = tabsWithErrors.map(function(t) { return '<strong style="color:#721c24;">' + (tabNames[t] || t) + '</strong>'; }).join(', ');
+        showSaveError('<i class="fa fa-exclamation-triangle me-2"></i>Please fix errors in the following tab(s) before saving: ' + tabLabels);
         return;
     }
     hideSaveError();
 
     const toReenable = [];
-    document.querySelectorAll('#personalDetailsForm select[disabled], #personalDetailsForm input[type="checkbox"][disabled]').forEach(el => {
+    document.querySelectorAll('#personalDetailsForm select[disabled], #personalDetailsForm input[type="checkbox"][disabled]').forEach(function(el) {
         if (!el.hasAttribute('data-always-readonly') && el.type !== 'file') { el.removeAttribute('disabled'); toReenable.push(el); }
     });
     const formData = new FormData(this);
     const csrfToken = document.querySelector('input[name="csrf_token"]').value;
-    toReenable.forEach(el => el.setAttribute('disabled', 'disabled'));
+    toReenable.forEach(function(el) { el.setAttribute('disabled', 'disabled'); });
 
     fetch('/my/employee/personal', { method: 'POST', body: formData, headers: { 'X-CSRFToken': csrfToken } })
-    .then(r => r.json())
-    .then(data => {
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
         if (data.success) {
             disableEditMode();
             localStorage.removeItem('profileDraft');
@@ -2339,26 +2427,26 @@ document.getElementById('personalDetailsForm').addEventListener('submit', functi
             showTabMessage(activeProfileTab, 'Error: ' + (data.error || 'Unknown error'), 'error');
         }
     })
-    .catch(err => { console.error('Error:', err); showTabMessage(activeProfileTab, 'Network error. Please try again.', 'error'); });
+    .catch(function(err) { console.error('Error:', err); showTabMessage(activeProfileTab, 'Network error. Please try again.', 'error'); });
 });
 
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('#personalDetailsForm .profile-tab-button').forEach(button => {
+/* =========================================================
+   DOM CONTENT LOADED
+========================================================= */
+document.addEventListener('DOMContentLoaded', function () {
+
+    document.querySelectorAll('#personalDetailsForm .profile-tab-button').forEach(function(button) {
         button.addEventListener('click', function() { switchProfileTab(this.getAttribute('data-tab-target')); });
     });
+
     switchProfileTab(activeProfileTab);
 
-    document.querySelectorAll('.edit-mode-toggle').forEach(t => t.checked = false);
+    document.querySelectorAll('.edit-mode-toggle').forEach(function(t) { t.checked = false; });
     document.getElementById('formActions').style.display = 'none';
     document.getElementById('viewActions').style.display = 'block';
     isEditMode = false;
 
-<!--    var nonResidentCheckbox = document.getElementById('is_non_resident');-->
-<!--    if (nonResidentCheckbox) {-->
-<!--        toggleNonResidentSections(nonResidentCheckbox);-->
-<!--    }-->
-
-    document.querySelectorAll('#personalDetailsForm input[type="file"].file-upload-input').forEach(fi => {
+    document.querySelectorAll('#personalDetailsForm input[type="file"].file-upload-input').forEach(function(fi) {
         fi.setAttribute('disabled', 'disabled');
     });
 
@@ -2382,7 +2470,8 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const draft = JSON.parse(draftRaw);
             enableEditMode();
-            Object.entries(draft).forEach(function([key, value]) {
+            Object.entries(draft).forEach(function(entry) {
+                const key = entry[0]; const value = entry[1];
                 const input = document.querySelector('[name="' + key + '"]');
                 if (!input || input.type === 'hidden' || input.type === 'file') return;
                 if (input.type === 'checkbox') {
@@ -2397,22 +2486,31 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (PENDING_LOCKED) {
-        document.querySelectorAll('.edit-mode-toggle').forEach(t => {
+        document.querySelectorAll('.edit-mode-toggle').forEach(function(t) {
             t.closest('.form-check.form-switch') && (t.closest('.form-check.form-switch').style.display = 'none');
         });
         var editBtn = document.getElementById('editProfileBtn');
         if (editBtn) { editBtn.disabled = true; editBtn.title = 'Editing locked — pending HR review'; }
     }
 
-    // ── Initialize states on page load ──
-    // AFTER — loads states based on countries_id
-var countrySelect = document.querySelector('select[name="countries_id"]');
-if (countrySelect && countrySelect.value) {
-    var currentStateVal = '<t t-esc="employee.states_id.id if employee.states_id else 0"/>';
-    loadStatesByCountryAndSelect(countrySelect.value, currentStateVal);
-}
+    /* ── Initialize Work Location state dropdown on page load ── */
+    var countrySelect = document.querySelector('select[name="countries_id"]');
+    if (countrySelect && countrySelect.value) {
+        var currentStateVal = '<t t-esc="employee.states_id.id if employee.states_id else 0"/>';
+        loadStatesByCountryAndSelect(countrySelect.value, currentStateVal);
+    }
+
+    /* ── Initialize Contact Information state dropdown on page load ── */
+    var contactCountrySelect = document.querySelector('select[name="country_residences_id"]');
+    if (contactCountrySelect && contactCountrySelect.value) {
+        var currentContactStateVal = '<t t-esc="employee.private_state_id.id if employee.private_state_id else 0"/>';
+        loadContactStatesByCountryAndSelect(contactCountrySelect.value, currentContactStateVal);
+    }
 });
 
+/* =========================================================
+   LOAD STATES — Work Location (countries_id → statesDropdown)
+========================================================= */
 function loadStatesByCountry(countryId) {
     var stateSelect = document.getElementById('statesDropdown');
     if (!stateSelect) return;
@@ -2424,10 +2522,7 @@ function loadStatesByCountry(countryId) {
     fetch('/portal/get_states', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            jsonrpc: '2.0', id: 1, method: 'call',
-            params: {country_id: parseInt(countryId)}
-        })
+        body: JSON.stringify({jsonrpc: '2.0', id: 1, method: 'call', params: {country_id: parseInt(countryId)}})
     })
     .then(function(r) { return r.json(); })
     .then(function(data) {
@@ -2451,10 +2546,7 @@ function loadStatesByCountryAndSelect(countryId, selectedId) {
     fetch('/portal/get_states', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            jsonrpc: '2.0', id: 1, method: 'call',
-            params: {country_id: parseInt(countryId)}
-        })
+        body: JSON.stringify({jsonrpc: '2.0', id: 1, method: 'call', params: {country_id: parseInt(countryId)}})
     })
     .then(function(r) { return r.json(); })
     .then(function(data) {
@@ -2469,7 +2561,64 @@ function loadStatesByCountryAndSelect(countryId, selectedId) {
         });
     });
 }
-                    ]]>
+
+/* =========================================================
+   LOAD STATES — Contact Info (country_residences_id → contactStateDropdown)
+   NOTE: This function is at GLOBAL scope — do NOT nest it inside
+   any other function or it will not be accessible from HTML onchange
+========================================================= */
+function loadContactStates(countryId) {
+    var stateSelect = document.getElementById('contactStateDropdown');
+    if (!stateSelect) return;
+    if (!countryId) {
+        stateSelect.innerHTML = '<option value="">-- Select Country first --</option>';
+        return;
+    }
+    stateSelect.innerHTML = '<option value="">-- Loading... --</option>';
+    fetch('/portal/get_states', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({jsonrpc: '2.0', id: 1, method: 'call', params: {country_id: parseInt(countryId)}})
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        var states = data.result || [];
+        stateSelect.innerHTML = '<option value="">-- Select State --</option>';
+        states.forEach(function(state) {
+            var opt = document.createElement('option');
+            opt.value = state.id;
+            opt.textContent = state.name;
+            stateSelect.appendChild(opt);
+        });
+    })
+    .catch(function() {
+        stateSelect.innerHTML = '<option value="">-- Error loading states --</option>';
+    });
+}
+
+function loadContactStatesByCountryAndSelect(countryId, selectedId) {
+    var stateSelect = document.getElementById('contactStateDropdown');
+    if (!stateSelect || !countryId) return;
+    fetch('/portal/get_states', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({jsonrpc: '2.0', id: 1, method: 'call', params: {country_id: parseInt(countryId)}})
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        var states = data.result || [];
+        stateSelect.innerHTML = '<option value="">-- Select State --</option>';
+        states.forEach(function(state) {
+            var opt = document.createElement('option');
+            opt.value = state.id;
+            opt.textContent = state.name;
+            if (selectedId && state.id == parseInt(selectedId)) opt.selected = true;
+            stateSelect.appendChild(opt);
+        });
+    });
+}
+
+]]>
                 </script>
 
                 <!-- ===== CSS ===== -->
