@@ -19,7 +19,9 @@ MANY2ONE_FIELDS = {
     'issue_countries_id',         # Passport Issuing Country
     'countries_id',               # Country (Work Location)
     'father_nationalities_id',    # Father Nationality  ← NEW
-    'mother_nationalities_id',    # Mother Nationality  ← NEW
+    'mother_nationalities_id',
+    'religion',
+    # Mother Nationality  ← NEW
 }
 
 # ── ALL editable text/select fields ───────────────────────────────────────────
@@ -30,6 +32,7 @@ EDITABLE_FIELDS = [
     'private_state_id',
     'whatsapp', 'linkedin', 'legal_name',
     'facebook_profile', 'insta_profile', 'twitter_profile',
+    'year_of_passing',
 
     # Basic Info — Personal
     'blood_group',
@@ -44,6 +47,7 @@ EDITABLE_FIELDS = [
     'country_id',
     'issue_countries_id',
     'countries_id',
+     'religion',
 
     # Basic Info — Emergency
     'l10n_in_relationship', 'emergency_phone', 'e_private_city',
@@ -101,6 +105,7 @@ EDITABLE_FIELDS = [
     # Professional — Work Location
     'u_private_city', 'current_address',
     'house_no', 'area_name', 'city', 'zip_code',
+    'country_residences_id', 'states_id',
 
     # Professional — General
     'experience', 'current_role', 'industry_start_date',
@@ -212,6 +217,16 @@ class EmployeePortalProfileSubmit(http.Controller):
     def portal_employee_home(self, **kwargs):
         return request.redirect('/my/employee/personal')
 
+    @http.route('/portal/get_states', type='json', auth='user', website=True)
+    def get_states_by_country(self, country_id=0, **kwargs):
+        try:
+            states = request.env['res.country.state'].sudo().search(
+                [('country_id', '=', int(country_id))], order='name'
+            )
+            return [{'id': s.id, 'name': s.name} for s in states]
+        except Exception:
+            return []
+
     @http.route(
         '/my/employee/personal',
         type='http', auth='user', website=True,
@@ -276,6 +291,7 @@ class EmployeePortalProfileSubmit(http.Controller):
                 }
 
         countries = request.env['res.country'].sudo().search([], order='name')
+        religions = request.env['tec.religion'].sudo().search([], order='name')
 
         return request.render(
             'employee_self_service_portal.portal_employee_profile_personal',
@@ -286,6 +302,7 @@ class EmployeePortalProfileSubmit(http.Controller):
                 'isd_codes':      ISD_CODES,
                 'notification':   notification,
                 'portal_overlay': portal_overlay,
+                'religions': religions,
             },
         )
 

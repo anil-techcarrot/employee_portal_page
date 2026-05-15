@@ -102,7 +102,18 @@ MANY2ONE_FIELDS = {
     'issue_countries_id',
     'countries_id',
     'father_nationalities_id',    # ← NEW
-    'mother_nationalities_id',    # ← NEW
+    'mother_nationalities_id',
+    'religion',# ← NEW
+}
+
+MANY2ONE_MODEL_MAP = {
+    'nationality_at_birth_id': 'res.country',
+    'country_id':              'res.country',
+    'issue_countries_id':      'res.country',
+    'countries_id':            'res.country',
+    'country_residences_id':   'res.country',
+    'states_id':               'res.country.state',
+    'religion':                'tec.religion',  # ← FIXED: points to tec.religion model
 }
 
 # Selection fields
@@ -305,8 +316,9 @@ class HrProfileChangeRequest(models.Model):
                         except Exception:
                             current_display = '—'
                         try:
-                            country = rec.env['res.country'].sudo().browse(int(str(new_val)))
-                            new_val_display = country.name if country.exists() else str(new_val)
+                            model_name = MANY2ONE_MODEL_MAP.get(key, 'res.country')
+                            linked_rec = rec.env[model_name].sudo().browse(int(str(new_val)))
+                            new_val_display = linked_rec.name if linked_rec.exists() else str(new_val)
                         except Exception:
                             new_val_display = str(new_val)
                         is_changed = (new_val_display != current_display)
@@ -387,10 +399,19 @@ class HrProfileChangeRequest(models.Model):
             # ── Many2one fields — write as integer ────────────────
             if k in MANY2ONE_FIELDS:
                 try:
-                    write_vals[k] = int(str(v))
-                    _logger.info('PCR %s: Many2one %s = %s', self.name, k, write_vals[k])
+                    int_val = int(str(v))
+                    model_name = MANY2ONE_MODEL_MAP.get(k, 'res.country')
+                    linked_rec = self.env[model_name].sudo().browse(int_val)
+                    if linked_rec.exists():
+                        write_vals[k] = int_val
+                        _logger.info('PCR %s: Many2one %s = %s (%s)',
+                                     self.name, k, int_val, linked_rec.name)
+                    else:
+                        _logger.warning('PCR %s: Many2one %s id %s not found in %s',
+                                        self.name, k, int_val, model_name)
                 except (ValueError, TypeError):
-                    _logger.warning('PCR %s: Cannot convert Many2one %s: %r', self.name, k, v)
+                    _logger.warning('PCR %s: Cannot convert Many2one %s value: %r',
+                                    self.name, k, v)
                 continue
 
             # ── Selection field validation ────────────────────────
