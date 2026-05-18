@@ -2203,20 +2203,23 @@ class PortalEmployee(http.Controller):
             import traceback
             _logger.error("Traceback: %s", traceback.format_exc())
 
+
     @http.route(MY_EMPLOYEE_URL + '/certification', type='http', auth='user', website=True, methods=['GET', 'POST'])
     def portal_employee_certification(self, **post):
         employee = self._get_employee()
 
+        skill_types = request.env['hr.skill.type'].sudo().search([
+            ('name', 'ilike', 'certif')
+        ])
         certificate_skills = request.env['hr.skill'].sudo().search([
-            ('skill_type_id.is_certification', '=', True)
-        ], order='skill_type_id, name')
+            ('skill_type_id', 'in', skill_types.ids)
+        ], order='name')
 
         if request.httprequest.method == 'POST':
             action = post.get('action')
             try:
                 import base64
 
-                # ── Handle file attachment separately (store temporarily) ──
                 attachment_data = None
                 attachment_name = None
                 attachment_mime = None
@@ -2226,7 +2229,6 @@ class PortalEmployee(http.Controller):
                     attachment_name = attachment_file.filename
                     attachment_mime = attachment_file.content_type or 'application/octet-stream'
 
-                # ── Build certification change payload ──
                 if action == 'add_certification':
                     skill_id = int(post.get('skill_id', 0) or 0)
                     if not skill_id:
@@ -2248,7 +2250,6 @@ class PortalEmployee(http.Controller):
                     }
                     if attachment_data:
                         cert_payload['attachment_data'] = attachment_data
-                        cert_payload['attachment_name'] = attachment_name
                         cert_payload['attachment_mime'] = attachment_mime
 
                 elif action == 'edit_certification':
@@ -2269,7 +2270,6 @@ class PortalEmployee(http.Controller):
                     }
                     if attachment_data:
                         cert_payload['attachment_data'] = attachment_data
-                        cert_payload['attachment_name'] = attachment_name
                         cert_payload['attachment_mime'] = attachment_mime
 
                 elif action == 'delete_certification':
@@ -2287,18 +2287,14 @@ class PortalEmployee(http.Controller):
                 else:
                     return request.make_json_response({'success': False, 'error': 'Unknown action.'})
 
-                # ── Create PCR for certification change ──
-                # ── Create PCR for certification change ──
-                # ── Create PCR for certification change ──
-                import json
+                import json as json_lib
                 pcr = request.env['hr.profile.change.request'].sudo().create({
                     'employee_id': employee.id,
-                    'submitted_data': json.dumps({'_cert_change': cert_payload}),
+                    'submitted_data': json_lib.dumps({'_cert_change': cert_payload}),
                     'state': 'draft',
                 })
                 pcr.action_submit()
 
-                # ── Save attachment directly to PCR so HR can view it ──
                 if attachment_data:
                     request.env['ir.attachment'].sudo().create({
                         'name': attachment_name,
@@ -2320,11 +2316,49 @@ class PortalEmployee(http.Controller):
                 _logger.error("Certification portal error: %s\n%s", str(e), traceback.format_exc())
                 return request.make_json_response({'success': False, 'error': str(e)})
 
-        # ── GET ──
+
+        import json as json_lib
+
+
         certifications = request.env['hr.employee.skill'].sudo().search([
             ('employee_id', '=', employee.id),
-            ('skill_type_id.is_certification', '=', True),
+            ('skill_type_id.name', 'ilike', 'certif'),
         ], order='id desc')
+
+
+        pending_pcrs = request.env['hr.profile.change.request'].sudo().search([
+            ('employee_id', '=', employee.id),
+            ('state', '=', 'pending'),
+        ], order='id desc')
+
+        pending_cert_changes = []
+        for pcr in pending_pcrs:
+            if not pcr.submitted_data:
+                continue
+            try:
+                data = json_lib.loads(pcr.submitted_data)
+                cert_change = data.get('_cert_change')
+                if not cert_change:
+                    continue
+
+                pcr_attachment = request.env['ir.attachment'].sudo().search([
+                    ('res_model', '=', 'hr.profile.change.request'),
+                    ('res_id', '=', pcr.id),
+                ], limit=1)
+
+                pending_cert_changes.append({
+                    'pcr_name': pcr.name,
+                    'pcr_id': pcr.id,
+                    'cert_action': cert_change.get('cert_action', ''),
+                    'skill_name': cert_change.get('skill_name', '—'),
+                    'valid_from': cert_change.get('valid_from') or '',
+                    'valid_to': cert_change.get('valid_to') or '',
+                    'attachment_name': cert_change.get('attachment_name') or '',
+                    'pcr_attachment': pcr_attachment or False,
+                    'skill_record_id': cert_change.get('skill_record_id', None),
+                })
+            except Exception:
+                continue
 
         return request.render(
             'employee_self_service_portal.portal_employee_profile_certification', {
@@ -2332,23 +2366,33 @@ class PortalEmployee(http.Controller):
                 'section': 'certification',
                 'certifications': certifications,
                 'certificate_skills': certificate_skills,
+                'pending_cert_changes': pending_cert_changes,
             }
         )
 
     @http.route('/portal/attachment/preview/<int:attachment_id>', type='http', auth='user', website=True)
     def preview_attachment(self, attachment_id, **kwargs):
-        """Stream attachment inline (so PDFs open in browser, images display)."""
+
         attachment = request.env['ir.attachment'].sudo().browse(attachment_id)
         if not attachment.exists():
             return request.not_found()
 
-        # Security: only allow access to attachments on hr.employee.skill
-        # records belonging to the logged-in employee
+        employee = self._get_employee()
+
+
         if attachment.res_model == 'hr.employee.skill' and attachment.res_id:
             skill_record = request.env['hr.employee.skill'].sudo().browse(attachment.res_id)
-            employee = self._get_employee()
             if not skill_record.exists() or skill_record.employee_id.id != employee.id:
                 return request.not_found()
+
+
+        elif attachment.res_model == 'hr.profile.change.request' and attachment.res_id:
+            pcr = request.env['hr.profile.change.request'].sudo().browse(attachment.res_id)
+            if not pcr.exists() or pcr.employee_id.id != employee.id:
+                return request.not_found()
+
+        else:
+            return request.not_found()
 
         return request.env['ir.binary']._get_stream_from(attachment).get_response(
             as_attachment=False
