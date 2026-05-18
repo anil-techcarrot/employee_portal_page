@@ -329,7 +329,7 @@
                             <!-- Profile Card -->
                             <div class="col-md-4">
                                 <div class="module-card card border-0 shadow-sm h-100">
-                                    <div class="card-body">
+                                    <div class="card-body d-flex flex-column justify-content-between">
                                         <div class="d-flex align-items-center mb-3">
                                             <div class="icon-circle bg-secondary bg-opacity-10 me-3">
                                                 <i class="fa fa-user-circle fa-lg text-secondary"></i>
@@ -343,57 +343,57 @@
                                         <!-- Employee quick info -->
                                         <div class="profile-summary mb-3">
 
-                                            <div class="row mt-1">
-                                                <div class="col-3 text-muted small">
+                                            <div class="row m-0 mt-1 ">
+                                                <div class="col-3 text-muted small p-0">
                                                     Name
                                                 </div>
-                                                <div class="col-1 text-center small">
+                                                <div class="col-1 text-center small p-0">
                                                     :
                                                 </div>
-                                                <div class="col-8">
+                                                <div class="col-8 p-0">
                                                     <strong class="small"
                                                             t-esc="employee.name if employee else '—'"/>
                                                 </div>
                                             </div>
 
-                                            <div class="row mt-1">
-                                                <div class="col-3 text-muted small">
-                                                    Department
-                                                </div>
-                                                <div class="col-1 text-center small">
-                                                    :
-                                                </div>
-                                                <div class="col-8">
-                                                    <strong class="small"
-                                                            t-esc="employee.department_id.name if employee and employee.department_id else '—'"/>
-                                                </div>
-                                            </div>
+<!--                                            <div class="row mt-1">-->
+<!--                                                <div class="col-3 text-muted small">-->
+<!--                                                    Department-->
+<!--                                                </div>-->
+<!--                                                <div class="col-1 text-center small">-->
+<!--                                                    :-->
+<!--                                                </div>-->
+<!--                                                <div class="col-8">-->
+<!--                                                    <strong class="small"-->
+<!--                                                            t-esc="employee.department_id.name if employee and employee.department_id else '—'"/>-->
+<!--                                                </div>-->
+<!--                                            </div>-->
 
-                                            <div class="row mt-1">
-                                                <div class="col-3 text-muted small">
+                                            <div class="row m-0 mt-1">
+                                                <div class="col-3 text-muted small p-0">
                                                     Job Title
                                                 </div>
-                                                <div class="col-1 text-center small">
+                                                <div class="col-1 text-center small p-0">
                                                     :
                                                 </div>
-                                                <div class="col-8">
+                                                <div class="col-8 p-0">
                                                     <strong class="small"
                                                             t-esc="employee.job_title if employee and employee.job_title else '—'"/>
                                                 </div>
                                             </div>
 
-                                            <div class="row mt-1">
-                                                <div class="col-3 text-muted small">
-                                                    Work Email
-                                                </div>
-                                                <div class="col-1 text-center small">
-                                                    :
-                                                </div>
-                                                <div class="col-8">
-                                                    <strong class="small"
-                                                            t-esc="employee.work_email if employee and employee.work_email else '—'"/>
-                                                </div>
-                                            </div>
+<!--                                            <div class="row mt-1">-->
+<!--                                                <div class="col-3 text-muted small">-->
+<!--                                                    Work Email-->
+<!--                                                </div>-->
+<!--                                                <div class="col-1 text-center small">-->
+<!--                                                    :-->
+<!--                                                </div>-->
+<!--                                                <div class="col-8">-->
+<!--                                                    <strong class="small"-->
+<!--                                                            t-esc="employee.work_email if employee and employee.work_email else '—'"/>-->
+<!--                                                </div>-->
+<!--                                            </div>-->
 
                                         </div>
                                         <a href="/my/employee" class="btn btn-outline-secondary btn-sm w-100">
@@ -409,7 +409,7 @@
                             <t t-if="has_attendance_access">
                                 <div class="col-md-4">
                                     <div class="module-card card border-0 shadow-sm h-100">
-                                        <div class="card-body">
+                                        <div class="card-body d-flex flex-column justify-content-between">
                                             <div class="d-flex align-items-center mb-3">
                                                 <div class="icon-circle bg-primary bg-opacity-10 me-3">
                                                     <i class="fa fa-calendar-check-o fa-lg text-primary"></i>
@@ -543,9 +543,9 @@
 
                             <!-- CRM Card -->
                             <t t-if="has_crm_access">
-                                <div class="4">
+                                <div class="col-md-4">
                                     <div class="module-card card border-0 shadow-sm h-100">
-                                        <div class="card-body">
+                                        <div class="card-body d-flex flex-column justify-content-between">
                                             <div class="d-flex align-items-center mb-3">
                                                 <div class="icon-circle bg-info bg-opacity-10 me-3">
                                                     <i class="fa fa-briefcase fa-lg text-info"></i>
@@ -588,7 +588,7 @@
                             <t t-if="has_expenses_access">
                                 <div class="col-md-4">
                                     <div class="module-card card border-0 shadow-sm h-100">
-                                        <div class="card-body">
+                                        <div class="card-body d-flex flex-column justify-content-between">
                                             <div class="d-flex align-items-center mb-3">
                                                 <div class="icon-circle bg-warning bg-opacity-10 me-3">
                                                     <i class="fa fa-money fa-lg text-warning"></i>
@@ -643,7 +643,7 @@
                             <t t-if="has_payslip_access">
                                 <div class="col-md-4">
                                     <div class="module-card card border-0 shadow-sm h-100">
-                                        <div class="card-body">
+                                        <div class="card-body d-flex flex-column justify-content-between">
 
                                             <div class="d-flex align-items-center mb-3">
                                                 <div class="icon-circle bg-success bg-opacity-10 me-3">
@@ -659,28 +659,28 @@
 
                                             <div class="payslip-summary mb-3">
 
-                                                <div class="row mt-1">
-                                                    <div class="col-3 small text-muted">
+                                                <div class="row m-0 mt-1">
+                                                    <div class="col-5 small text-muted p-0">
                                                         Total Payslips
                                                     </div>
-                                                    <div class="col-1 text-center small">
+                                                    <div class="col-1 text-center small p-0">
                                                         :
                                                     </div>
-                                                    <div class="col-8">
-                                                        <strong class="small text-success"
+                                                    <div class="col-6">
+                                                        <strong class="small text-success p-0"
                                                                 t-esc="payslips_count or 0"/>
                                                     </div>
                                                 </div>
 
                                                 <t t-if="latest_payslip">
-                                                    <div class="row mt-1">
-                                                        <div class="col-3 small text-muted">
+                                                    <div class="row m-0 mt-1 ">
+                                                        <div class="col-3 small text-muted p-0">
                                                             Latest
                                                         </div>
-                                                        <div class="col-1 text-center small">
+                                                        <div class="col-1 text-center small p-0">
                                                             :
                                                         </div>
-                                                        <div class="col-8">
+                                                        <div class="col-8 p-0">
                                                             <small class="text-muted">
                                                                 <t t-esc="latest_payslip.get_formatted_period()"/>
                                                             </small>
