@@ -58,7 +58,9 @@
                 </header>
                 <sheet>
                     <div class="oe_title">
-                        <h1><field name="name" readonly="1"/></h1>
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
                     </div>
                     <group>
                         <group string="Request Information">
@@ -78,6 +80,12 @@
                     </group>
                     <separator string="Submitted Changes (Current vs New)"/>
                     <field name="changed_fields_display" widget="html" readonly="1"/>
+                    <separator string="Supporting Documents"/>
+                    <field name="attachment_ids"
+                           widget="many2many_binary"
+                           string="Attached Documents"
+                           readonly="1"
+                           help="Documents submitted by the employee with this request."/>
                     <separator string="Audit Trail"/>
                     <field name="trail_ids" readonly="1">
                         <list>

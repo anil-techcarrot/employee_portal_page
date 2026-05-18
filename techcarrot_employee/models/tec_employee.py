@@ -466,3 +466,20 @@ class HrVersionInherit(models.Model):
         selection_add=[('bootcamp', 'Bootcamp'), ('permanent', 'Permanent'), ('temporary', 'Temporary'),
                        ('seconded', 'Seconded')],
         ondelete={'bootcamp': 'cascade', 'permanent': 'cascade', 'temporary': 'cascade', 'seconded': 'cascade'})
+
+
+
+# models/hr_employee_skill.py
+from odoo import fields, models
+
+class HrEmployeeSkill(models.Model):
+    _inherit = 'hr.employee.skill'
+
+    certificate_attachment_ids = fields.Many2many(
+        comodel_name='ir.attachment',
+        relation='hr_employee_skill_attachment_rel',
+        column1='skill_id',
+        column2='attachment_id',
+        string='Attachments',
+        copy=False,
+    )

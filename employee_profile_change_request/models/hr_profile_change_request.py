@@ -125,6 +125,7 @@ SELECTION_FIELDS = {
 SKIP_ON_APPROVE = {
     'csrf_token', 'submit',
     'emirates_id_file', 'passport_file', 'other_documents', 'has_work_permit',
+    '_cert_change'
 }
 
 CODED_VALUE_LABELS = {
@@ -195,6 +196,22 @@ class HrProfileChangeRequest(models.Model):
     has_work_permit_doc = fields.Boolean(string='Work Permit Uploaded',  compute='_compute_doc_flags', store=True)
     has_any_doc         = fields.Boolean(string='Has Any Document',      compute='_compute_doc_flags', store=True)
     total_docs_uploaded = fields.Integer(string='Total Documents',       compute='_compute_doc_flags', store=True)
+
+    attachment_ids = fields.Many2many(
+        'ir.attachment',
+        string='Supporting Documents',
+        compute='_compute_attachment_ids',
+    )
+
+    def _compute_attachment_ids(self):
+        for rec in self:
+            if rec.id:
+                rec.attachment_ids = self.env['ir.attachment'].sudo().search([
+                    ('res_model', '=', 'hr.profile.change.request'),
+                    ('res_id', '=', rec.id),
+                ])
+            else:
+                rec.attachment_ids = self.env['ir.attachment']
 
     @api.depends('submitted_data')
     def _compute_doc_flags(self):
@@ -299,6 +316,53 @@ class HrProfileChangeRequest(models.Model):
                 continue
             try:
                 data = json.loads(rec.submitted_data)
+
+                # ── Certification change — special rendering ──
+                cert_change = data.get('_cert_change')
+                if cert_change:
+                    action_labels = {'add': 'Add Certification', 'edit': 'Edit Certification',
+                                     'delete': 'Delete Certification'}
+                    action = cert_change.get('cert_action', '')
+                    skill_name = cert_change.get('skill_name', '—')
+                    valid_from = cert_change.get('valid_from') or 'Indefinite'
+                    valid_to = cert_change.get('valid_to') or 'Indefinite'
+                    has_attachment = bool(cert_change.get('has_attachment')) or bool(cert_change.get('attachment_name'))
+
+                    rec.changed_fields_display = f'''
+                    <div style="overflow-x:auto;">
+                      <table style="width:100%;border-collapse:collapse;font-size:13px;font-family:Arial,sans-serif;">
+                        <thead><tr style="background:#4e73df;color:white;">
+                          <th style="padding:10px 12px;text-align:left;border:1px solid #3a5ec9;">Field</th>
+                          <th style="padding:10px 12px;text-align:left;border:1px solid #3a5ec9;">Value</th>
+                        </tr></thead>
+                        <tbody>
+                          <tr style="background:#fffde7;">
+                            <td style="padding:8px 12px;border:1px solid #ddd;"><strong>Action</strong></td>
+                            <td style="padding:8px 12px;border:1px solid #ddd;color:#2e7d32;font-weight:600;">{action_labels.get(action, action)}</td>
+                          </tr>
+                          <tr>
+                            <td style="padding:8px 12px;border:1px solid #ddd;"><strong>Certificate</strong></td>
+                            <td style="padding:8px 12px;border:1px solid #ddd;">{skill_name}</td>
+                          </tr>
+                          <tr>
+                            <td style="padding:8px 12px;border:1px solid #ddd;"><strong>Valid From</strong></td>
+                            <td style="padding:8px 12px;border:1px solid #ddd;">{valid_from}</td>
+                          </tr>
+                          <tr>
+                            <td style="padding:8px 12px;border:1px solid #ddd;"><strong>Valid To</strong></td>
+                            <td style="padding:8px 12px;border:1px solid #ddd;">{valid_to}</td>
+                          </tr>
+                          <tr>
+                            <td style="padding:8px 12px;border:1px solid #ddd;"><strong>Attachment</strong></td>
+                            <td style="padding:8px 12px;border:1px solid #ddd;">{"✅ File attached (will be saved on approval)" if has_attachment else "—"}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <p style="font-size:11px;color:#999;margin-top:8px;">
+                      ⚠ This certification change will only be applied to Odoo after you click Approve.
+                    </p>'''
+                    continue  # skip the normal field-diff rendering
                 rows = ''
                 for key, new_val in data.items():
                     label = FIELD_LABELS.get(key, key.replace('_', ' ').title())
@@ -385,6 +449,21 @@ class HrProfileChangeRequest(models.Model):
             data = json.loads(self.submitted_data or '{}')
         except Exception:
             raise UserError(_('Submitted data is corrupted.'))
+        cert_change = data.get('_cert_change')
+        if cert_change:
+            self._apply_cert_change(cert_change)
+            self.write({
+                'state': 'approved',
+                'reviewed_by': self.env.user.id,
+                'review_date': fields.Datetime.now(),
+            })
+            self._add_trail(action='approved', note=f'Approved by {self.env.user.name}.')
+            self._send_mail_to_employee('approved')
+            self.employee_id.sudo().write({
+                'last_portal_submission': False,
+                'last_submission_state': 'approved',
+            })
+            return True
 
         write_vals = {}
 
@@ -464,6 +543,98 @@ class HrProfileChangeRequest(models.Model):
             'last_submission_state':  'approved',
         })
         return True
+
+    def _apply_cert_change(self, cert_change):
+        action = cert_change.get('cert_action')
+        employee = self.employee_id
+
+        # Find attachment linked to this PCR (uploaded by employee)
+        pcr_attachments = self.env['ir.attachment'].sudo().search([
+            ('res_model', '=', 'hr.profile.change.request'),
+            ('res_id', '=', self.id),
+        ])
+
+        if action == 'add':
+            skill_id = cert_change.get('skill_id')
+            skill = self.env['hr.skill'].sudo().browse(skill_id)
+            if not skill.exists():
+                raise UserError(_('Skill no longer exists.'))
+
+            skill_level = self.env['hr.skill.level'].sudo().search([
+                ('skill_type_id', '=', skill.skill_type_id.id),
+                ('default_level', '=', True),
+            ], limit=1)
+            if not skill_level:
+                skill_level = self.env['hr.skill.level'].sudo().search([
+                    ('skill_type_id', '=', skill.skill_type_id.id),
+                ], limit=1)
+            if not skill_level:
+                raise UserError(_('No skill level configured for this certificate type.'))
+
+            new_skill = self.env['hr.employee.skill'].sudo().create({
+                'employee_id': employee.id,
+                'skill_id': skill_id,
+                'skill_type_id': skill.skill_type_id.id,
+                'skill_level_id': skill_level.id,
+                'valid_from': cert_change.get('valid_from') or False,
+                'valid_to': cert_change.get('valid_to') or False,
+            })
+
+            # Move attachment from PCR to the new hr.employee.skill record
+            if pcr_attachments:
+                new_att_ids = []
+                for att in pcr_attachments:
+                    new_att = self.env['ir.attachment'].sudo().create({
+                        'name': att.name,
+                        'datas': att.datas,
+                        'res_model': 'hr.employee.skill',
+                        'res_id': new_skill.id,
+                        'mimetype': att.mimetype,
+                    })
+                    new_att_ids.append(new_att.id)
+                new_skill.sudo().write({
+                    'certificate_attachment_ids': [(6, 0, new_att_ids)]
+                })
+            _logger.info('Cert ADD approved: skill=%s employee=%s', skill.name, employee.name)
+
+        elif action == 'edit':
+            record_id = cert_change.get('skill_record_id')
+            skill_record = self.env['hr.employee.skill'].sudo().browse(record_id)
+            if not skill_record.exists() or skill_record.employee_id.id != employee.id:
+                raise UserError(_('Certification record not found.'))
+
+            vals = {}
+            if cert_change.get('valid_from') is not None:
+                vals['valid_from'] = cert_change['valid_from'] or False
+            if cert_change.get('valid_to') is not None:
+                vals['valid_to'] = cert_change['valid_to'] or False
+            if vals:
+                skill_record.sudo().write(vals)
+
+            # Move attachment from PCR to the existing hr.employee.skill record
+            if pcr_attachments:
+                new_att_ids = []
+                for att in pcr_attachments:
+                    new_att = self.env['ir.attachment'].sudo().create({
+                        'name': att.name,
+                        'datas': att.datas,
+                        'res_model': 'hr.employee.skill',
+                        'res_id': skill_record.id,
+                        'mimetype': att.mimetype,
+                    })
+                    new_att_ids.append(new_att.id)
+                existing_ids = skill_record.certificate_attachment_ids.ids
+                skill_record.sudo().write({
+                    'certificate_attachment_ids': [(6, 0, existing_ids + new_att_ids)]
+                })
+            _logger.info('Cert EDIT approved: id=%s employee=%s', record_id, employee.name)
+
+        elif action == 'delete':
+            record_id = cert_change.get('skill_record_id')
+            skill_record = self.env['hr.employee.skill'].sudo().browse(record_id)
+            if skill_record.exists() and skill_record.employee_id.id == employee.id:
+                skill_record.sudo().unlink()
+            _logger.info('Cert DELETE approved: id=%s employee=%s', record_id, employee.name)
 
     def action_reject(self):
         self.ensure_one()

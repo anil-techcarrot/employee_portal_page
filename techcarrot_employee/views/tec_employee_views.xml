@@ -389,6 +389,15 @@
 
 
                 <separator string="Certifications"/>
+
+                <field name="certification_ids" mode="list" widget="one2many" nolabel="1" context="{'form_view_ref': 'hr_skills.employee_skill_view_inherit_certificate_form', 'dialog_size': 'large', 'default_employee_id': id, 'certificate_skill': True}">
+                        <list decoration-muted="valid_to and valid_to &lt; context_today().strftime('%Y-%m-%d')">
+                            <field name="skill_id" width="300" string="Certification"/>
+                            <field name="certificate_attachment_ids" string="Attachments" widget="many2many_binary"/>
+                            <field name="valid_from" string="From" widget="formatted_date" options="{                                 'month_format': 'short',                             }"/>
+                            <field name="valid_to" string="To" widget="formatted_date" options="{                                 'month_format': 'short',                                 'color': {                                     'danger': 'valid_to and valid_to &lt;= (context_today() + relativedelta(days=7)).strftime(\'%Y-%m-%d\') and valid_to &gt; context_today().strftime(\'%Y-%m-%d\')',                                     'warning': 'valid_to and valid_to &lt;= (context_today() + relativedelta(months=3)).strftime(\'%Y-%m-%d\') and valid_to &gt; (context_today() + relativedelta(days=7)).strftime(\'%Y-%m-%d\')'                                 }                             }"/>
+                        </list>
+                    </field>
                 <group>
                     <group string="Certifications">
                         <field name="x_certifications"
@@ -458,5 +467,25 @@
             <!--            </xpath>-->
         </field>
     </record>
+
+
+    <!-- Inherit certification popup form to add attachment field -->
+    <record id="techcarrot_certificate_form_view_inherit" model="ir.ui.view">
+    <field name="name">hr.employee.skill.certificate.form.inherit</field>
+    <field name="model">hr.employee.skill</field>
+    <field name="inherit_id" ref="hr_skills.employee_skill_view_inherit_certificate_form"/>
+    <field name="arch" type="xml">
+
+
+        <xpath expr="//field[@name='skill_id']" position="after">
+            <field name="certificate_attachment_ids"
+                   string="Attachments"
+                   widget="many2many_binary"/>
+        </xpath>
+
+    </field>
+    </record>
+
+
 </odoo>
 

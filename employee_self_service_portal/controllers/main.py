@@ -2206,61 +2206,153 @@ class PortalEmployee(http.Controller):
     @http.route(MY_EMPLOYEE_URL + '/certification', type='http', auth='user', website=True, methods=['GET', 'POST'])
     def portal_employee_certification(self, **post):
         employee = self._get_employee()
+
+        certificate_skills = request.env['hr.skill'].sudo().search([
+            ('skill_type_id.is_certification', '=', True)
+        ], order='skill_type_id, name')
+
         if request.httprequest.method == 'POST':
+            action = post.get('action')
             try:
-                vals = {}
-
-                # Certifications text
-                if post.get('x_certifications') is not None:
-                    vals['x_certifications'] = post.get('x_certifications', '').strip()
-
-                #  Write text fields
-                if vals:
-                    _logger.info("Certification - Writing vals to employee %s: %s", employee.id, list(vals.keys()))
-                    employee.sudo().write(vals)
-
-                #  Handle files uploads
                 import base64
-                files = request.httprequest.files
 
-                training_file = files.get('training_certificates')
-                if training_file and training_file.filename:
-                    file_data = base64.b64encode(training_file.read())
-                    employee.sudo().write({
-                        'training_certificates': file_data,
-                        'training_certificates_filename': training_file.filename,
+                # ── Handle file attachment separately (store temporarily) ──
+                attachment_data = None
+                attachment_name = None
+                attachment_mime = None
+                attachment_file = request.httprequest.files.get('attachment_file')
+                if attachment_file and attachment_file.filename:
+                    attachment_data = base64.b64encode(attachment_file.read()).decode()
+                    attachment_name = attachment_file.filename
+                    attachment_mime = attachment_file.content_type or 'application/octet-stream'
+
+                # ── Build certification change payload ──
+                if action == 'add_certification':
+                    skill_id = int(post.get('skill_id', 0) or 0)
+                    if not skill_id:
+                        return request.make_json_response({'success': False, 'error': 'Certificate Name is required.'})
+
+                    skill = request.env['hr.skill'].sudo().browse(skill_id)
+                    if not skill.exists():
+                        return request.make_json_response({'success': False, 'error': 'Selected skill not found.'})
+
+                    cert_payload = {
+                        'cert_action': 'add',
+                        'skill_id': skill_id,
+                        'skill_name': skill.name,
+                        'skill_type_id': skill.skill_type_id.id,
+                        'valid_from': post.get('valid_from') or '',
+                        'valid_to': post.get('valid_to') or '',
+                        'has_attachment': bool(attachment_data),
+                        'attachment_name': attachment_name or '',
+                    }
+                    if attachment_data:
+                        cert_payload['attachment_data'] = attachment_data
+                        cert_payload['attachment_name'] = attachment_name
+                        cert_payload['attachment_mime'] = attachment_mime
+
+                elif action == 'edit_certification':
+                    record_id = int(post.get('skill_record_id', 0) or 0)
+                    skill_record = request.env['hr.employee.skill'].sudo().browse(record_id)
+                    if not skill_record.exists() or skill_record.employee_id.id != employee.id:
+                        return request.make_json_response(
+                            {'success': False, 'error': 'Record not found or access denied.'})
+
+                    cert_payload = {
+                        'cert_action': 'edit',
+                        'skill_record_id': record_id,
+                        'skill_name': skill_record.skill_id.name,
+                        'valid_from': post.get('valid_from') or '',
+                        'valid_to': post.get('valid_to') or '',
+                        'has_attachment': bool(attachment_data),
+                        'attachment_name': attachment_name or '',
+                    }
+                    if attachment_data:
+                        cert_payload['attachment_data'] = attachment_data
+                        cert_payload['attachment_name'] = attachment_name
+                        cert_payload['attachment_mime'] = attachment_mime
+
+                elif action == 'delete_certification':
+                    record_id = int(post.get('skill_record_id', 0) or 0)
+                    skill_record = request.env['hr.employee.skill'].sudo().browse(record_id)
+                    if not skill_record.exists() or skill_record.employee_id.id != employee.id:
+                        return request.make_json_response(
+                            {'success': False, 'error': 'Record not found or access denied.'})
+
+                    cert_payload = {
+                        'cert_action': 'delete',
+                        'skill_record_id': record_id,
+                        'skill_name': skill_record.skill_id.name,
+                    }
+                else:
+                    return request.make_json_response({'success': False, 'error': 'Unknown action.'})
+
+                # ── Create PCR for certification change ──
+                # ── Create PCR for certification change ──
+                # ── Create PCR for certification change ──
+                import json
+                pcr = request.env['hr.profile.change.request'].sudo().create({
+                    'employee_id': employee.id,
+                    'submitted_data': json.dumps({'_cert_change': cert_payload}),
+                    'state': 'draft',
+                })
+                pcr.action_submit()
+
+                # ── Save attachment directly to PCR so HR can view it ──
+                if attachment_data:
+                    request.env['ir.attachment'].sudo().create({
+                        'name': attachment_name,
+                        'datas': attachment_data,
+                        'res_model': 'hr.profile.change.request',
+                        'res_id': pcr.id,
+                        'mimetype': attachment_mime,
+                        'description': 'Certification attachment submitted by employee',
                     })
-                    _logger.info("Training certificate saved: %s", training_file.filename)
-
-                awards_file = files.get('awards_files')
-                if awards_file and awards_file.filename:
-                    file_data = base64.b64encode(awards_file.read())
-                    employee.sudo().write({
-                        'awards_files': file_data,
-                        'awards_files_filename': awards_file.filename,
-                    })
-                    _logger.info("Awards file saved: %s", awards_file.filename)
-
-                _logger.info("Certification - Successfully saved for employee %s", employee.id)
 
                 return request.make_json_response({
                     'success': True,
-                    'message': 'Certifications updated successfully'
+                    'message': 'Your certification change has been submitted for HR approval.',
+                    'reference': pcr.name,
                 })
 
             except Exception as e:
-                _logger.error("Error in portal_employee_certification POST: %s", str(e))
                 import traceback
-                _logger.error("Traceback: %s", traceback.format_exc())
-                return request.make_json_response({
-                    'success': False,
-                    'error': str(e)
-                })
+                _logger.error("Certification portal error: %s\n%s", str(e), traceback.format_exc())
+                return request.make_json_response({'success': False, 'error': str(e)})
 
-        return request.render('employee_self_service_portal.portal_employee_profile_certification', {
-            'employee': employee,
-            'section': 'certification',
-        })
+        # ── GET ──
+        certifications = request.env['hr.employee.skill'].sudo().search([
+            ('employee_id', '=', employee.id),
+            ('skill_type_id.is_certification', '=', True),
+        ], order='id desc')
+
+        return request.render(
+            'employee_self_service_portal.portal_employee_profile_certification', {
+                'employee': employee,
+                'section': 'certification',
+                'certifications': certifications,
+                'certificate_skills': certificate_skills,
+            }
+        )
+
+    @http.route('/portal/attachment/preview/<int:attachment_id>', type='http', auth='user', website=True)
+    def preview_attachment(self, attachment_id, **kwargs):
+        """Stream attachment inline (so PDFs open in browser, images display)."""
+        attachment = request.env['ir.attachment'].sudo().browse(attachment_id)
+        if not attachment.exists():
+            return request.not_found()
+
+        # Security: only allow access to attachments on hr.employee.skill
+        # records belonging to the logged-in employee
+        if attachment.res_model == 'hr.employee.skill' and attachment.res_id:
+            skill_record = request.env['hr.employee.skill'].sudo().browse(attachment.res_id)
+            employee = self._get_employee()
+            if not skill_record.exists() or skill_record.employee_id.id != employee.id:
+                return request.not_found()
+
+        return request.env['ir.binary']._get_stream_from(attachment).get_response(
+            as_attachment=False
+        )
 
     @http.route(MY_EMPLOYEE_URL + '/bank', type='http', auth='user', website=True, methods=['GET', 'POST'])
     def portal_employee_bank(self, **post):
