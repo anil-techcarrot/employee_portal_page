@@ -525,9 +525,9 @@
                     </div>
 
                     <!-- ══ NON RESIDENT TOGGLE ══ -->
-                    <div class="card mb-2 shadow-sm profile-tab-section" data-tab-group="basic">
-                        <div class="card-body py-2">
-                            <div class="d-flex align-items-center">
+<!--                    <div class="card mb-2 shadow-sm profile-tab-section" data-tab-group="basic">-->
+<!--                        <div class="card-body py-2">-->
+<!--                            <div class="d-flex align-items-center">-->
                                 <!--                                <div class="form-check me-3">-->
                                 <!--                                    <input type="checkbox" class="form-check-input" name="is_non_resident"-->
                                 <!--                                           id="is_non_resident"-->
@@ -541,9 +541,9 @@
                                 <!--                                    <i class="fa fa-info-circle me-1"></i>-->
 
                                 <!--                                </small>-->
-                            </div>
-                        </div>
-                    </div>
+<!--                            </div>-->
+<!--                        </div>-->
+<!--                    </div>-->
 
                     <!-- Identity Documents — SHOWN/HIDDEN by Non Resident checkbox -->
                     <div class="card mb-4 shadow-sm profile-tab-section" data-tab-group="basic"
