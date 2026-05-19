@@ -107,6 +107,27 @@ EDITABLE_FIELDS = [
     'house_no', 'area_name', 'city', 'zip_code',
     'country_residences_id', 'states_id',
 
+'pan', 'aadhar_no',
+
+    # Basic Info — Permanent Address
+    'private_street', 'private_street2', 'private_city',
+    'private_zip', 'private_state_id',
+
+    # Professional — Career Details
+    'no_of_career_break', 'career_break', 'career_break_detail',
+    'career_break_start_date', 'career_break_end_date',
+
+    # Family — Emergency Contact Person
+    'emergency_contact_person_name', 'emergency_contact_person_phone',
+    'alternate_mobile_number', 'emergency_contact_person_name_1',
+    'emergency_contact_person_phone_1', 'second_alternative_number',
+    'home_land_line_no',
+
+    # Education Details
+    'institute_name', 'degree_name', 'field_of_study',
+    'study_field', 'start_date_of_degree', 'completion_date_of_degree',
+    'year_of_passing', 'score', 'certification_obtained',
+
     # Professional — General
     'experience', 'current_role', 'industry_start_date',
 
@@ -128,6 +149,21 @@ FILE_FIELDS = [
     'passport_file',
     'other_documents',
     'has_work_permit',
+    'pan',
+    'aadhar_no',
+    'no_of_career_break',
+    'career_break',
+    'career_break_start_date',
+    'career_break_end_date',
+    'institute_name',
+    'degree_name',
+    'field_of_study',
+    'study_field',
+    'start_date_of_degree',
+    'completion_date_of_degree',
+    'year_of_passing',
+    'score',
+    'certification_obtained',
 ]
 
 EMAIL_PATTERN = re.compile(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
@@ -309,11 +345,19 @@ class EmployeePortalProfileSubmit(http.Controller):
     def _handle_post(self, employee, post):
         try:
             # ── Block if pending ──────────────────────────────────
+            # ── If last submission was rejected, clear state to allow resubmission ──
+            if employee.last_submission_state == 'rejected':
+                employee.sudo().write({
+                    'last_submission_state': False,
+                    'last_portal_submission': False,
+                })
+
+            # ── Block ONLY if there is an active pending request ──
             pending_req = request.env['hr.profile.change.request'].sudo().search([
                 ('employee_id', '=', employee.id),
                 ('state', '=', 'pending'),
             ], limit=1)
-            if pending_req:
+            if pending_req and employee.last_submission_state == 'pending':
                 return request.make_json_response({
                     'success': False,
                     'error': 'Your previous request is still pending HR approval.',

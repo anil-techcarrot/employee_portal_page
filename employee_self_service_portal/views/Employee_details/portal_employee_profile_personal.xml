@@ -2103,6 +2103,33 @@ function enableEditMode() {
         return;
     }
 
+    /* ── Re-populate state and city dropdowns when entering edit mode ── */
+    setTimeout(function() {
+        /* Contact Information — Country of Residency → State/Province */
+        var contactCountrySel = document.querySelector('select[name="country_residences_id"]');
+        if (contactCountrySel && contactCountrySel.value) {
+            var contactStateSel = document.getElementById('contactStateDropdown');
+            var savedContactState = contactStateSel ? contactStateSel.value : '0';
+            loadContactStatesByCountryAndSelect(contactCountrySel.value, savedContactState || '0');
+        }
+        /* Work Location — Country → State */
+        var workCountrySel = document.querySelector('select[name="countries_id"]');
+        if (workCountrySel && workCountrySel.value) {
+            var workStateSel = document.getElementById('statesDropdown');
+            var savedWorkState = workStateSel ? workStateSel.value : '0';
+            loadStatesByCountryAndSelect(workCountrySel.value, savedWorkState || '0');
+            /* After state loads, load cities */
+            setTimeout(function() {
+                var stateDropdown = document.getElementById('statesDropdown');
+                if (stateDropdown && stateDropdown.value) {
+                    var cityDropdown = document.getElementById('workCityDropdown');
+                    var savedCity = cityDropdown ? cityDropdown.getAttribute('data-saved-value') || cityDropdown.value : '';
+                    loadWorkCitiesAndSelect(stateDropdown.value, savedCity);
+                }
+            }, 700);
+        }
+    }, 200);
+
     isEditMode = true;
     document.querySelectorAll('.edit-mode-toggle').forEach(t => t.checked = true);
     storeOriginalFormData();
