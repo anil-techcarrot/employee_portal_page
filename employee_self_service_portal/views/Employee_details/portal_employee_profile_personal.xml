@@ -186,12 +186,7 @@
                                            t-att-value="employee.employee_name_english or ''" data-always-readonly="1"
                                            readonly="readonly"/>
                                 </div>
-                                <!--                                <div class="col-md-6">-->
-                                <!--                                    <label class="form-label fw-bold">Employee Name (Arabic)</label>-->
-                                <!--                                    <input type="text" class="form-control"-->
-                                <!--                                           t-att-value="employee.employee_name_arabic or ''" data-always-readonly="1"-->
-                                <!--                                           readonly="readonly"/>-->
-                                <!--                                </div>-->
+
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Employment Type</label>
                                     <input type="text" class="form-control" t-att-value="employee.employment_type or ''"
@@ -215,20 +210,6 @@
                                            t-att-value="employee.currency_id.name or ''" data-always-readonly="1"
                                            readonly="readonly"/>
                                 </div>
-
-                                <!-- ══ NATIONALITY AT BIRTH — dropdown (editable) ══ -->
-<!--                                <div class="col-md-6">-->
-<!--                                    <label class="form-label fw-bold">Nationality At Birth</label>-->
-<!--                                    <select name="nationality_at_birth_id" class="form-select" disabled="disabled">-->
-<!--                                        <option value="">&#45;&#45; Select Country &#45;&#45;</option>-->
-<!--                                        <t t-foreach="countries" t-as="country">-->
-<!--                                            <option t-att-value="country.id"-->
-<!--                                                    t-att-selected="'selected' if country.id == employee.nationality_at_birth_id.id else None">-->
-<!--                                                <t t-esc="country.name"/>-->
-<!--                                            </option>-->
-<!--                                        </t>-->
-<!--                                    </select>-->
-<!--                                </div>-->
 
                                 <!-- WORK EMAIL — always readonly -->
                                 <div class="col-md-6">
@@ -265,39 +246,6 @@
                                         </t>
                                     </select>
                                 </div>
-
-
-<!--                                <div class="col-md-6">-->
-<!--                                    <label class="form-label fw-bold">-->
-<!--                                        <i class="fa fa-venus-mars text-muted me-1"></i>Gender-->
-<!--                                    </label>-->
-<!--                                    <select name="sex" class="form-select" data-always-readonly="1" disabled="disabled">-->
-<!--                                        <option value="">Select Gender</option>-->
-<!--                                        <option value="male"-->
-<!--                                                t-att-selected="'selected' if employee.sex == 'male' else None">Male-->
-<!--                                        </option>-->
-<!--                                        <option value="female"-->
-<!--                                                t-att-selected="'selected' if employee.sex == 'female' else None">Female-->
-<!--                                        </option>-->
-<!--                                        <option value="other"-->
-<!--                                                t-att-selected="'selected' if employee.sex == 'other' else None">Other-->
-<!--                                        </option>-->
-<!--                                    </select>-->
-<!--                                </div>-->
-
-<!--                                &lt;!&ndash; DATE OF BIRTH — editable &ndash;&gt;-->
-<!--                                <div class="col-md-6">-->
-<!--                                    <label class="form-label fw-bold">-->
-<!--                                        <i class="fa fa-calendar text-muted me-1"></i>Date of Birth-->
-<!--                                    </label>-->
-<!--                                    <input type="date" name="birthday" class="form-control"-->
-<!--                                           t-att-value="employee.birthday"-->
-<!--                                           readonly="readonly" data-validation="past-date"/>-->
-<!--                                    <div class="invalid-feedback"></div>-->
-<!--                                </div>-->
-<!--                            </div>-->
-<!--                        </div>-->
-<!--                    </div>-->
 
                     <!-- Personal Information -->
                     <div class="card mb-4 shadow-sm profile-tab-section" data-tab-group="basic">
@@ -420,53 +368,7 @@
                                     <div class="invalid-feedback"></div>
                                     <small class="text-muted">Digits only, optional leading + for country code</small>
                                 </div>
-                                <!-- Payslip Language -->
-<!--                                <div class="col-md-6">-->
-<!--                                    <label class="form-label fw-bold">Payslip Language</label>-->
-<!--                                    <select name="lang" class="form-select" disabled="disabled">-->
-<!--                                        <option value="">&#45;&#45; Select Language &#45;&#45;</option>-->
-<!--                                        <option value="en_US"-->
-<!--                                                t-att-selected="'selected' if (employee.lang or '') == 'en_US' else None">-->
-<!--                                            English-->
-<!--                                        </option>-->
-<!--                                        <option value="ar_001"-->
-<!--                                                t-att-selected="'selected' if (employee.lang or '') == 'ar_001' else None">-->
-<!--                                            Arabic-->
-<!--                                        </option>-->
-<!--                                        <option value="fr_FR"-->
-<!--                                                t-att-selected="'selected' if (employee.lang or '') == 'fr_FR' else None">-->
-<!--                                            French-->
-<!--                                        </option>-->
-<!--                                        <option value="de_DE"-->
-<!--                                                t-att-selected="'selected' if (employee.lang or '') == 'de_DE' else None">-->
-<!--                                            German-->
-<!--                                        </option>-->
-<!--                                        <option value="es_ES"-->
-<!--                                                t-att-selected="'selected' if (employee.lang or '') == 'es_ES' else None">-->
-<!--                                            Spanish-->
-<!--                                        </option>-->
-<!--                                        <option value="hi_IN"-->
-<!--                                                t-att-selected="'selected' if (employee.lang or '') == 'hi_IN' else None">-->
-<!--                                            Hindi-->
-<!--                                        </option>-->
-<!--                                        <option value="ur_PK"-->
-<!--                                                t-att-selected="'selected' if (employee.lang or '') == 'ur_PK' else None">-->
-<!--                                            Urdu-->
-<!--                                        </option>-->
-<!--                                        <option value="ml_IN"-->
-<!--                                                t-att-selected="'selected' if (employee.lang or '') == 'ml_IN' else None">-->
-<!--                                            Malayalam-->
-<!--                                        </option>-->
-<!--                                        <option value="ta_IN"-->
-<!--                                                t-att-selected="'selected' if (employee.lang or '') == 'ta_IN' else None">-->
-<!--                                            Tamil-->
-<!--                                        </option>-->
-<!--                                        <option value="tl_PH"-->
-<!--                                                t-att-selected="'selected' if (employee.lang or '') == 'tl_PH' else None">-->
-<!--                                            Filipino-->
-<!--                                        </option>-->
-<!--                                    </select>-->
-<!--                                </div>-->
+
 
                                 <!-- Blood Group -->
                                 <div class="col-md-6">
@@ -525,25 +427,7 @@
                     </div>
 
                     <!-- ══ NON RESIDENT TOGGLE ══ -->
-<!--                    <div class="card mb-2 shadow-sm profile-tab-section" data-tab-group="basic">-->
-<!--                        <div class="card-body py-2">-->
-<!--                            <div class="d-flex align-items-center">-->
-                                <!--                                <div class="form-check me-3">-->
-                                <!--                                    <input type="checkbox" class="form-check-input" name="is_non_resident"-->
-                                <!--                                           id="is_non_resident"-->
-                                <!--                                           t-att-checked="'checked' if employee.is_non_resident else None"-->
-                                <!--                                           disabled="disabled"/>-->
-                                <!--                                    <label class="form-check-label fw-bold" for="is_non_resident">-->
-                                <!--                                        Non Resident-->
-                                <!--                                    </label>-->
-                                <!--                                </div>-->
-                                <!--                                <small class="text-muted">-->
-                                <!--                                    <i class="fa fa-info-circle me-1"></i>-->
 
-                                <!--                                </small>-->
-<!--                            </div>-->
-<!--                        </div>-->
-<!--                    </div>-->
 
                     <!-- Identity Documents — SHOWN/HIDDEN by Non Resident checkbox -->
                     <div class="card mb-4 shadow-sm profile-tab-section" data-tab-group="basic"
@@ -692,33 +576,7 @@
                         </div>
                         <div class="card-body">
                             <div class="row g-3">
-<!--                                <div class="col-md-6">-->
-<!--                                    <label class="form-label fw-bold">-->
-<!--                                        <i class="fa fa-envelope text-muted me-1"></i>Personal Email-->
-<!--                                    </label>-->
-<!--                                    <input type="email" name="private_email" class="form-control"-->
-<!--                                           t-att-value="portal_overlay.get('private_email') or employee.private_email or ''"-->
-<!--                                           readonly="readonly" data-validation="email"/>-->
-<!--                                    <div class="invalid-feedback"></div>-->
-<!--                                </div>-->
-<!--                                <div class="col-md-6">-->
-<!--                                    <label class="form-label fw-bold">-->
-<!--                                        <i class="fa fa-phone text-muted me-1"></i>Personal Phone-->
-<!--                                    </label>-->
-<!--                                    <input type="tel" name="private_phone" class="form-control"-->
-<!--                                           t-att-value="portal_overlay.get('private_phone') or employee.private_phone or ''"-->
-<!--                                           readonly="readonly" data-validation="phone"/>-->
-<!--                                    <div class="invalid-feedback"></div>-->
-<!--                                    <small class="text-muted">Digits only, optional leading + for country code</small>-->
-<!--                                </div>-->
-<!--                                <div class="col-md-6">-->
-<!--                                    <label class="form-label fw-bold">WhatsApp</label>-->
-<!--                                    <input type="text" name="whatsapp" class="form-control"-->
-<!--                                           t-att-value="portal_overlay.get('whatsapp') or employee.whatsapp or ''"-->
-<!--                                           readonly="readonly" data-validation="phone"/>-->
-<!--                                    <div class="invalid-feedback"></div>-->
-<!--                                    <small class="text-muted">Digits only, optional leading + for country code</small>-->
-<!--                                </div>-->
+
                                 <div class="col-md-12">
                                     <label class="form-label fw-bold">
                                         <i class="fa fa-map-marker text-muted me-1"></i>Address Line 1
@@ -912,12 +770,7 @@
                                            t-att-value="employee.work_location_id.name or ''" data-always-readonly="1"
                                            readonly="readonly"/>
                                 </div>
-                                <!--                                <div class="col-md-6">-->
-                                <!--                                    <label class="form-label fw-bold">Current Work Address</label>-->
-                                <!--                                    <input type="text" name="current_address" class="form-control"-->
-                                <!--                                           t-att-value="portal_overlay.get('current_address') or employee.current_address or ''"-->
-                                <!--                                           readonly="readonly"/>-->
-                                <!--                                </div>-->
+
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">House Number and Building Name</label>
                                     <input type="text" name="house_no" class="form-control"
@@ -936,18 +789,7 @@
                                            t-att-value="portal_overlay.get('city') or employee.city or ''"
                                            readonly="readonly"/>
                                 </div>
-                                <!--                                <div class="col-md-6">-->
-                                <!--                                    <label class="form-label fw-bold">Country of Residency</label>-->
-                                <!--                                    <select name="country_residences_id" class="form-select" disabled="disabled">-->
-                                <!--                                        <option value="">&#45;&#45; Select Country &#45;&#45;</option>-->
-                                <!--                                        <t t-foreach="countries" t-as="country">-->
-                                <!--                                            <option t-att-value="country.id"-->
-                                <!--                                                    t-att-selected="'selected' if country.id == employee.country_residences_id.id else None">-->
-                                <!--                                                <t t-esc="country.name"/>-->
-                                <!--                                            </option>-->
-                                <!--                                        </t>-->
-                                <!--                                    </select>-->
-                                <!--                                </div>-->
+
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Country</label>
                                     <select name="countries_id" class="form-select" disabled="disabled"
@@ -996,60 +838,21 @@
                         </div>
                         <div class="card-body">
                             <div class="row g-3">
-<!--                                <div class="col-md-6">-->
-<!--                                    <label class="form-label fw-bold">Practice</label>-->
-<!--                                    <input type="text" class="form-control"-->
-<!--                                           t-att-value="employee.practice.name if employee.practice else ''"-->
-<!--                                           data-always-readonly="1" readonly="readonly"/>-->
-<!--                                </div>-->
-<!--                                <div class="col-md-6">-->
-<!--                                    <label class="form-label fw-bold">Sub Practice</label>-->
-<!--                                    <input type="text" class="form-control"-->
-<!--                                           t-att-value="employee.sub_practice.name if employee.sub_practice else ''"-->
-<!--                                           data-always-readonly="1" readonly="readonly"/>-->
-<!--                                </div>-->
-<!--                                <div class="col-md-6">-->
-<!--                                    <label class="form-label fw-bold">Practice Head</label>-->
-<!--                                    <input type="text" class="form-control"-->
-<!--                                           t-att-value="employee.practice_heads_id.name if employee.practice_heads_id else ''"-->
-<!--                                           data-always-readonly="1" readonly="readonly"/>-->
-<!--                                </div>-->
+
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Employee Inside UAE</label>
                                     <input type="text" class="form-control"
                                            t-att-value="'Yes' if employee.emp_inside_uae else 'No'"
                                            data-always-readonly="1" readonly="readonly"/>
                                 </div>
-<!--                                <div class="col-md-6">-->
-<!--                                    <label class="form-label fw-bold">Industry Start Date</label>-->
-<!--                                    <input type="date" name="industry_start_date" class="form-control"-->
-<!--                                           t-att-value="portal_overlay.get('industry_start_date') or (employee.industry_start_date.strftime('%Y-%m-%d') if employee.industry_start_date else '')"-->
-<!--                                           readonly="readonly" data-validation="past-date"/>-->
-<!--                                    <div class="invalid-feedback"></div>-->
-<!--                                </div>-->
-<!--                                <div class="col-md-6">-->
-<!--                                    <label class="form-label fw-bold">Years of Experience</label>-->
-<!--                                    <input type="text" name="experience" class="form-control"-->
-<!--                                           t-att-value="portal_overlay.get('experience') or employee.experience or ''"-->
-<!--                                           readonly="readonly"/>-->
-<!--                                </div>-->
+
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Current / Additional Role</label>
                                     <input type="text" name="current_role" class="form-control"
                                            t-att-value="portal_overlay.get('current_role') or employee.current_role or ''"
                                            readonly="readonly"/>
                                 </div>
-                                <!--                                <div class="col-md-6">-->
-                                <!--                                    <label class="form-label fw-bold">Payroll</label>-->
-                                <!--                                    <input type="text" class="form-control" t-att-value="employee.payroll or ''"-->
-                                <!--                                           data-always-readonly="1" readonly="readonly"/>-->
-                                <!--                                </div>-->
-                                <!--                                <div class="col-md-6">-->
-                                <!--                                    <label class="form-label fw-bold">Mentor Name</label>-->
-                                <!--                                    <input type="text" class="form-control"-->
-                                <!--                                           t-att-value="employee.mentor_names_id.name or ''" data-always-readonly="1"-->
-                                <!--                                           readonly="readonly"/>-->
-                                <!--                                </div>-->
+
                             </div>
                         </div>
                     </div>
@@ -1650,33 +1453,8 @@
                                     <div class="invalid-feedback"></div>
                                     <small class="text-muted">Digits only</small>
                                 </div>
-<!--                                <div class="col-md-6">-->
-<!--                                    <label class="form-label fw-bold">Marital Status</label>-->
-<!--                                    <select name="marital" class="form-select" data-always-readonly="1"-->
-<!--                                            disabled="disabled">-->
-<!--                                        <option value="">Select Status</option>-->
-<!--                                        <option value="single"-->
-<!--                                                t-att-selected="'selected' if employee.marital == 'single' else None">-->
-<!--                                            Single-->
-<!--                                        </option>-->
-<!--                                        <option value="married"-->
-<!--                                                t-att-selected="'selected' if employee.marital == 'married' else None">-->
-<!--                                            Married-->
-<!--                                        </option>-->
-<!--                                        <option value="cohabitant"-->
-<!--                                                t-att-selected="'selected' if employee.marital == 'cohabitant' else None">-->
-<!--                                            Legal Cohabitant-->
-<!--                                        </option>-->
-<!--                                        <option value="widower"-->
-<!--                                                t-att-selected="'selected' if employee.marital == 'widower' else None">-->
-<!--                                            Widower-->
-<!--                                        </option>-->
-<!--                                        <option value="divorced"-->
-<!--                                                t-att-selected="'selected' if employee.marital == 'divorced' else None">-->
-<!--                                            Divorced-->
-<!--                                        </option>-->
-<!--                                    </select>-->
-<!--                                </div>-->
+
+
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Dependent Status</label>
                                     <input type="text" class="form-control"

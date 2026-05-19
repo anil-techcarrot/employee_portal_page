@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 import json
 import logging
@@ -11,17 +10,14 @@ from odoo.http import request
 _logger = logging.getLogger(__name__)
 
 # ── Many2one fields — submitted as integer IDs from country dropdowns ─────────
-# These are stored as integer IDs in submitted_data.
-# action_approve writes int(v) for these.
 MANY2ONE_FIELDS = {
-    'nationality_at_birth_id',    # Nationality At Birth
-    'country_id',                 # Nationality
-    'issue_countries_id',         # Passport Issuing Country
-    'countries_id',               # Country (Work Location)
-    'father_nationalities_id',    # Father Nationality  ← NEW
+    'nationality_at_birth_id',
+    'country_id',
+    'issue_countries_id',
+    'countries_id',
+    'father_nationalities_id',
     'mother_nationalities_id',
     'religion',
-    # Mother Nationality  ← NEW
 }
 
 # ── ALL editable text/select fields ───────────────────────────────────────────
@@ -32,30 +28,44 @@ EDITABLE_FIELDS = [
     'private_state_id',
     'whatsapp', 'linkedin', 'legal_name',
     'facebook_profile', 'insta_profile', 'twitter_profile',
-    'year_of_passing',
 
     # Basic Info — Personal
-    'blood_group',
+    'blood_group', 'place_of_birth', 'birthday',
 
     # Basic Info — Identity
     'issue_date', 'expiry_date',
     'emirates_id_number', 'emirates_expiry_date',
     'passport_id', 'identification_id', 'ssnid', 'visa_no', 'permit_no',
 
+    # Basic Info — PAN / Aadhar  ← FIX Issue 1
+    'pan', 'aadhar_no',
+
     # Basic Info — Country dropdowns (Many2one — sent as int IDs)
     'nationality_at_birth_id',
     'country_id',
     'issue_countries_id',
     'countries_id',
-     'religion',
+    'religion',
 
     # Basic Info — Emergency
     'l10n_in_relationship', 'emergency_phone', 'e_private_city',
 
-    # Country Code — now a dropdown in portal
+    # Country Code — dropdown in portal
     'phone_code_1',
 
-    # Professional — Emergency Contact
+    # Permanent Address  ← FIX Issue 1
+    # (private_street, private_street2, private_city, private_zip, private_state_id already above)
+
+    # Professional — Work Location
+    'u_private_city', 'current_address',
+    'house_no', 'area_name', 'city', 'zip_code',
+    'country_residences_id', 'states_id',
+
+    # Professional — Career Details  ← FIX Issue 1
+    'no_of_career_break', 'career_break', 'career_break_detail',
+    'career_break_start_date', 'career_break_end_date',
+
+    # Family — Emergency Contact Person  ← FIX Issue 1
     'emergency_contact_person_name', 'emergency_contact_person_phone',
     'alternate_mobile_number', 'emergency_contact_person_name_1',
     'emergency_contact_person_phone_1', 'second_alternative_number',
@@ -80,11 +90,9 @@ EDITABLE_FIELDS = [
     'dependent_child_emirates_id_expiry_date_1',
     'dependent_child_aadhar_no_1',
 
-    # Family — Father / Mother (text fields)
+    # Family — Father / Mother
     'father_name', 'father_dob',
     'mother_name', 'mother_dob',
-
-    # Family — Father / Mother Nationality (Many2one dropdowns) ← NEW
     'father_nationalities_id',
     'mother_nationalities_id',
 
@@ -102,28 +110,7 @@ EDITABLE_FIELDS = [
     # Family — Languages
     'mother_tongue_name', 'language_known_name',
 
-    # Professional — Work Location
-    'u_private_city', 'current_address',
-    'house_no', 'area_name', 'city', 'zip_code',
-    'country_residences_id', 'states_id',
-
-'pan', 'aadhar_no',
-
-    # Basic Info — Permanent Address
-    'private_street', 'private_street2', 'private_city',
-    'private_zip', 'private_state_id',
-
-    # Professional — Career Details
-    'no_of_career_break', 'career_break', 'career_break_detail',
-    'career_break_start_date', 'career_break_end_date',
-
-    # Family — Emergency Contact Person
-    'emergency_contact_person_name', 'emergency_contact_person_phone',
-    'alternate_mobile_number', 'emergency_contact_person_name_1',
-    'emergency_contact_person_phone_1', 'second_alternative_number',
-    'home_land_line_no',
-
-    # Education Details
+    # Education Details  ← FIX Issue 1
     'institute_name', 'degree_name', 'field_of_study',
     'study_field', 'start_date_of_degree', 'completion_date_of_degree',
     'year_of_passing', 'score', 'certification_obtained',
@@ -143,33 +130,19 @@ EDITABLE_FIELDS = [
     'reason_of_leaving',
 ]
 
-# File upload fields
+# ── FIX Issue 1: FILE_FIELDS must contain ONLY actual file upload fields ──────
+# Previously pan, aadhar_no, career fields, education fields were mistakenly
+# placed here, causing them to be read as file uploads and their text values ignored.
 FILE_FIELDS = [
     'emirates_id_file',
     'passport_file',
     'other_documents',
     'has_work_permit',
-    'pan',
-    'aadhar_no',
-    'no_of_career_break',
-    'career_break',
-    'career_break_start_date',
-    'career_break_end_date',
-    'institute_name',
-    'degree_name',
-    'field_of_study',
-    'study_field',
-    'start_date_of_degree',
-    'completion_date_of_degree',
-    'year_of_passing',
-    'score',
-    'certification_obtained',
 ]
 
 EMAIL_PATTERN = re.compile(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
 ISD_PATTERN   = re.compile(r'^\+[1-9][0-9]{0,2}$')
 
-# ISD codes list for dropdown
 ISD_CODES = [
     ('+1',   'USA / Canada (+1)'),
     ('+7',   'Russia (+7)'),
@@ -338,32 +311,40 @@ class EmployeePortalProfileSubmit(http.Controller):
                 'isd_codes':      ISD_CODES,
                 'notification':   notification,
                 'portal_overlay': portal_overlay,
-                'religions': religions,
+                'religions':      religions,
             },
         )
 
     def _handle_post(self, employee, post):
         try:
-            # ── Block if pending ──────────────────────────────────
-            # ── If last submission was rejected, clear state to allow resubmission ──
+            # ══════════════════════════════════════════════════════════
+            # FIX Issue 3: Allow rejected employees to resubmit
+            # Clear rejected state FIRST so the pending check below
+            # works correctly and doesn't accidentally block them.
+            # ══════════════════════════════════════════════════════════
             if employee.last_submission_state == 'rejected':
                 employee.sudo().write({
                     'last_submission_state': False,
                     'last_portal_submission': False,
                 })
 
-            # ── Block ONLY if there is an active pending request ──
+            # ── Block ONLY if there is an active pending PCR record AND
+            #    the employee state is still 'pending' (not just cleared).
+            #    After clearing rejected above, last_submission_state is False
+            #    so this block will NOT fire for previously-rejected employees.
             pending_req = request.env['hr.profile.change.request'].sudo().search([
                 ('employee_id', '=', employee.id),
                 ('state', '=', 'pending'),
             ], limit=1)
-            if pending_req and employee.last_submission_state == 'pending':
+            # Re-read the employee to get the freshly written state
+            employee_state = employee.sudo().read(['last_submission_state'])[0]['last_submission_state']
+            if pending_req and employee_state == 'pending':
                 return request.make_json_response({
                     'success': False,
                     'error': 'Your previous request is still pending HR approval.',
                 })
 
-            # ── Email validation ──────────────────────────────────
+            # ── Email validation ──────────────────────────────────────
             for field in ['private_email', 'industry_ref_email', 'last_report_manager_mail']:
                 val = post.get(field, '').strip()
                 if val and not EMAIL_PATTERN.match(val):
@@ -372,7 +353,7 @@ class EmployeePortalProfileSubmit(http.Controller):
                         'error': f'Invalid email format: {field}'
                     })
 
-            # ── ISD validation (now a dropdown — value is e.g. "+91") ─
+            # ── ISD validation ────────────────────────────────────────
             isd_val = post.get('phone_code_1', '').strip()
             if isd_val and not ISD_PATTERN.match(isd_val):
                 return request.make_json_response({
@@ -380,7 +361,7 @@ class EmployeePortalProfileSubmit(http.Controller):
                     'error': 'ISD code must start with + followed by 1-3 digits (e.g. +91, +971)'
                 })
 
-            # ── Collect and compare all fields ────────────────────
+            # ── Collect and compare all fields ────────────────────────
             changed = {}
 
             for field in EDITABLE_FIELDS:
@@ -389,7 +370,7 @@ class EmployeePortalProfileSubmit(http.Controller):
                     continue
                 new_val = str(val).strip()
 
-                # ── Many2one country / nationality dropdowns ───────
+                # ── Many2one country / nationality dropdowns ───────────
                 if field in MANY2ONE_FIELDS:
                     try:
                         new_id = int(new_val) if new_val else 0
@@ -400,11 +381,10 @@ class EmployeePortalProfileSubmit(http.Controller):
                     current_id  = current_rec.id if current_rec else 0
 
                     if new_id and new_id != current_id:
-                        # Store as integer string — action_approve does int() on write
                         changed[field] = str(new_id)
                     continue
 
-                # ── Regular text/select fields ────────────────────
+                # ── Regular text/select fields ─────────────────────────
                 try:
                     current = getattr(employee, field, None)
                     if hasattr(current, 'name'):
@@ -420,7 +400,12 @@ class EmployeePortalProfileSubmit(http.Controller):
                     if new_val:
                         changed[field] = new_val
 
-            # ── File uploads ──────────────────────────────────────
+            # ══════════════════════════════════════════════════════════
+            # FIX Issue 1: File uploads — only actual file fields here.
+            # pan, aadhar_no, career fields, education fields have been
+            # removed from FILE_FIELDS so they flow through EDITABLE_FIELDS
+            # as plain text above.
+            # ══════════════════════════════════════════════════════════
             file_changed_fields = {}
             for field in FILE_FIELDS:
                 file_obj = request.httprequest.files.get(field)
@@ -440,11 +425,11 @@ class EmployeePortalProfileSubmit(http.Controller):
                     'message':   'No changes detected. Your profile is already up to date.',
                 })
 
-            # ── Write files directly to employee ──────────────────
+            # ── Write files directly to employee ──────────────────────
             if file_changed_fields:
                 employee.sudo().write(file_changed_fields)
 
-            # ── Create PCR ────────────────────────────────────────
+            # ── Create PCR ────────────────────────────────────────────
             ref = ''
             if changed:
                 req = request.env['hr.profile.change.request'].sudo().create({
