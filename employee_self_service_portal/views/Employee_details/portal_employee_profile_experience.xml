@@ -1,30 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <template id="portal_employee_profile_experience">
         <t t-call="employee_self_service_portal.portal_employee_profile_base">
             <t t-set="section" t-value="'experience'"/>
             <t t-set="section_content">
 
-                <!-- Success/Error contain Messages -->
-                <div id="messageContainer" style="display: none;">
-                    <div id="successMessage" class="alert alert-success alert-dismissible fade" role="alert"
-                         style="display: none;">
+                <div id="expMessageContainer" style="display:none; margin-bottom:16px;">
+                    <div id="expSuccessMessage" class="alert alert-success alert-dismissible fade"
+                         role="alert" style="display:none;">
                         <i class="fa fa-check-circle me-2"></i>
-                        <span id="successText"></span>
+                        <span id="expSuccessText"></span>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
-                    <div id="errorMessage" class="alert alert-danger alert-dismissible fade" role="alert"
-                         style="display: none;">
+                    <div id="expErrorMessage" class="alert alert-danger alert-dismissible fade"
+                         role="alert" style="display:none;">
                         <i class="fa fa-exclamation-triangle me-2"></i>
-                        <span id="errorText"></span>
+                        <span id="expErrorText"></span>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 </div>
 
-                <!-- Issue 11: upload progress overlay -->
-                <div id="uploadProgressOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-                     background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
-                    <div style="background:#fff; border-radius:12px; padding:32px 40px; text-align:center; box-shadow:0 8px 32px rgba(0,0,0,0.2);">
-                        <div class="spinner-border text-primary mb-3" style="width:3rem;height:3rem;" role="status">
+
+                <div id="uploadProgressOverlay"
+                     style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+                            background:rgba(0,0,0,0.5); z-index:10000;
+                            align-items:center; justify-content:center;">
+                    <div style="background:#fff; border-radius:12px; padding:32px 40px;
+                                text-align:center; box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+                        <div class="spinner-border text-primary mb-3"
+                             style="width:3rem; height:3rem;" role="status">
                             <span class="visually-hidden">Uploading...</span>
                         </div>
                         <h5 class="mb-1">Uploading File...</h5>
@@ -32,471 +36,1013 @@
                     </div>
                 </div>
 
-                <!-- Experience Management Form -->
-                <form id="experienceForm" action="/my/employee/experience" method="post"
-                      enctype="multipart/form-data">
-                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
 
-                    <!-- Work Experience Section -->
-                    <div class="card mb-4 shadow-sm">
-                        <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">
-                                <i class="fa fa-briefcase text-primary me-2"></i>Work Experience
+                <t t-if="pending_skill_changes">
+                    <div class="card mb-4 shadow-sm border-warning">
+                        <div class="card-header d-flex align-items-center gap-2"
+                             style="background:#fff8e1; border-bottom:1px solid #ffe082;">
+                            <i class="fa fa-clock-o text-warning" style="font-size:16px;"></i>
+                            <h5 class="mb-0" style="color:#856404;">
+                                Pending HR Approval — Skills
                             </h5>
-                            <div class="d-flex gap-2 align-items-center">
-                                <!-- Issue 9: only show badge when value > 0 -->
-                                <span class="badge bg-info" id="experienceYears" style="display:none;"></span>
-                            </div>
+                            <span class="badge bg-warning text-dark ms-2" style="font-size:12px;">
+                                <t t-esc="len(pending_skill_changes)"/>
+                                request(s)
+                            </span>
                         </div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">
-                                    <i class="fa fa-history text-muted me-1"></i>Professional Experience Summary
-                                </label>
-                                <textarea name="x_experience"
-                                          id="experienceText"
-                                          class="form-control"
-                                          rows="6"
-                                          readonly=""
-                                          placeholder="Describe your professional experience, roles, responsibilities, and achievements..."><t t-esc="employee.x_experience or ''"/></textarea>
-                                <!-- Issue 9: only show word count when > 0 -->
-                                <small class="text-muted" id="experienceWordCountWrap" style="display:none;">
-                                    <span id="experienceWordCount">0</span> words
+                        <div class="card-body p-0">
+                            <table class="table mb-0">
+                                <thead style="background:#fffde7;">
+                                    <tr>
+                                        <th style="padding:11px 18px; font-size:12px; color:#856404; text-transform:uppercase; letter-spacing:0.5px;">
+                                            Reference
+                                        </th>
+                                        <th style="padding:11px 18px; font-size:12px; color:#856404; text-transform:uppercase; letter-spacing:0.5px;">
+                                            Skill Type
+                                        </th>
+                                        <th style="padding:11px 18px; font-size:12px; color:#856404; text-transform:uppercase; letter-spacing:0.5px;">
+                                            Skill
+                                        </th>
+                                        <th style="padding:11px 18px; font-size:12px; color:#856404; text-transform:uppercase; letter-spacing:0.5px;">
+                                            Level
+                                        </th>
+                                        <th style="padding:11px 18px; font-size:12px; color:#856404; text-transform:uppercase; letter-spacing:0.5px;">
+                                            Status
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="pending_skill_changes" t-as="psc">
+                                        <tr style="background:#fffef5;">
+                                            <td style="padding:12px 18px; vertical-align:middle; font-size:13px;">
+                                                <span class="text-muted fw-semibold">
+                                                    <t t-esc="psc['pcr_name']"/>
+                                                </span>
+                                            </td>
+
+                                            <td style="padding:12px 18px; vertical-align:middle; font-size:14px;">
+                                                <t t-esc="psc['type_name']"/>
+                                            </td>
+                                            <td style="padding:12px 18px; vertical-align:middle; font-size:14px; font-weight:600;">
+                                                <t t-esc="psc['skill_name']"/>
+                                            </td>
+                                            <td style="padding:12px 18px; vertical-align:middle; font-size:13px;">
+                                                <t t-if="psc.get('level_name') and psc['level_name'] != '—'">
+                                                    <span class="badge bg-primary">
+                                                        <t t-esc="psc['level_name']"/>
+                                                    </span>
+                                                </t>
+                                                <t t-else="">
+                                                    <span class="text-muted">—</span>
+                                                </t>
+                                            </td>
+                                            <td style="padding:12px 18px; vertical-align:middle;">
+                                                <span class="badge rounded-pill"
+                                                      style="background:#fff3cd; color:#856404; border:1px solid #ffe082; font-size:12px; padding:5px 10px;">
+                                                    <i class="fa fa-hourglass-half me-1"></i>Awaiting HR Review
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="card-footer"
+                             style="background:#fffde7; border-top:1px solid #ffe082; padding:10px 18px;">
+                            <small class="text-muted">
+                                <i class="fa fa-info-circle me-1"></i>
+                                These skill changes are awaiting HR approval and will appear in your skills once
+                                approved.
+                            </small>
+                        </div>
+                    </div>
+                </t>
+
+
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fa fa-cogs text-primary me-2"></i>Skills &amp; Competencies
+                        </h5>
+                        <button type="button" class="btn btn-success" id="openSkillModal"
+                                style="display:none; font-weight:600; background:#2C5B32; border-color:#2C5B32; color:white;">
+                            <i class="fa fa-plus me-1"></i>Add Skills
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="padding:13px 18px; font-size:13px; color:#555;">Skill Type</th>
+                                    <th style="padding:13px 18px; font-size:13px; color:#555;">Skill</th>
+                                    <th style="padding:13px 18px; font-size:13px; color:#555;">Level</th>
+                                    <th id="skillActionHeader" style="display:none; padding:13px 18px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="skillTableBody">
+                                <t t-foreach="employee_skills" t-as="sk">
+                                    <tr t-att-data-id="sk.id"
+                                        t-att-data-skill-name="sk.skill_id.name"
+                                        t-att-data-type-name="sk.skill_type_id.name"
+                                        t-att-data-type-id="sk.skill_type_id.id"
+                                        t-att-data-level-name="sk.skill_level_id.name if sk.skill_level_id else ''"
+                                        t-att-data-level-id="sk.skill_level_id.id if sk.skill_level_id else ''">
+                                        <td style="padding:13px 18px; vertical-align:middle; font-size:14px;"
+                                            class="col-type-name">
+                                            <t t-esc="sk.skill_type_id.name"/>
+                                        </td>
+                                        <td style="padding:13px 18px; vertical-align:middle; font-size:14px;"
+                                            class="col-skill-name">
+                                            <t t-esc="sk.skill_id.name"/>
+                                        </td>
+                                        <td style="padding:13px 18px; vertical-align:middle; font-size:14px;"
+                                            class="col-level-name">
+                                            <t t-if="sk.skill_level_id">
+                                                <span class="badge bg-primary">
+                                                    <t t-esc="sk.skill_level_id.name"/>
+                                                </span>
+                                            </t>
+                                            <t t-else="">
+                                                <span class="text-muted">—</span>
+                                            </t>
+                                        </td>
+                                        <td class="skill-action-col"
+                                            style="display:none; padding:13px 18px; vertical-align:middle; text-align:right; white-space:nowrap;">
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-warning ess-btn-edit-skill me-1"
+                                                    t-att-data-id="sk.id" title="Edit">
+                                                <i class="fa fa-pencil"></i>
+                                            </button>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-danger ess-btn-delete-skill"
+                                                    t-att-data-id="sk.id" title="Delete">
+                                                <i class="fa fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </t>
+                                <t t-if="not employee_skills">
+                                    <tr id="skillEmptyRow">
+                                        <td colspan="4" class="text-center text-muted py-4">
+                                            No skills added yet.
+                                            <span id="skillEmptyHint" style="display:none;">
+                                                Click <strong>Add Skills</strong> to get started.
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- RESUME / CV -->
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">
+                            <i class="fa fa-folder-open text-primary me-2"></i>Resume / CV
+                        </h5>
+                    </div>
+                    <div class="card-body">
+
+                        <!-- Pending resume approval notice -->
+                        <t t-if="pending_resume_change">
+                            <div class="alert mb-3"
+                                 style="background:#fff8e1; border:1px solid #ffe082; border-radius:6px;">
+                                <i class="fa fa-clock-o text-warning me-2"></i>
+                                <strong style="color:#856404;">Pending HR Approval:</strong>
+                                <span style="color:#856404;">
+                                    <i class="fa fa-file me-1"></i>
+                                    <t t-esc="pending_resume_change['filename']"/>
+                                </span>
+                                <span class="badge rounded-pill ms-2"
+                                      style="background:#fff3cd; color:#856404; border:1px solid #ffe082; font-size:11px;">
+                                    <i class="fa fa-hourglass-half me-1"></i>Awaiting HR Review
+                                </span>
+                                <small class="text-muted d-block mt-1">
+                                    Ref:
+                                    <t t-esc="pending_resume_change['pcr_name']"/>
                                 </small>
                             </div>
-                        </div>
-                    </div>
+                        </t>
 
-                    <!-- Skills Section -->
-                    <div class="card mb-4 shadow-sm">
-                        <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">
-                                <i class="fa fa-cogs text-primary me-2"></i>Skills &amp; Competencies
-                            </h5>
-                            <div class="d-flex gap-2 align-items-center">
-                                <!-- Issue 9: only show badge when value > 0 -->
-                                <span class="badge bg-success" id="skillsCount" style="display:none;"></span>
-                            </div>
-                        </div>
-                        <div class="card-body">
+                        <!-- Current approved resume -->
+                        <t t-if="employee.resume_file">
                             <div class="mb-3">
-                                <label class="form-label fw-bold">
-                                    <i class="fa fa-star text-muted me-1"></i>Technical &amp; Professional Skills
-                                </label>
-                                <input type="text"
-                                       name="x_skills"
-                                       id="skillsInput"
-                                       class="form-control"
-                                       t-att-value="employee.x_skills or ''"
-                                       readonly=""
-                                       placeholder="e.g., Python, Project Management, Data Analysis..."/>
-                                <small class="text-muted">Separate skills with commas.</small>
+                                <a t-attf-href="/web/content/hr.employee/#{employee.id}/resume_file?download=true"
+                                   class="btn btn-outline-success btn-sm" target="_blank">
+                                    <i class="fa fa-download me-1"></i>
+                                    <t t-esc="employee.resume_file_filename or 'Download Resume'"/>
+                                </a>
+                                <span class="text-muted ms-2" style="font-size:12px;">(current approved file)</span>
                             </div>
-                            <div class="skills-display" id="skillsDisplay">
-                                <h6 class="text-muted mb-3">
-                                    <i class="fa fa-tags me-1"></i>Skill Tags
-                                </h6>
-                                <div id="skillsBadges" class="d-flex flex-wrap gap-2"></div>
-                            </div>
-                        </div>
-                    </div>
+                        </t>
+                        <t t-else="">
+                            <p class="text-muted small mb-2">No approved resume on file.</p>
+                        </t>
 
-                    <!-- Resume/CV Upload Only -->
-                    <div class="card mb-4 shadow-sm">
-                        <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">
-                                <i class="fa fa-folder-open text-primary me-2"></i>Resume / CV
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row g-3">
-                                <!-- Issue 13: file input disabled in non-edit mode -->
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold">
-                                        <i class="fa fa-file-pdf text-muted me-1"></i>Resume/CV
+                        <!-- Upload form — shown only in edit mode -->
+                        <form id="resumeUploadForm" enctype="multipart/form-data" style="display:none;">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <input type="hidden" name="action" value="upload_resume"/>
+                            <div class="d-flex align-items-center gap-3 flex-wrap">
+                                <div>
+                                    <input type="file" name="resume_file" id="resumeFileInput"
+                                           class="form-control form-control-sm"
+                                           accept=".pdf,.doc,.docx" style="max-width:320px;"/>
+                                    <small class="text-muted d-block mt-1">PDF, DOC, DOCX — Max 10 MB</small>
+                                </div>
+                                <button type="button" id="resumeUploadBtn"
+                                        class="btn btn-outline-primary btn-sm">
+                                    <i class="fa fa-paper-plane me-1"></i>Submit for HR Approval
+                                </button>
+                            </div>
+                            <div id="resumeFileError" class="text-danger mt-1"
+                                 style="display:none; font-size:13px;"></div>
+                        </form>
+
+                    </div>
+                </div>
+
+
+                <div class="card shadow-sm">
+                    <div class="card-body text-center">
+
+                        <div id="expFormActions" style="display:none;">
+
+
+                            <div id="expPendingBadge" style="display:none; margin-bottom:12px;">
+                                <span class="badge bg-warning text-dark" style="font-size:13px; padding:6px 12px;">
+                                    <i class="fa fa-clock-o me-1"></i>
+                                    <span id="expPendingCount">0</span>
+                                    pending skill change(s)
+                                </span>
+                            </div>
+
+
+                            <div class="alert alert-warning text-start mb-3"
+                                 style="border-left:4px solid #ffc107; border-radius:6px;">
+                                <div class="form-check d-flex align-items-start gap-2">
+                                    <input type="checkbox" id="expDisclaimer" class="form-check-input mt-1"/>
+                                    <label class="form-check-label" for="expDisclaimer"
+                                           style="font-size:0.875rem;">
+                                        <strong>Employee Disclaimer</strong>
+                                        – I, hereby confirm that the information updated by me is
+                                        accurate and complete to the best of my knowledge. I agree
+                                        to keep my data updated at all times and consent to the
+                                        collection and use of such information, for employment
+                                        administration and legal compliances. I acknowledge that any
+                                        false or incomplete information may lead to actions in
+                                        accordance with company policies and applicable laws.
                                     </label>
-                                    <t t-if="employee.resume_file">
-                                        <div class="mb-2">
-                                            <a t-att-href="'/web/content/hr.employee/%s/resume_file?download=true' % employee.id"
-                                               class="btn btn-outline-success btn-sm"
-                                               target="_blank">
-                                                <i class="fa fa-download me-1"></i>
-                                                <t t-esc="employee.resume_file_filename or 'Download Resume'"/>
-                                            </a>
-                                        </div>
-                                    </t>
-                                    <t t-else="">
-                                        <p class="text-muted small mb-1">No file uploaded yet</p>
-                                    </t>
-                                    <input type="file"
-                                           name="resume_file"
-                                           id="resumeFileInput"
-                                           class="form-control form-control-sm exp-file-input"
-                                           accept=".pdf,.doc,.docx"
-                                           disabled="disabled"/>
-                                    <small class="text-muted">PDF, DOC, DOCX (Max: 10MB)</small>
                                 </div>
+                            </div>
+
+                            <button type="button" class="btn btn-secondary me-2" id="expCancelBtn"
+                                    style="font-size:14px; padding:8px 18px; font-weight:600; background:#E74C2D; border-color:#E74C2D; color:white;">
+                                <i class="fa fa-times me-1"></i>Cancel
+                            </button>
+
+                            <button type="button" id="expSaveBtn"
+                                    class="btn btn-primary"
+                                    disabled="disabled"
+                                    style="font-size:14px; padding:8px 18px; font-weight:600; opacity:0.6;">
+                                <i class="fa fa-paper-plane me-1"></i>Submit for HR Approval
+                            </button>
+                        </div>
+
+                        <div id="expViewActions">
+                            <p class="text-muted mb-3">
+                                Last updated:
+                                <strong id="expLastUpdated">
+                                    <t t-esc="employee.write_date.strftime('%d %b, %Y at %I:%M %p') if employee.write_date else 'Never'"/>
+                                </strong>
+                            </p>
+                            <button type="button" class="btn btn-outline-primary" id="expEditBtn"
+                                    style="font-size:14px; padding:8px 18px; font-weight:600;">
+                                <i class="fa fa-edit me-1"></i>Edit Skills
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+
+
+                <div class="ess-modal-overlay" id="addSkillModal" style="display:none;">
+                    <div class="ess-modal" style="width:640px;">
+                        <div class="ess-modal-header">
+                            <h5 class="mb-0 fw-bold">
+                                <i class="fa fa-plus-circle text-primary me-2"></i>Add Skills
+                            </h5>
+                            <button type="button" class="btn-close" id="closeSkillModal"></button>
+                        </div>
+                        <div class="ess-modal-body">
+
+
+                            <div class="row g-2 mb-3">
+                                <div class="col-12 col-md-4">
+                                    <label class="form-label fw-semibold mb-1" style="font-size:13px;">
+                                        Skill Type
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <select id="modalSkillType" class="form-select form-select-sm">
+                                        <option value="">— Select Type —</option>
+                                        <t t-foreach="skill_types" t-as="st">
+                                            <option t-att-value="st.id">
+                                                <t t-esc="st.name"/>
+                                            </option>
+                                        </t>
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <label class="form-label fw-semibold mb-1" style="font-size:13px;">
+                                        Skill
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <select id="modalSkill" class="form-select form-select-sm" disabled="disabled">
+                                        <option value="">— Select Skill —</option>
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <label class="form-label fw-semibold mb-1" style="font-size:13px;">
+                                        Level
+                                        <span class="text-danger">*</span>
+                                    </label>
+                                    <select id="modalLevel" class="form-select form-select-sm" disabled="disabled">
+                                        <option value="">— Select Level —</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="text-end mb-3">
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="addSkillToList">
+                                    <i class="fa fa-plus me-1"></i>Add to List
+                                </button>
+                            </div>
+
+
+                            <div id="skillStagedSection" style="display:none;">
+                                <div style="font-size:12px; color:#666; font-weight:600; margin-bottom:6px;">
+                                    <i class="fa fa-list me-1"></i>Skills to be submitted for approval:
+                                </div>
+                                <table class="table table-sm table-bordered mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="font-size:12px;">Skill Type</th>
+                                            <th style="font-size:12px;">Skill</th>
+                                            <th style="font-size:12px;">Level</th>
+                                            <th style="font-size:12px; width:36px;"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="skillStagedBody"></tbody>
+                                </table>
+                            </div>
+
+                            <div class="mt-3 pt-3"
+                                 style="border-top:1px solid #eee; display:flex; gap:10px; align-items:center;">
+                                <button type="button" class="btn btn-primary" id="saveSkillModal">
+                                    <i class="fa fa-check me-1"></i>Save All
+                                </button>
+                                <button type="button" class="btn btn-secondary" id="closeSkillModal2"
+                                        style="background:#E74C2D; border-color:#E74C2D; color:white;">
+                                    Cancel
+                                </button>
+                                <span id="modalSkillCount" class="text-muted ms-auto" style="font-size:12px;"></span>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Form Actions -->
-                    <div class="card shadow-sm">
-                        <div class="card-body text-center">
-                            <div id="formActions" style="display: none;">
 
-                                <!-- Disclaimer -->
-                                <div class="alert alert-warning text-start mb-3"
-                                     style="border-left: 4px solid #ffc107; border-radius: 6px;">
-                                    <div class="form-check d-flex align-items-start gap-2">
-                                        <input type="checkbox"
-                                               id="expDisclaimer"
-                                               class="form-check-input mt-1"
-                                               onchange="toggleExpSaveBtn()"/>
-                                        <label class="form-check-label" for="expDisclaimer"
-                                               style="font-size:0.875rem;">
-                                            <strong>Employee Disclaimer</strong>
-                                            – I, hereby confirm that the
-                                            information updated by me is accurate and complete to the best of my
-                                            knowledge. I agree to keep my data updated at all times and consent
-                                            to the collection and use of such information, for employment
-                                            administration and legal compliances. I acknowledge that any false or
-                                            incomplete information may lead to actions in accordance with company
-                                            policies and applicable laws.
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <button type="button" class="btn btn-secondary me-2" onclick="cancelEdit()">
-                                    <i class="fa fa-times me-1"></i>Cancel
-                                </button>
-                                <!-- Save button starts disabled -->
-                                <button type="submit"
-                                        id="expSaveBtn"
-                                        class="btn btn-primary"
-                                        disabled="disabled"
-                                        style="opacity:0.6;">
-                                    <i class="fa fa-check me-1"></i>Save Changes
-                                </button>
+                <div class="ess-modal-overlay" id="editSkillModal" style="display:none;">
+                    <div class="ess-modal">
+                        <div class="ess-modal-header">
+                            <h5 class="mb-0 fw-bold">Edit Skill Level</h5>
+                            <button type="button" class="btn-close" id="closeEditModal"></button>
+                        </div>
+                        <div class="ess-modal-body">
+                            <input type="hidden" id="editRecordId"/>
+                            <input type="hidden" id="editTypeId"/>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Skill Type</label>
+                                <input type="text" id="editTypeName" class="form-control bg-light" readonly="readonly"/>
                             </div>
-                            <div id="viewActions">
-                                <p class="text-muted mb-3">
-                                    Last updated:
-                                    <strong id="expLastUpdated">
-                                        <t t-esc="employee.write_date.strftime('%d %b, %Y at %I:%M %p') if employee.write_date else 'Never'"/>
-                                    </strong>
-                                </p>
-                                <!-- Issue 10: Edit button changes appearance in edit mode -->
-                                <button type="button" id="expEditBtn"
-                                        class="btn btn-outline-primary" onclick="enableFullEdit()">
-                                    <i class="fa fa-edit me-1"></i>Edit Experience &amp; Skills
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Skill</label>
+                                <input type="text" id="editSkillName" class="form-control bg-light"
+                                       readonly="readonly"/>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">
+                                    Level
+                                    <span class="text-danger">*</span>
+                                </label>
+                                <select id="editLevelSelect" class="form-select">
+                                    <option value="">— Select Level —</option>
+                                </select>
+                            </div>
+                            <div class="mt-3 pt-3" style="border-top:1px solid #eee; display:flex; gap:10px;">
+                                <button type="button" class="btn btn-primary" id="saveEditBtn">
+                                    <i class="fa fa-save me-1"></i>Update
                                 </button>
+                                <button type="button" class="btn btn-secondary" id="closeEditModal2">Cancel</button>
                             </div>
                         </div>
                     </div>
-                </form>
+                </div>
 
-                <script type="text/javascript">
-                    <![CDATA[
-let isEditMode = false;
-let originalFormData = {};
-/* Issue 12: snapshot original text/skills values at page load for change detection */
-let originalExpText = '';
-let originalSkillsText = '';
-
-/* Issue 8: fix last-updated timezone */
-(function fixExpTimezone() {
-    var el = document.getElementById('expLastUpdated');
-    if (!el) return;
-    var raw = el.textContent.trim().replace(/\u00a0/g,' ');
-    if (!raw || raw === 'Never') return;
-    try {
-        var m = raw.match(/(\d{1,2})\s+(\w+),?\s+(\d{4})\s+at\s+(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-        if (m) {
-            var months = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
-            var monIdx = months[m[2].toLowerCase().substring(0,3)];
-            var hr = parseInt(m[4],10);
-            var isPM = m[6].toUpperCase()==='PM';
-            if (isPM && hr < 12) hr += 12;
-            if (!isPM && hr === 12) hr = 0;
-            var dt = new Date(Date.UTC(parseInt(m[3],10), monIdx, parseInt(m[1],10), hr, parseInt(m[5],10)));
-            if (!isNaN(dt.getTime())) {
-                el.textContent = dt.toLocaleString(undefined,{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true});
-            }
-        }
-    } catch(e) {}
-})();
-
-document.addEventListener('DOMContentLoaded', function () {
-    /* snapshot originals for change detection (Issue 12) */
-    originalExpText = (document.getElementById('experienceText').value || '').trim();
-    originalSkillsText = (document.getElementById('skillsInput').value || '').trim();
-
-    updateSkillsDisplay();
-    updateWordCount();
-    calculateExperience();
-
-    /* Issue 13: ensure resume file input is disabled on load */
-    document.querySelectorAll('.exp-file-input').forEach(fi => fi.setAttribute('disabled','disabled'));
-});
-
-/* Issue 9: show badge only when count > 0 */
-function updateSkillsDisplay() {
-    const skillsInput = document.getElementById('skillsInput');
-    const skillsBadges = document.getElementById('skillsBadges');
-    const skillsCountEl = document.getElementById('skillsCount');
-    if (skillsInput && skillsInput.value && skillsInput.value.trim()) {
-        const skills = skillsInput.value.split(',').map(s => s.trim()).filter(s => s);
-        skillsBadges.innerHTML = '';
-        skills.forEach(skill => {
-            const badge = document.createElement('span');
-            badge.className = 'badge bg-primary me-1 mb-1';
-            badge.textContent = skill;
-            skillsBadges.appendChild(badge);
-        });
-        if (skills.length > 0) {
-            skillsCountEl.textContent = skills.length + ' Skills';
-            skillsCountEl.style.display = '';
-        } else {
-            skillsCountEl.style.display = 'none';
-        }
-    } else {
-        skillsBadges.innerHTML = '<span class="text-muted small">No skills added yet</span>';
-        skillsCountEl.style.display = 'none';
-    }
-}
-
-/* Issue 9: show word count only when > 0 */
-function updateWordCount() {
-    const experienceText = document.getElementById('experienceText');
-    const wrapEl = document.getElementById('experienceWordCountWrap');
-    const countEl = document.getElementById('experienceWordCount');
-    if (experienceText) {
-        const wordCount = experienceText.value.trim().split(/\s+/).filter(w => w.length > 0).length;
-        if (wordCount > 0) {
-            countEl.textContent = wordCount;
-            wrapEl.style.display = '';
-        } else {
-            wrapEl.style.display = 'none';
-        }
-    }
-}
-
-/* Issue 9: show years badge only when value > 0 */
-function calculateExperience() {
-    const experienceText = document.getElementById('experienceText');
-    const yearsEl = document.getElementById('experienceYears');
-    if (!experienceText) return;
-    const text = experienceText.value.toLowerCase();
-    const yearMatches = text.match(/(\d+)\s*(years?|yrs?)/g);
-    if (yearMatches) {
-        const years = yearMatches.map(m => parseInt(m.match(/\d+/)[0]));
-        const maxYears = Math.max(...years);
-        if (maxYears > 0) {
-            yearsEl.textContent = maxYears + ' Years';
-            yearsEl.style.display = '';
-            return;
-        }
-    }
-    yearsEl.style.display = 'none';
-}
-
-/* Issue 10: change Edit button style when in edit mode */
-function enableFullEdit() {
-    isEditMode = true;
-    storeOriginalFormData();
-    const inputs = document.querySelectorAll('#experienceForm input, #experienceForm textarea');
-    inputs.forEach(input => {
-        if (input.type !== 'hidden') {
-            input.removeAttribute('readonly');
-            input.removeAttribute('disabled');
-        }
-    });
-    /* Issue 13: enable file inputs in edit mode */
-    document.querySelectorAll('#experienceForm .exp-file-input').forEach(fi => fi.removeAttribute('disabled'));
-
-    document.getElementById('formActions').style.display = 'block';
-    document.getElementById('viewActions').style.display = 'none';
-
-    /* Issue 10: change button appearance */
-    var editBtn = document.getElementById('expEditBtn');
-    if (editBtn) {
-        editBtn.classList.remove('btn-outline-primary');
-        editBtn.classList.add('btn-primary', 'edit-active');
-        editBtn.innerHTML = '<i class="fa fa-pencil me-1"></i>Editing Mode ON';
-    }
-
-    const disc = document.getElementById('expDisclaimer');
-    if (disc) disc.checked = false;
-    const btn = document.getElementById('expSaveBtn');
-    if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
-    document.getElementById('experienceText').addEventListener('input', function () {
-        updateWordCount();
-        calculateExperience();
-    });
-    document.getElementById('skillsInput').addEventListener('input', updateSkillsDisplay);
-}
-
-function toggleExpSaveBtn() {
-    const checked = document.getElementById('expDisclaimer').checked;
-    const btn = document.getElementById('expSaveBtn');
-    btn.disabled = !checked;
-    btn.style.opacity = checked ? '1' : '0.6';
-}
-
-function storeOriginalFormData() {
-    const form = document.getElementById('experienceForm');
-    const formData = new FormData(form);
-    originalFormData = {};
-    for (let [key, value] of formData.entries()) {
-        originalFormData[key] = value;
-    }
-}
-
-function cancelEdit() {
-    for (let [key, value] of Object.entries(originalFormData)) {
-        const input = document.querySelector(`[name="${key}"]`);
-        if (input && input.type !== 'hidden' && input.type !== 'file') {
-            input.value = value;
-        }
-    }
-    disableEditMode();
-    updateSkillsDisplay();
-    updateWordCount();
-    calculateExperience();
-    showMessage('Changes cancelled.', 'info');
-}
-
-function disableEditMode() {
-    isEditMode = false;
-    const inputs = document.querySelectorAll('#experienceForm input, #experienceForm textarea');
-    inputs.forEach(input => {
-        if (input.type !== 'hidden' && input.type !== 'file') {
-            input.setAttribute('readonly', 'readonly');
-        }
-    });
-    /* Issue 13: disable file inputs when leaving edit mode */
-    document.querySelectorAll('#experienceForm .exp-file-input').forEach(fi => {
-        fi.setAttribute('disabled', 'disabled');
-        fi.value = '';
-    });
-
-    document.getElementById('formActions').style.display = 'none';
-    document.getElementById('viewActions').style.display = 'block';
-
-    /* Issue 10: restore button appearance */
-    var editBtn = document.getElementById('expEditBtn');
-    if (editBtn) {
-        editBtn.classList.remove('btn-primary', 'edit-active');
-        editBtn.classList.add('btn-outline-primary');
-        editBtn.innerHTML = '<i class="fa fa-edit me-1"></i>Edit Experience &amp; Skills';
-    }
-
-    const disc = document.getElementById('expDisclaimer');
-    if (disc) disc.checked = false;
-    const btn = document.getElementById('expSaveBtn');
-    if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
-}
-
-document.getElementById('experienceForm').addEventListener('submit', function (e) {
-    e.preventDefault();
-    const disc = document.getElementById('expDisclaimer');
-    if (disc && !disc.checked) {
-        showMessage('Please read and accept the Employee Disclaimer before saving.', 'error');
-        return;
-    }
-
-    /* Issue 12: detect if anything actually changed */
-    const currentExpText = (document.getElementById('experienceText').value || '').trim();
-    const currentSkillsText = (document.getElementById('skillsInput').value || '').trim();
-    const resumeInput = document.getElementById('resumeFileInput');
-    const hasFileChange = resumeInput && resumeInput.files && resumeInput.files.length > 0;
-
-    if (currentExpText === originalExpText && currentSkillsText === originalSkillsText && !hasFileChange) {
-        showMessage('No changes detected. Your experience data is already up to date.', 'info');
-        return;
-    }
-
-    /* Issue 11: show upload overlay for large files */
-    const hasLargeFile = hasFileChange && resumeInput.files[0].size > 1 * 1024 * 1024; /* >1MB */
-    var overlay = document.getElementById('uploadProgressOverlay');
-    if (hasLargeFile || hasFileChange) {
-        overlay.style.display = 'flex';
-    }
-
-    const formData = new FormData(this);
-    fetch('/my/employee/experience', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => {
-        if (overlay) overlay.style.display = 'none';
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            /* Update snapshots so re-save correctly detects no change */
-            originalExpText = currentExpText;
-            originalSkillsText = currentSkillsText;
-            showMessage('Experience and skills updated successfully!', 'success');
-            disableEditMode();
-        } else {
-            showMessage('Error: ' + (data.error || 'Unknown error'), 'error');
-        }
-    })
-    .catch(error => {
-        if (overlay) overlay.style.display = 'none';
-        console.error('Error:', error);
-        showMessage('Network error. Please try again.', 'error');
-    });
-});
-
-function showMessage(text, type) {
-    const messageContainer = document.getElementById('messageContainer');
-    const successMsg = document.getElementById('successMessage');
-    const errorMsg = document.getElementById('errorMessage');
-    successMsg.style.display = 'none';
-    errorMsg.style.display = 'none';
-    successMsg.classList.remove('show');
-    errorMsg.classList.remove('show');
-    if (type === 'success') {
-        document.getElementById('successText').textContent = text;
-        successMsg.style.display = 'block';
-        successMsg.classList.add('show');
-    } else if (type === 'info') {
-        document.getElementById('successText').textContent = text;
-        successMsg.style.display = 'block';
-        successMsg.classList.add('show');
-    } else {
-        document.getElementById('errorText').textContent = text;
-        errorMsg.style.display = 'block';
-        errorMsg.classList.add('show');
-    }
-    messageContainer.style.display = 'block';
-    messageContainer.scrollIntoView({behavior: 'smooth'});
-    setTimeout(() => {
-        successMsg.classList.remove('show');
-        errorMsg.classList.remove('show');
-    }, 5000);
-}
-                    ]]>
-                </script>
 
                 <style>
-                    <![CDATA[
-.skills-display {
-    background-color: #f8f9fa;
-    border-radius: 0.375rem;
-    padding: 1rem;
-    margin-top: 1rem;
-}
-.badge { font-size: 0.875em; padding: 0.5em 0.75em; }
-/* Issue 10: active edit button */
-#expEditBtn.edit-active { box-shadow: 0 0 0 3px rgba(13,110,253,0.35); }
-/* Issue 13: disabled file input */
-input[type="file"]:disabled { background-color: #e9ecef; cursor: not-allowed; opacity: 0.65; }
-                    ]]>
+                    .ess-modal-overlay {
+                    position:fixed; inset:0; background:rgba(0,0,0,0.45);
+                    display:flex; align-items:center; justify-content:center;
+                    z-index:9999; padding:16px;
+                    }
+                    .ess-modal {
+                    background:#fff; border-radius:12px; width:520px; max-width:100%;
+                    box-shadow:0 8px 40px rgba(0,0,0,0.18);
+                    overflow:hidden; max-height:90vh; overflow-y:auto;
+                    }
+                    .ess-modal-header {
+                    display:flex; align-items:center; justify-content:space-between;
+                    padding:18px 24px 16px; border-bottom:1px solid #eee;
+                    position:sticky; top:0; background:#fff; z-index:1;
+                    }
+                    .ess-modal-body { padding:20px 24px; }
+                    tr.skill-staged-add { background:#f0fff4 !important; }
+                    tr.skill-staged-edit { background:#fff8e1 !important; }
+                    tr.skill-staged-delete { background:#fff0f0 !important; opacity:0.6; text-decoration:line-through; }
+                    .skill-badge { font-size:11px; padding:2px 7px; border-radius:4px; margin-left:6px; font-weight:600;
+                    }
+                    .badge-new { background:#d4edda; color:#155724; }
+                    .badge-edited { background:#fff3cd; color:#856404; }
+                    .badge-delete { background:#f8d7da; color:#721c24; }
+                    input[type="file"]:disabled { background-color:#e9ecef; cursor:not-allowed; opacity:0.65; }
                 </style>
+
+
+                <div id="skillDataContainer" t-att-data-skill-json="skill_data_json" style="display:none;"></div>
+                <input type="hidden" id="exp_csrf_token" t-att-value="request.csrf_token()"/>
+
+
+                <script>
+                    //<![CDATA[
+(function(){
+document.addEventListener('DOMContentLoaded', function(){
+
+    /* ─── Server data ─── */
+    var skillData = {};
+    try {
+        skillData = JSON.parse(document.getElementById('skillDataContainer').dataset.skillJson || '{}');
+    } catch(e) { skillData = {skills:{}, levels:{}}; }
+
+    var BASE_URL   = '/my/employee/experience';
+    var csrfToken  = document.getElementById('exp_csrf_token')
+                     ? document.getElementById('exp_csrf_token').value : '';
+
+    /* pending skill changes (for HR approval) */
+    var pendingChanges = [];
+    /* items queued inside the Add Skills modal */
+    var modalQueue     = [];
+    var tempId         = -1;
+
+    /* ─── Utility ─── */
+    function showMsg(text, type) {
+        var c  = document.getElementById('expMessageContainer');
+        var s  = document.getElementById('expSuccessMessage');
+        var er = document.getElementById('expErrorMessage');
+        s.style.display='none';  s.classList.remove('show');
+        er.style.display='none'; er.classList.remove('show');
+        if (type === 'success' || type === 'info') {
+            document.getElementById('expSuccessText').textContent = text;
+            s.style.display='block'; s.classList.add('show');
+        } else {
+            document.getElementById('expErrorText').textContent = text;
+            er.style.display='block'; er.classList.add('show');
+        }
+        c.style.display='block';
+        c.scrollIntoView({behavior:'smooth'});
+        setTimeout(function(){ s.classList.remove('show'); er.classList.remove('show'); }, 6000);
+    }
+
+    function esc(str){
+        return String(str||'')
+            .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function openModal(id)  { document.getElementById(id).style.display='flex'; }
+    function closeModal(id) { document.getElementById(id).style.display='none'; }
+    function getRow(id)     { return document.querySelector('#skillTableBody tr[data-id="'+id+'"]'); }
+
+    function clearBadge(row){ var b=row.querySelector('.skill-badge'); if(b) b.remove(); }
+    function setBadge(row, type){
+        clearBadge(row);
+        var labels = {add:'New', edit:'Edited', delete:'To Delete'};
+        var classes = {add:'badge-new', edit:'badge-edited', delete:'badge-delete'};
+        var s = document.createElement('span');
+        s.className = 'skill-badge ' + classes[type];
+        s.textContent = labels[type];
+        var cell = row.querySelector('.col-skill-name');
+        if(cell) cell.appendChild(s);
+    }
+
+    function updateBadge(){
+        var el = document.getElementById('expPendingBadge');
+        var ct = document.getElementById('expPendingCount');
+        ct.textContent = pendingChanges.length;
+        el.style.display = pendingChanges.length > 0 ? 'block' : 'none';
+    }
+
+    /* ─── Fix last-updated timezone ─── */
+    (function(){
+        var el = document.getElementById('expLastUpdated');
+        if(!el) return;
+        var raw = (el.textContent||'').trim().replace(/\u00a0/g,' ');
+        if(!raw || raw==='Never') return;
+        try {
+            var m = raw.match(/(\d{1,2})\s+(\w+),?\s+(\d{4})\s+at\s+(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+            if(!m) return;
+            var mo = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+            var hr = parseInt(m[4],10), isPM = m[6].toUpperCase()==='PM';
+            if(isPM&&hr<12) hr+=12; if(!isPM&&hr===12) hr=0;
+            var dt = new Date(Date.UTC(parseInt(m[3],10), mo[m[2].toLowerCase().substring(0,3)], parseInt(m[1],10), hr, parseInt(m[5],10)));
+            if(!isNaN(dt.getTime()))
+                el.textContent = dt.toLocaleString(undefined,{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true});
+        } catch(e) {}
+    })();
+
+
+    var resumeUploadBtn = document.getElementById('resumeUploadBtn');
+    var resumeFileInput = document.getElementById('resumeFileInput');
+    var resumeErrEl     = document.getElementById('resumeFileError');
+    var overlay         = document.getElementById('uploadProgressOverlay');
+
+    if(resumeUploadBtn){
+        resumeUploadBtn.addEventListener('click', function(){
+            resumeErrEl.style.display='none';
+
+            if(!resumeFileInput.files || resumeFileInput.files.length === 0){
+                resumeErrEl.textContent = 'Please choose a file before uploading.';
+                resumeErrEl.style.display = 'block';
+                return;
+            }
+
+            var file = resumeFileInput.files[0];
+
+
+            var allowed = ['application/pdf',
+                           'application/msword',
+                           'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+            if(allowed.indexOf(file.type) === -1){
+                resumeErrEl.textContent = 'Only PDF, DOC, and DOCX files are allowed.';
+                resumeErrEl.style.display = 'block';
+                return;
+            }
+
+            /* Validate size (10 MB) */
+            if(file.size > 10 * 1024 * 1024){
+                resumeErrEl.textContent = 'File size must not exceed 10 MB.';
+                resumeErrEl.style.display = 'block';
+                return;
+            }
+
+            /* Show overlay for large files (> 1 MB) */
+            if(file.size > 1024 * 1024 && overlay){
+                overlay.style.display = 'flex';
+            }
+
+            var fd = new FormData();
+            fd.append('csrf_token', csrfToken);
+            fd.append('action', 'upload_resume');
+            fd.append('resume_file', file, file.name);
+
+            resumeUploadBtn.disabled = true;
+            resumeUploadBtn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>Uploading...';
+
+            fetch(BASE_URL, {method:'POST', body:fd})
+                .then(function(r){ return r.json(); })
+                .then(function(d){
+                    if(overlay) overlay.style.display = 'none';
+                    resumeUploadBtn.disabled = false;
+                    resumeUploadBtn.innerHTML = '<i class="fa fa-upload me-1"></i>Upload Resume';
+                    if(d.success){
+                        showMsg('Resume submitted for HR approval! Reference: ' + (d.reference || ''), 'success');
+                        setTimeout(function(){ location.reload(); }, 1500);
+                    } else {
+                        resumeErrEl.textContent = d.error || 'Upload failed. Please try again.';
+                        resumeErrEl.style.display = 'block';
+                    }
+                })
+                .catch(function(){
+                    if(overlay) overlay.style.display = 'none';
+                    resumeUploadBtn.disabled = false;
+                    resumeUploadBtn.innerHTML = '<i class="fa fa-upload me-1"></i>Upload Resume';
+                    resumeErrEl.textContent = 'Network error. Please try again.';
+                    resumeErrEl.style.display = 'block';
+                });
+        });
+    }
+
+
+    document.getElementById('expDisclaimer').addEventListener('change', function(){
+        var btn = document.getElementById('expSaveBtn');
+        btn.disabled    = !this.checked;
+        btn.style.opacity = this.checked ? '1' : '0.6';
+    });
+
+
+    var typeSelect  = document.getElementById('modalSkillType');
+    var skillSelect = document.getElementById('modalSkill');
+    var levelSelect = document.getElementById('modalLevel');
+
+    typeSelect.addEventListener('change', function(){
+        var typeId = this.value;
+        skillSelect.innerHTML = '<option value="">— Select Skill —</option>';
+        levelSelect.innerHTML = '<option value="">— Select Level —</option>';
+        skillSelect.disabled = true;
+        levelSelect.disabled = true;
+        if(!typeId) return;
+
+        (skillData.skills[typeId] || []).forEach(function(sk){
+            var opt = document.createElement('option');
+            opt.value = sk.id; opt.textContent = sk.name;
+            skillSelect.appendChild(opt);
+        });
+        skillSelect.disabled = (skillData.skills[typeId] || []).length === 0;
+
+        (skillData.levels[typeId] || []).forEach(function(lv){
+            var opt = document.createElement('option');
+            opt.value = lv.id; opt.textContent = lv.name;
+            levelSelect.appendChild(opt);
+        });
+        levelSelect.disabled = (skillData.levels[typeId] || []).length === 0;
+    });
+
+
+    function renderModalQueue(){
+        var tbody = document.getElementById('skillStagedBody');
+        var sec   = document.getElementById('skillStagedSection');
+        var ctr   = document.getElementById('modalSkillCount');
+        tbody.innerHTML = '';
+        if(modalQueue.length === 0){ sec.style.display='none'; ctr.textContent=''; return; }
+        sec.style.display = 'block';
+        ctr.textContent = modalQueue.length + ' skill(s) ready to save';
+        modalQueue.forEach(function(item, idx){
+            var tr = document.createElement('tr');
+            tr.innerHTML =
+                '<td style="font-size:12px;">' + esc(item.typeName) + '</td>' +
+                '<td style="font-size:12px;">' + esc(item.skillName) + '</td>' +
+                '<td style="font-size:12px;"><span class="badge bg-primary">' + esc(item.levelName) + '</span></td>' +
+                '<td><button type="button" class="btn btn-sm btn-link text-danger p-0" data-idx="' + idx + '" title="Remove">' +
+                    '<i class="fa fa-times"></i></button></td>';
+            tbody.appendChild(tr);
+        });
+        tbody.querySelectorAll('button[data-idx]').forEach(function(btn){
+            btn.addEventListener('click', function(){
+                modalQueue.splice(parseInt(this.dataset.idx), 1);
+                renderModalQueue();
+            });
+        });
+    }
+
+    function resetModalSelects(){
+        typeSelect.value  = '';
+        skillSelect.innerHTML = '<option value="">— Select Skill —</option>';
+        skillSelect.disabled = true;
+        levelSelect.innerHTML = '<option value="">— Select Level —</option>';
+        levelSelect.disabled = true;
+    }
+
+    document.getElementById('openSkillModal').addEventListener('click', function(){
+        modalQueue = [];
+        resetModalSelects();
+        renderModalQueue();
+        openModal('addSkillModal');
+    });
+    document.getElementById('closeSkillModal').addEventListener('click',  function(){ closeModal('addSkillModal'); });
+    document.getElementById('closeSkillModal2').addEventListener('click', function(){ closeModal('addSkillModal'); });
+    document.getElementById('addSkillModal').addEventListener('click', function(e){ if(e.target===this) closeModal('addSkillModal'); });
+
+    document.getElementById('addSkillToList').addEventListener('click', function(){
+        var typeOpt  = typeSelect.options[typeSelect.selectedIndex];
+        var skillOpt = skillSelect.options[skillSelect.selectedIndex];
+        var levelOpt = levelSelect.options[levelSelect.selectedIndex];
+
+        if(!typeSelect.value)  { showMsg('Please select a Skill Type.', 'error'); return; }
+        if(!skillSelect.value) { showMsg('Please select a Skill.', 'error'); return; }
+        if(!levelSelect.value) { showMsg('Please select a Level.', 'error'); return; }
+
+        if(modalQueue.some(function(i){ return i.skillId === skillSelect.value; })){
+            showMsg('This skill is already in the list.', 'error'); return;
+        }
+
+        modalQueue.push({
+            typeId:    typeSelect.value,
+            typeName:  typeOpt  ? typeOpt.textContent  : '',
+            skillId:   skillSelect.value,
+            skillName: skillOpt ? skillOpt.textContent : '',
+            levelId:   levelSelect.value,
+            levelName: levelOpt ? levelOpt.textContent : '',
+        });
+        renderModalQueue();
+        /* Reset skill + level but keep type so user can quickly add more */
+        skillSelect.value = '';
+        levelSelect.value = '';
+    });
+
+    document.getElementById('saveSkillModal').addEventListener('click', function(){
+        if(modalQueue.length === 0){ showMsg('Please add at least one skill.', 'error'); return; }
+
+        var emptyRow = document.getElementById('skillEmptyRow');
+        if(emptyRow) emptyRow.remove();
+
+        /* Build batch payload */
+        var batchItems = modalQueue.map(function(item){
+            return {
+                skill_id:   item.skillId,   skill_name: item.skillName,
+                level_id:   item.levelId,   level_name: item.levelName,
+                type_id:    item.typeId,     type_name:  item.typeName,
+            };
+        });
+
+
+        pendingChanges.push({
+            type:    'add_batch',
+            rowId:   null,
+            payload: { batch_skills: batchItems }
+        });
+
+        /* Show visual rows in the table */
+        var tbody = document.getElementById('skillTableBody');
+        modalQueue.forEach(function(item){
+            var rowTempId = tempId--;
+            var tr = document.createElement('tr');
+            tr.setAttribute('data-id',         rowTempId);
+            tr.setAttribute('data-skill-name',  item.skillName);
+            tr.setAttribute('data-type-name',   item.typeName);
+            tr.setAttribute('data-type-id',     item.typeId);
+            tr.setAttribute('data-level-name',  item.levelName);
+            tr.setAttribute('data-level-id',    item.levelId);
+            tr.classList.add('skill-staged-add');
+            tr.innerHTML =
+                '<td style="padding:13px 18px;vertical-align:middle;font-size:14px;" class="col-type-name">' + esc(item.typeName) + '</td>' +
+                '<td style="padding:13px 18px;vertical-align:middle;font-size:14px;" class="col-skill-name">' +
+                    esc(item.skillName) + '<span class="skill-badge badge-new">New</span>' +
+                '</td>' +
+                '<td style="padding:13px 18px;vertical-align:middle;font-size:14px;" class="col-level-name">' +
+                    '<span class="badge bg-primary">' + esc(item.levelName) + '</span>' +
+                '</td>' +
+                '<td class="skill-action-col" style="padding:13px 18px;vertical-align:middle;text-align:right;white-space:nowrap;">' +
+                    '<button type="button" class="btn btn-sm btn-outline-danger ess-btn-delete-skill" data-id="' + rowTempId + '" title="Remove">' +
+                        '<i class="fa fa-trash"></i></button>' +
+                '</td>';
+            tbody.appendChild(tr);
+            bindDelete(tr);
+        });
+
+        updateBadge();
+        closeModal('addSkillModal');
+        showMsg(modalQueue.length + ' skill(s) staged. Accept the disclaimer and click "Submit for HR Approval".', 'info');
+        modalQueue = [];
+    });
+
+
+    function bindEdit(){
+        document.querySelectorAll('.ess-btn-edit-skill').forEach(function(btn){
+            btn.addEventListener('click', function(){
+                var rowId = this.dataset.id;
+                var row   = getRow(rowId);
+                if(!row) return;
+
+                document.getElementById('editRecordId').value  = rowId;
+                document.getElementById('editTypeId').value    = row.dataset.typeId  || '';
+                document.getElementById('editTypeName').value  = row.dataset.typeName || '';
+                document.getElementById('editSkillName').value = row.dataset.skillName || '';
+
+                var lsel   = document.getElementById('editLevelSelect');
+                lsel.innerHTML = '<option value="">— Select Level —</option>';
+                (skillData.levels[row.dataset.typeId] || []).forEach(function(lv){
+                    var opt = document.createElement('option');
+                    opt.value = lv.id; opt.textContent = lv.name;
+                    lsel.appendChild(opt);
+                });
+                lsel.value = row.dataset.levelId || '';
+                openModal('editSkillModal');
+            });
+        });
+    }
+    bindEdit();
+
+    document.getElementById('closeEditModal').addEventListener('click',  function(){ closeModal('editSkillModal'); });
+    document.getElementById('closeEditModal2').addEventListener('click', function(){ closeModal('editSkillModal'); });
+    document.getElementById('editSkillModal').addEventListener('click', function(e){ if(e.target===this) closeModal('editSkillModal'); });
+
+    document.getElementById('saveEditBtn').addEventListener('click', function(){
+        var rowId  = document.getElementById('editRecordId').value;
+        var lsel   = document.getElementById('editLevelSelect');
+        var levelId   = lsel.value;
+        var levelName = lsel.options[lsel.selectedIndex] ? lsel.options[lsel.selectedIndex].textContent : '';
+        if(!levelId){ showMsg('Please select a level.', 'error'); return; }
+
+        /* Replace any existing edit for this row */
+        pendingChanges = pendingChanges.filter(function(c){ return !(c.rowId == rowId && c.type === 'edit'); });
+        pendingChanges.push({type:'edit', rowId:rowId, payload:{level_id:levelId, level_name:levelName}});
+
+        var row = getRow(rowId);
+        if(row){
+            row.setAttribute('data-level-id',   levelId);
+            row.setAttribute('data-level-name',  levelName);
+            row.querySelector('.col-level-name').innerHTML =
+                '<span class="badge bg-primary">' + esc(levelName) + '</span>';
+            if(!row.classList.contains('skill-staged-add')){
+                row.classList.add('skill-staged-edit');
+                setBadge(row, 'edit');
+            }
+        }
+        updateBadge();
+        closeModal('editSkillModal');
+        showMsg('Edit staged.', 'info');
+    });
+
+
+    function bindDelete(row){
+        var btn = row.querySelector('.ess-btn-delete-skill');
+        if(!btn) return;
+        btn.addEventListener('click', function(){
+            var rowId  = this.dataset.id;
+            var isTemp = parseInt(rowId, 10) < 0;
+            if(!confirm('Remove this skill?')) return;
+
+            if(isTemp){
+                /* Remove from pending batch (remove the whole batch if only one skill;
+                   otherwise drop that skill from the batch payload) */
+                pendingChanges = pendingChanges.filter(function(c){
+                    if(c.type !== 'add_batch') return true;
+                    return false; /* simplest: remove the whole batch; user can re-add */
+                });
+                var r = getRow(rowId);
+                if(r) r.remove();
+            } else {
+                pendingChanges = pendingChanges.filter(function(c){
+                    return !(c.rowId == rowId && (c.type === 'edit' || c.type === 'delete'));
+                });
+                pendingChanges.push({type:'delete', rowId:rowId, payload:{}});
+                var r = getRow(rowId);
+                if(r){
+                    r.classList.remove('skill-staged-edit');
+                    r.classList.add('skill-staged-delete');
+                    setBadge(r, 'delete');
+                    r.querySelector('.skill-action-col').innerHTML =
+                        '<button type="button" class="btn btn-sm btn-outline-secondary ess-btn-undo" data-id="' + rowId + '" title="Undo">' +
+                            '<i class="fa fa-undo me-1"></i>Undo</button>';
+                    bindUndo(r);
+                }
+            }
+            updateBadge();
+        });
+    }
+
+    function bindUndo(row){
+        var btn = row.querySelector('.ess-btn-undo');
+        if(!btn) return;
+        btn.addEventListener('click', function(){
+            var rowId = this.dataset.id;
+            pendingChanges = pendingChanges.filter(function(c){ return !(c.rowId == rowId && c.type === 'delete'); });
+            row.classList.remove('skill-staged-delete');
+            clearBadge(row);
+            row.querySelector('.skill-action-col').innerHTML =
+                '<button type="button" class="btn btn-sm btn-outline-warning ess-btn-edit-skill me-1" data-id="' + rowId + '" title="Edit"><i class="fa fa-pencil"></i></button>' +
+                '<button type="button" class="btn btn-sm btn-outline-danger ess-btn-delete-skill" data-id="' + rowId + '" title="Delete"><i class="fa fa-trash"></i></button>';
+            bindEdit();
+            bindDelete(row);
+            updateBadge();
+            showMsg('Undo successful.', 'info');
+        });
+    }
+
+    /* Bind delete on server-rendered rows */
+    document.querySelectorAll('#skillTableBody tr[data-id]').forEach(function(row){ bindDelete(row); });
+
+
+    function enableEdit(){
+        document.getElementById('openSkillModal').style.display = 'inline-flex';
+        document.getElementById('skillActionHeader').style.display = '';
+        document.querySelectorAll('.skill-action-col').forEach(function(td){ td.style.display=''; });
+        var h = document.getElementById('skillEmptyHint'); if(h) h.style.display='';
+
+        /* Show resume upload form */
+        var rf = document.getElementById('resumeUploadForm'); if(rf) rf.style.display='block';
+
+        document.getElementById('expViewActions').style.display = 'none';
+        document.getElementById('expFormActions').style.display = 'block';
+
+        /* Reset disclaimer & save button */
+        var disc = document.getElementById('expDisclaimer');
+        if(disc) disc.checked = false;
+        var btn = document.getElementById('expSaveBtn');
+        if(btn){ btn.disabled=true; btn.style.opacity='0.6'; }
+
+        updateBadge();
+    }
+
+    function disableEdit(){
+        document.getElementById('openSkillModal').style.display = 'none';
+        document.getElementById('skillActionHeader').style.display = 'none';
+        document.querySelectorAll('.skill-action-col').forEach(function(td){ td.style.display='none'; });
+        var h = document.getElementById('skillEmptyHint'); if(h) h.style.display='none';
+
+        /* Hide resume upload form */
+        var rf = document.getElementById('resumeUploadForm'); if(rf) rf.style.display='none';
+
+        document.getElementById('expViewActions').style.display = 'block';
+        document.getElementById('expFormActions').style.display = 'none';
+
+        /* Reset disclaimer & save button */
+        var disc = document.getElementById('expDisclaimer');
+        if(disc) disc.checked = false;
+        var btn = document.getElementById('expSaveBtn');
+        if(btn){ btn.disabled=true; btn.style.opacity='0.6'; }
+    }
+
+    document.getElementById('expEditBtn').addEventListener('click', enableEdit);
+
+    document.getElementById('expCancelBtn').addEventListener('click', function(){
+        if(pendingChanges.length > 0 && !confirm('Discard all unsaved skill changes?')) return;
+        pendingChanges = [];
+        disableEdit();
+        location.reload();
+    });
+
+
+    document.getElementById('expSaveBtn').addEventListener('click', function(){
+        var disc = document.getElementById('expDisclaimer');
+        if(disc && !disc.checked){
+            showMsg('Please read and accept the Employee Disclaimer before submitting.', 'error');
+            return;
+        }
+        if(pendingChanges.length === 0){ disableEdit(); return; }
+
+        var btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>Submitting...';
+
+        var changes = pendingChanges.slice();
+        var errors  = [];
+
+        function next(i){
+            if(i >= changes.length){
+                if(errors.length > 0){
+                    showMsg('Some changes failed: ' + errors.join('; '), 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa fa-paper-plane me-1"></i>Submit for HR Approval';
+                } else {
+                    showMsg('Skills submitted for HR Approval!', 'success');
+                    pendingChanges = [];
+                    setTimeout(function(){ location.reload(); }, 1200);
+                }
+                return;
+            }
+
+            var c  = changes[i];
+            var fd = new FormData();
+            fd.append('csrf_token', csrfToken);
+
+            if(c.type === 'add_batch'){
+                fd.append('action', 'add_skill');
+                fd.append('batch_skills', JSON.stringify(c.payload.batch_skills));
+
+            } else if(c.type === 'edit'){
+                fd.append('action', 'edit_skill');
+                fd.append('skill_record_id', c.rowId);
+                fd.append('level_id',   c.payload.level_id);
+                fd.append('level_name', c.payload.level_name);
+
+            } else if(c.type === 'delete'){
+                fd.append('action', 'delete_skill');
+                fd.append('skill_record_id', c.rowId);
+            }
+
+            fetch(BASE_URL, {method:'POST', body:fd})
+                .then(function(r){ return r.json(); })
+                .then(function(d){
+                    if(!d.success)
+                        errors.push((c.type === 'add_batch' ? 'batch add' : '#'+c.rowId) + ': ' + (d.error || 'failed'));
+                    next(i + 1);
+                })
+                .catch(function(){
+                    errors.push('network error at step ' + (i+1));
+                    next(i + 1);
+                });
+        }
+        next(0);
+    });
+
+}); /* end DOMContentLoaded */
+})();
+//]]>
+                </script>
+
             </t>
         </t>
     </template>

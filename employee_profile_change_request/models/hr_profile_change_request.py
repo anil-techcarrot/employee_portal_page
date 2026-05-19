@@ -125,7 +125,7 @@ SELECTION_FIELDS = {
 SKIP_ON_APPROVE = {
     'csrf_token', 'submit',
     'emirates_id_file', 'passport_file', 'other_documents', 'has_work_permit',
-    '_cert_change'
+    '_cert_change','_skill_change','_resume_change',
 }
 
 CODED_VALUE_LABELS = {
@@ -363,6 +363,71 @@ class HrProfileChangeRequest(models.Model):
                       ⚠ This certification change will only be applied to Odoo after you click Approve.
                     </p>'''
                     continue  # skip the normal field-diff rendering
+
+                # ── Skill change — special rendering ──
+                skill_change = data.get('_skill_change')
+                if skill_change:
+                    action = skill_change.get('cert_action', '')
+
+                    if action == 'add_batch':
+                        skills = skill_change.get('skills', [])
+                        rows = ''
+                        for item in skills:
+                            rows += (
+                                f'<tr>'
+                                f'<td style="padding:8px 12px;border:1px solid #ddd;">{item.get("type_name", "—")}</td>'
+                                f'<td style="padding:8px 12px;border:1px solid #ddd;font-weight:600;">{item.get("skill_name", "—")}</td>'
+                                f'<td style="padding:8px 12px;border:1px solid #ddd;">'
+                                f'<span class="badge bg-primary">{item.get("level_name", "—")}</span></td>'
+                                f'</tr>'
+                            )
+                        rec.changed_fields_display = f'''
+                        <div style="overflow-x:auto;">
+                          <p style="margin-bottom:8px;font-weight:600;color:#2e7d32;">
+                            <i class="fa fa-plus-circle me-1"></i>Add {len(skills)} Skill(s)
+                          </p>
+                          <table style="width:100%;border-collapse:collapse;font-size:13px;font-family:Arial,sans-serif;">
+                            <thead><tr style="background:#4e73df;color:white;">
+                              <th style="padding:10px 12px;text-align:left;border:1px solid #3a5ec9;">Skill Type</th>
+                              <th style="padding:10px 12px;text-align:left;border:1px solid #3a5ec9;">Skill</th>
+                              <th style="padding:10px 12px;text-align:left;border:1px solid #3a5ec9;">Level</th>
+                            </tr></thead>
+                            <tbody>{rows}</tbody>
+                          </table>
+                        </div>
+                        <p style="font-size:11px;color:#999;margin-top:8px;">
+                          ⚠ These {len(skills)} skill(s) will only be added to Odoo after you click Approve.
+                        </p>'''
+                        continue
+
+                resume_change = data.get('_resume_change')
+                if resume_change:
+                    filename = resume_change.get('filename', '—')
+                    rec.changed_fields_display = f'''
+                    <div style="overflow-x:auto;">
+                      <table style="width:100%;border-collapse:collapse;font-size:13px;font-family:Arial,sans-serif;">
+                        <thead><tr style="background:#4e73df;color:white;">
+                          <th style="padding:10px 12px;text-align:left;border:1px solid #3a5ec9;">Field</th>
+                          <th style="padding:10px 12px;text-align:left;border:1px solid #3a5ec9;">Value</th>
+                        </tr></thead>
+                        <tbody>
+                          <tr style="background:#fffde7;">
+                            <td style="padding:8px 12px;border:1px solid #ddd;"><strong>Action</strong></td>
+                            <td style="padding:8px 12px;border:1px solid #ddd;color:#2e7d32;font-weight:600;">Upload Resume / CV</td>
+                          </tr>
+                          <tr>
+                            <td style="padding:8px 12px;border:1px solid #ddd;"><strong>File Name</strong></td>
+                            <td style="padding:8px 12px;border:1px solid #ddd;"><i class="fa fa-file me-1"></i>{filename}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <p style="font-size:11px;color:#999;margin-top:8px;">
+                      ⚠ The resume file will only be saved to the employee record after HR clicks Approve.
+                      You can download the file from the Supporting Documents section above.
+                    </p>'''
+                    continue
+
                 rows = ''
                 for key, new_val in data.items():
                     label = FIELD_LABELS.get(key, key.replace('_', ' ').title())
@@ -465,6 +530,39 @@ class HrProfileChangeRequest(models.Model):
             })
             return True
 
+
+        skill_change = data.get('_skill_change')
+        if skill_change:
+            self._apply_skill_change(skill_change)
+            self.write({
+                'state': 'approved',
+                'reviewed_by': self.env.user.id,
+                'review_date': fields.Datetime.now(),
+            })
+            self._add_trail(action='approved', note=f'Approved by {self.env.user.name}.')
+            self._send_mail_to_employee('approved')
+            self.employee_id.sudo().write({
+                'last_portal_submission': False,
+                'last_submission_state': 'approved',
+            })
+            return True
+
+        resume_change = data.get('_resume_change')
+        if resume_change:
+            self._apply_resume_change(resume_change)
+            self.write({
+                'state': 'approved',
+                'reviewed_by': self.env.user.id,
+                'review_date': fields.Datetime.now(),
+            })
+            self._add_trail(action='approved', note=f'Approved by {self.env.user.name}.')
+            self._send_mail_to_employee('approved')
+            self.employee_id.sudo().write({
+                'last_portal_submission': False,
+                'last_submission_state': 'approved',
+            })
+            return True
+
         write_vals = {}
 
         for k, v in data.items():
@@ -475,7 +573,7 @@ class HrProfileChangeRequest(models.Model):
             if v is None or v == '':
                 continue
 
-            # ── Many2one fields — write as integer ────────────────
+
             if k in MANY2ONE_FIELDS:
                 try:
                     int_val = int(str(v))
@@ -493,7 +591,7 @@ class HrProfileChangeRequest(models.Model):
                                     self.name, k, v)
                 continue
 
-            # ── Selection field validation ────────────────────────
+
             if k in SELECTION_FIELDS:
                 field_obj = self.employee_id._fields.get(k)
                 if field_obj and hasattr(field_obj, 'selection'):
@@ -580,7 +678,7 @@ class HrProfileChangeRequest(models.Model):
                 'valid_to': cert_change.get('valid_to') or False,
             })
 
-            # Move attachment from PCR to the new hr.employee.skill record
+
             if pcr_attachments:
                 new_att_ids = []
                 for att in pcr_attachments:
@@ -611,7 +709,7 @@ class HrProfileChangeRequest(models.Model):
             if vals:
                 skill_record.sudo().write(vals)
 
-            # Move attachment from PCR to the existing hr.employee.skill record
+
             if pcr_attachments:
                 new_att_ids = []
                 for att in pcr_attachments:
@@ -635,6 +733,131 @@ class HrProfileChangeRequest(models.Model):
             if skill_record.exists() and skill_record.employee_id.id == employee.id:
                 skill_record.sudo().unlink()
             _logger.info('Cert DELETE approved: id=%s employee=%s', record_id, employee.name)
+
+
+
+    def _apply_skill_change(self, skill_change):
+        action = skill_change.get('cert_action')
+        employee = self.employee_id
+
+        if action == 'add_batch':
+            skills = skill_change.get('skills', [])
+
+
+            seen_in_batch = set()
+            deduped = []
+            for item in skills:
+                sid = str(item.get('skill_id', ''))
+                if sid and sid not in seen_in_batch:
+                    seen_in_batch.add(sid)
+                    deduped.append(item)
+            skills = deduped
+
+
+            existing_skill_ids = set(
+                self.env['hr.employee.skill'].sudo().search([
+                    ('employee_id', '=', employee.id),
+                    ('skill_type_id.is_certification', '=', False),
+                ]).mapped('skill_id.id')
+            )
+
+            for item in skills:
+                skill_id = int(item.get('skill_id', 0))
+                level_id = item.get('level_id')
+                type_id = item.get('type_id')
+
+
+                if skill_id in existing_skill_ids:
+                    _logger.warning(
+                        'Batch skill id=%s already exists for employee %s, skipping.',
+                        skill_id, employee.name
+                    )
+                    continue
+
+                skill = self.env['hr.skill'].sudo().browse(skill_id)
+                if not skill.exists():
+                    _logger.warning('Batch skill id=%s no longer exists, skipping.', skill_id)
+                    continue
+
+                self.env['hr.employee.skill'].sudo().create({
+                    'employee_id': employee.id,
+                    'skill_id': skill_id,
+                    'skill_type_id': int(type_id) if type_id else skill.skill_type_id.id,
+                    'skill_level_id': int(level_id) if level_id else False,
+                })
+
+
+                existing_skill_ids.add(skill_id)
+
+                _logger.info('Batch Skill ADD approved: %s for %s', skill.name, employee.name)
+
+        elif action == 'add':
+            skill_id = int(skill_change.get('skill_id', 0))
+            level_id = skill_change.get('level_id')
+            type_id = skill_change.get('type_id')
+
+            # ── Check not already on employee ──
+            existing = self.env['hr.employee.skill'].sudo().search([
+                ('employee_id', '=', employee.id),
+                ('skill_id', '=', skill_id),
+                ('skill_type_id.is_certification', '=', False),
+            ], limit=1)
+            if existing:
+                _logger.warning(
+                    'Skill id=%s already exists for employee %s, skipping add.',
+                    skill_id, employee.name
+                )
+                return
+
+            skill = self.env['hr.skill'].sudo().browse(skill_id)
+            if not skill.exists():
+                raise UserError(_('Skill no longer exists.'))
+
+            self.env['hr.employee.skill'].sudo().create({
+                'employee_id': employee.id,
+                'skill_id': skill_id,
+                'skill_type_id': int(type_id) if type_id else skill.skill_type_id.id,
+                'skill_level_id': int(level_id) if level_id else False,
+            })
+            _logger.info('Skill ADD approved: %s for %s', skill.name, employee.name)
+
+        elif action == 'edit':
+            record_id = int(skill_change.get('skill_record_id', 0))
+            level_id = skill_change.get('level_id')
+            skill_record = self.env['hr.employee.skill'].sudo().browse(record_id)
+            if skill_record.exists() and skill_record.employee_id.id == employee.id:
+                skill_record.sudo().write({
+                    'skill_level_id': int(level_id) if level_id else False
+                })
+            _logger.info('Skill EDIT approved: id=%s for %s', record_id, employee.name)
+
+        elif action == 'delete':
+            record_id = int(skill_change.get('skill_record_id', 0))
+            skill_record = self.env['hr.employee.skill'].sudo().browse(record_id)
+            if skill_record.exists() and skill_record.employee_id.id == employee.id:
+                skill_record.sudo().unlink()
+            _logger.info('Skill DELETE approved: id=%s for %s', record_id, employee.name)
+
+    def _apply_resume_change(self, resume_change):
+        """Copy resume attachment from PCR to employee record on approval."""
+        employee = self.employee_id
+        pcr_attachment = self.env['ir.attachment'].sudo().search([
+            ('res_model', '=', 'hr.profile.change.request'),
+            ('res_id', '=', self.id),
+            ('description', '=', 'Resume submitted by employee for approval'),
+        ], limit=1)
+
+        if not pcr_attachment:
+            _logger.warning('PCR %s: No resume attachment found to apply.', self.name)
+            return
+
+        import base64
+        employee.sudo().write({
+            'resume_file': pcr_attachment.datas,
+            'resume_file_filename': resume_change.get('filename', pcr_attachment.name),
+        })
+        _logger.info('Resume approved and saved for employee %s: %s',
+                     employee.name, resume_change.get('filename'))
 
     def action_reject(self):
         self.ensure_one()

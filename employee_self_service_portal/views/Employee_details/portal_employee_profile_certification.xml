@@ -39,7 +39,6 @@
                             <thead style="background:#fffde7;">
                                 <tr>
                                     <th style="padding:11px 18px; font-size:12px; color:#856404; text-transform:uppercase; letter-spacing:0.5px;">Reference</th>
-                                    <th style="padding:11px 18px; font-size:12px; color:#856404; text-transform:uppercase; letter-spacing:0.5px;">Action</th>
                                     <th style="padding:11px 18px; font-size:12px; color:#856404; text-transform:uppercase; letter-spacing:0.5px;">Certificate</th>
                                     <th style="padding:11px 18px; font-size:12px; color:#856404; text-transform:uppercase; letter-spacing:0.5px;">Attachment</th>
                                     <th style="padding:11px 18px; font-size:12px; color:#856404; text-transform:uppercase; letter-spacing:0.5px;">From</th>
@@ -55,24 +54,6 @@
                                             <span class="text-muted fw-semibold">
                                                 <t t-esc="pcc['pcr_name']"/>
                                             </span>
-                                        </td>
-
-                                        <td style="padding:12px 18px; vertical-align:middle;">
-                                            <t t-if="pcc['cert_action'] == 'add'">
-                                                <span class="badge" style="background:#d4edda; color:#155724; font-size:12px;">
-                                                    <i class="fa fa-plus me-1"></i>Add
-                                                </span>
-                                            </t>
-                                            <t t-elif="pcc['cert_action'] == 'edit'">
-                                                <span class="badge" style="background:#fff3cd; color:#856404; font-size:12px;">
-                                                    <i class="fa fa-pencil me-1"></i>Edit
-                                                </span>
-                                            </t>
-                                            <t t-elif="pcc['cert_action'] == 'delete'">
-                                                <span class="badge" style="background:#f8d7da; color:#721c24; font-size:12px;">
-                                                    <i class="fa fa-trash me-1"></i>Delete
-                                                </span>
-                                            </t>
                                         </td>
 
                                         <td style="padding:12px 18px; vertical-align:middle; font-size:14px; font-weight:600;">
