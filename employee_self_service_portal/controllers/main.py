@@ -7,6 +7,7 @@ import json
 import logging
 import base64
 import io
+import json as json_lib
 import pikepdf
 
 # Set up logger
@@ -1266,7 +1267,7 @@ class PortalEmployee(http.Controller):
 
         # Payslips data with enhanced analytics
         payslips = request.env['hr.payslip'].sudo().search([
-            ('employee_id', '=', employee.id),('state', 'in', ['paid'])
+            ('employee_id', '=', employee.id), ('state', 'in', ['paid'])
         ])
         payslips_count = len(payslips)
 
@@ -2105,7 +2106,6 @@ class PortalEmployee(http.Controller):
             # Read file data
             file_data = base64.b64encode(file.read())
 
-            # Create attachment
             attachment = request.env['ir.attachment'].sudo().create({
                 'name': f"{doc_type} - {file.filename}",
                 'datas': file_data,
@@ -2125,84 +2125,276 @@ class PortalEmployee(http.Controller):
     def portal_employee_experience(self, **post):
         employee = self._get_employee()
         if request.httprequest.method == 'POST':
+            action = post.get('action')
             try:
-                vals = {}
 
-                #  No validation - just save whatever is provided
-                if post.get('x_experience') is not None:
-                    vals['x_experience'] = post.get('x_experience', '').strip()
+                if action == 'upload_resume':
+                    resume_file = request.httprequest.files.get('resume_file')
+                    if not resume_file or not resume_file.filename:
+                        return request.make_json_response({'success': False, 'error': 'No file provided.'})
 
-                if post.get('x_skills') is not None:
-                    vals['x_skills'] = post.get('x_skills', '').strip()
+                    allowed_types = [
+                        'application/pdf',
+                        'application/msword',
+                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    ]
+                    if resume_file.content_type not in allowed_types:
+                        return request.make_json_response(
+                            {'success': False, 'error': 'Only PDF, DOC, and DOCX files are allowed.'})
 
-                #  Write only if there are values to write
-                if vals:
-                    _logger.info("Experience - Writing vals to employee %s: %s", employee.id, list(vals.keys()))
-                    employee.sudo().write(vals)
-                    _logger.info("Experience - Successfully wrote for employee %s", employee.id)
+                    file_content = resume_file.read()
+                    if len(file_content) > 10 * 1024 * 1024:
+                        return request.make_json_response(
+                            {'success': False, 'error': 'File size must not exceed 10 MB.'})
 
-                # Handle document uploads
-                self._handle_experience_documents(employee, request.httprequest.files)
+                    import base64
+                    file_data = base64.b64encode(file_content).decode()
 
-                return request.make_json_response({
-                    'success': True,
-                    'message': 'Experience and skills updated successfully'
-                })
+                    payload = {
+                        '_resume_change': {
+                            'filename': resume_file.filename,
+                            'mimetype': resume_file.content_type or 'application/octet-stream',
+                        }
+                    }
+                    pcr = request.env['hr.profile.change.request'].sudo().create({
+                        'employee_id': employee.id,
+                        'submitted_data': json_lib.dumps(payload),
+                        'state': 'draft',
+                    })
+                    pcr.action_submit()
+
+                    # Save file as attachment on the PCR so HR can download it
+                    request.env['ir.attachment'].sudo().create({
+                        'name': resume_file.filename,
+                        'datas': file_data,
+                        'res_model': 'hr.profile.change.request',
+                        'res_id': pcr.id,
+                        'mimetype': resume_file.content_type or 'application/octet-stream',
+                        'description': 'Resume submitted by employee for approval',
+                    })
+
+                    return request.make_json_response({
+                        'success': True,
+                        'reference': pcr.name,
+                        'message': 'Resume submitted for HR approval.',
+                    })
+
+
+                elif action == 'add_skill':
+
+                    batch_raw = post.get('batch_skills', '')
+
+                    if batch_raw:
+
+                        try:
+                            batch_skills = json_lib.loads(batch_raw)
+                        except Exception:
+                            return request.make_json_response({'success': False, 'error': 'Invalid batch data.'})
+
+                        if not batch_skills:
+                            return request.make_json_response({'success': False, 'error': 'No skills provided.'})
+
+                        for item in batch_skills:
+                            skill = request.env['hr.skill'].sudo().browse(int(item.get('skill_id', 0)))
+                            if not skill.exists():
+                                return request.make_json_response({
+                                    'success': False,
+                                    'error': f'Skill "{item.get("skill_name", "")}" no longer exists.'
+                                })
+
+                        payload = {
+                            '_skill_change': {
+                                'cert_action': 'add_batch',
+                                'skills': batch_skills,
+                                # list of {skill_id, skill_name, level_id, level_name, type_id, type_name}
+                            }
+                        }
+                        pcr = request.env['hr.profile.change.request'].sudo().create({
+                            'employee_id': employee.id,
+                            'submitted_data': json_lib.dumps(payload),
+                            'state': 'draft',
+                        })
+                        pcr.action_submit()
+                        return request.make_json_response({'success': True, 'reference': pcr.name})
+
+                    else:
+                        # Single skill
+                        skill_id = int(post.get('skill_id', 0) or 0)
+                        level_id = int(post.get('level_id', 0) or 0)
+                        type_id = int(post.get('type_id', 0) or 0)
+                        skill_name = post.get('skill_name', '')
+                        level_name = post.get('level_name', '')
+                        type_name = post.get('type_name', '')
+
+                        if not skill_id:
+                            return request.make_json_response({'success': False, 'error': 'Skill is required.'})
+                        skill = request.env['hr.skill'].sudo().browse(skill_id)
+                        if not skill.exists():
+                            return request.make_json_response({'success': False, 'error': 'Skill not found.'})
+
+                        payload = {
+                            '_skill_change': {
+                                'cert_action': 'add',
+                                'skill_id': skill_id,
+                                'skill_name': skill_name,
+                                'level_id': level_id,
+                                'level_name': level_name,
+                                'type_id': type_id or skill.skill_type_id.id,
+                                'type_name': type_name,
+                            }
+                        }
+                        pcr = request.env['hr.profile.change.request'].sudo().create({
+                            'employee_id': employee.id,
+                            'submitted_data': json_lib.dumps(payload),
+                            'state': 'draft',
+                        })
+                        pcr.action_submit()
+                        return request.make_json_response({'success': True, 'reference': pcr.name})
+
+                elif action == 'edit_skill':
+                    record_id = int(post.get('skill_record_id', 0) or 0)
+                    level_id = int(post.get('level_id', 0) or 0)
+                    level_name = post.get('level_name', '')
+
+                    skill_record = request.env['hr.employee.skill'].sudo().browse(record_id)
+                    if not skill_record.exists() or skill_record.employee_id.id != employee.id:
+                        return request.make_json_response({'success': False, 'error': 'Record not found.'})
+
+                    payload = {
+                        '_skill_change': {
+                            'cert_action': 'edit',
+                            'skill_record_id': record_id,
+                            'skill_name': skill_record.skill_id.name,
+                            'type_name': skill_record.skill_type_id.name,
+                            'level_id': level_id,
+                            'level_name': level_name,
+                        }
+                    }
+                    pcr = request.env['hr.profile.change.request'].sudo().create({
+                        'employee_id': employee.id,
+                        'submitted_data': json_lib.dumps(payload),
+                        'state': 'draft',
+                    })
+                    pcr.action_submit()
+                    return request.make_json_response({'success': True, 'reference': pcr.name})
+
+                elif action == 'delete_skill':
+                    record_id = int(post.get('skill_record_id', 0) or 0)
+                    skill_record = request.env['hr.employee.skill'].sudo().browse(record_id)
+                    if not skill_record.exists() or skill_record.employee_id.id != employee.id:
+                        return request.make_json_response({'success': False, 'error': 'Record not found.'})
+
+                    payload = {
+                        '_skill_change': {
+                            'cert_action': 'delete',
+                            'skill_record_id': record_id,
+                            'skill_name': skill_record.skill_id.name,
+                            'type_name': skill_record.skill_type_id.name,
+                        }
+                    }
+                    pcr = request.env['hr.profile.change.request'].sudo().create({
+                        'employee_id': employee.id,
+                        'submitted_data': json_lib.dumps(payload),
+                        'state': 'draft',
+                    })
+                    pcr.action_submit()
+                    return request.make_json_response({'success': True, 'reference': pcr.name})
+
+                else:
+                    return request.make_json_response({'success': False, 'error': 'Unknown action.'})
 
             except Exception as e:
-                _logger.error("Error in portal_employee_experience POST: %s", str(e))
                 import traceback
-                _logger.error("Traceback: %s", traceback.format_exc())
-                return request.make_json_response({
-                    'success': False,
-                    'error': str(e)
-                })
+                _logger.error("Experience portal error: %s\n%s", str(e), traceback.format_exc())
+                return request.make_json_response({'success': False, 'error': str(e)})
 
-        return request.render('employee_self_service_portal.portal_employee_profile_experience', {
-            'employee': employee,
-            'section': 'experience',
-        })
+        # ── GET
+        skill_types = request.env['hr.skill.type'].sudo().search([
+            ('is_certification', '=', False)
+        ], order='name')
 
-    def _handle_experience_documents(self, employee, files):
-        """Handle experience-related document uploads"""
-        try:
-            import base64
+        all_skills = request.env['hr.skill'].sudo().search([
+            ('skill_type_id', 'in', skill_types.ids)
+        ], order='skill_type_id, name')
 
-            # Handle Resume/ CV
-            resume_file = files.get('resume_file')
-            if resume_file and resume_file.filename:
-                file_data = base64.b64encode(resume_file.read())
-                employee.sudo().write({
-                    'resume_file': file_data,
-                    'resume_file_filename': resume_file.filename,
-                })
-                _logger.info("Resume file saved: %s", resume_file.filename)
+        all_levels = request.env['hr.skill.level'].sudo().search([
+            ('skill_type_id', 'in', skill_types.ids)
+        ], order='skill_type_id, name')
 
-            # Handle Training  Certificates
-            training_file = files.get('training_certificates')
-            if training_file and training_file.filename:
-                file_data = base64.b64encode(training_file.read())
-                employee.sudo().write({
-                    'training_certificates': file_data,
-                    'training_certificates_filename': training_file.filename,
-                })
-                _logger.info("Training certificate saved: %s", training_file.filename)
+        skill_data = {'skills': {}, 'levels': {}}
+        for sk in all_skills:
+            tid = str(sk.skill_type_id.id)
+            skill_data['skills'].setdefault(tid, [])
+            skill_data['skills'][tid].append({'id': str(sk.id), 'name': sk.name})
+        for lv in all_levels:
+            tid = str(lv.skill_type_id.id)
+            skill_data['levels'].setdefault(tid, [])
+            skill_data['levels'][tid].append({'id': str(lv.id), 'name': lv.name})
 
-            # Handle Awards & Recognition
-            awards_file = files.get('awards_files')
-            if awards_file and awards_file.filename:
-                file_data = base64.b64encode(awards_file.read())
-                employee.sudo().write({
-                    'awards_files': file_data,
-                    'awards_files_filename': awards_file.filename,
-                })
-                _logger.info("Awards file saved: %s", awards_file.filename)
+        employee_skills = request.env['hr.employee.skill'].sudo().search([
+            ('employee_id', '=', employee.id),
+            ('skill_type_id.is_certification', '=', False),
+        ], order='skill_type_id, id')
 
-        except Exception as e:
-            _logger.error("Error handling experience documents: %s", str(e))
-            import traceback
-            _logger.error("Traceback: %s", traceback.format_exc())
+        pending_skill_pcrs = request.env['hr.profile.change.request'].sudo().search([
+            ('employee_id', '=', employee.id),
+            ('state', '=', 'pending'),
+        ], order='create_date desc')
 
+        pending_skill_changes = []
+        for pcr in pending_skill_pcrs:
+            try:
+                data = json_lib.loads(pcr.submitted_data or '{}')
+                skill_change = data.get('_skill_change')
+                if not skill_change:
+                    continue
+                action_type = skill_change.get('cert_action', '')
+                if action_type == 'add_batch':
+                    # One PCR, multiple skills — expand to one row each
+                    for item in skill_change.get('skills', []):
+                        pending_skill_changes.append({
+                            'pcr_name': pcr.name,
+                            'cert_action': 'add',
+                            'type_name': item.get('type_name', '—'),
+                            'skill_name': item.get('skill_name', '—'),
+                            'level_name': item.get('level_name', '—'),
+                        })
+                else:
+                    pending_skill_changes.append({
+                        'pcr_name': pcr.name,
+                        'cert_action': action_type,
+                        'type_name': skill_change.get('type_name', '—'),
+                        'skill_name': skill_change.get('skill_name', '—'),
+                        'level_name': skill_change.get('level_name', '—'),
+                    })
+            except Exception:
+                continue
+
+        pending_resume_change = None
+        for pcr in pending_skill_pcrs:
+            try:
+                data = json_lib.loads(pcr.submitted_data or '{}')
+                resume_change = data.get('_resume_change')
+                if not resume_change:
+                    continue
+                pending_resume_change = {
+                    'pcr_name': pcr.name,
+                    'filename': resume_change.get('filename', '—'),
+                }
+                break  # only show the latest pending resume PCR
+            except Exception:
+                continue
+
+        return request.render(
+            'employee_self_service_portal.portal_employee_profile_experience', {
+                'employee': employee,
+                'section': 'experience',
+                'employee_skills': employee_skills,
+                'skill_types': skill_types,
+                'skill_data_json': json_lib.dumps(skill_data),
+                'pending_skill_changes': pending_skill_changes,
+            }
+        )
 
     @http.route(MY_EMPLOYEE_URL + '/certification', type='http', auth='user', website=True, methods=['GET', 'POST'])
     def portal_employee_certification(self, **post):
@@ -2316,15 +2508,12 @@ class PortalEmployee(http.Controller):
                 _logger.error("Certification portal error: %s\n%s", str(e), traceback.format_exc())
                 return request.make_json_response({'success': False, 'error': str(e)})
 
-
         import json as json_lib
-
 
         certifications = request.env['hr.employee.skill'].sudo().search([
             ('employee_id', '=', employee.id),
             ('skill_type_id.name', 'ilike', 'certif'),
         ], order='id desc')
-
 
         pending_pcrs = request.env['hr.profile.change.request'].sudo().search([
             ('employee_id', '=', employee.id),
@@ -2378,7 +2567,6 @@ class PortalEmployee(http.Controller):
             return request.not_found()
 
         employee = self._get_employee()
-
 
         if attachment.res_model == 'hr.employee.skill' and attachment.res_id:
             skill_record = request.env['hr.employee.skill'].sudo().browse(attachment.res_id)
@@ -2909,7 +3097,7 @@ class PortalEmployee(http.Controller):
         activity_types = request.env['mail.activity.type'].sudo().search([])
         default_activity_type_id = request.env.ref('mail.mail_activity_data_todo').id if request.env.ref(
             'mail.mail_activity_data_todo', raise_if_not_found=False) else (
-                    activity_types and activity_types[0].id or False)
+                activity_types and activity_types[0].id or False)
         return request.render('employee_self_service_portal.portal_employee_crm_edit', {
             'lead': lead,
             'stages': stages,
@@ -3132,7 +3320,7 @@ class PortalEmployee(http.Controller):
         activity_types = request.env['mail.activity.type'].sudo().search([])
         default_activity_type_id = request.env.ref('mail.mail_activity_data_todo').id if request.env.ref(
             'mail.mail_activity_data_todo', raise_if_not_found=False) else (
-                    activity_types and activity_types[0].id or False)
+                activity_types and activity_types[0].id or False)
         salespersons = request.env['res.users'].sudo().search([('active', '=', True)])
 
         # Get today's date for comparison
@@ -3505,309 +3693,309 @@ class PortalEmployee(http.Controller):
             'selected_year': year or '',
         })
 
-#     @http.route(MY_EMPLOYEE_URL + '/payslips/download/<int:payslip_id>', type='http', auth='user', website=True)
-#     def portal_payslip_download(self, payslip_id, **kwargs):
-#         """Download payslip as PDF"""
-#         import logging
-#         import base64
-#         _logger = logging.getLogger(__name__)
+    #     @http.route(MY_EMPLOYEE_URL + '/payslips/download/<int:payslip_id>', type='http', auth='user', website=True)
+    #     def portal_payslip_download(self, payslip_id, **kwargs):
+    #         """Download payslip as PDF"""
+    #         import logging
+    #         import base64
+    #         _logger = logging.getLogger(__name__)
 
-#         try:
-#             payslip = request.env['hr.payslip'].sudo().browse(payslip_id)
-#             employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.env.uid)], limit=1)
+    #         try:
+    #             payslip = request.env['hr.payslip'].sudo().browse(payslip_id)
+    #             employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.env.uid)], limit=1)
 
-#             # Security check - only allow access to own payslips
-#             if not payslip.exists() or not employee or payslip.employee_id.id != employee.id:
-#                 _logger.warning("Unauthorized payslip access attempt by user %s for payslip %s", request.env.uid,
-#                                 payslip_id)
-#                 return request.redirect(MY_EMPLOYEE_URL + '/payslips?error=access_denied')
+    #             # Security check - only allow access to own payslips
+    #             if not payslip.exists() or not employee or payslip.employee_id.id != employee.id:
+    #                 _logger.warning("Unauthorized payslip access attempt by user %s for payslip %s", request.env.uid,
+    #                                 payslip_id)
+    #                 return request.redirect(MY_EMPLOYEE_URL + '/payslips?error=access_denied')
 
-#             # Only allow download of confirmed payslips
-#             if payslip.state not in ['validated', 'done', 'paid']:
-#                 _logger.warning("Download attempt for unconfirmed payslip %s by user %s", payslip_id, request.env.uid)
-#                 return request.redirect(MY_EMPLOYEE_URL + '/payslips?error=not_confirmed')
+    #             # Only allow download of confirmed payslips
+    #             if payslip.state not in ['validated', 'done', 'paid']:
+    #                 _logger.warning("Download attempt for unconfirmed payslip %s by user %s", payslip_id, request.env.uid)
+    #                 return request.redirect(MY_EMPLOYEE_URL + '/payslips?error=not_confirmed')
 
-#             _logger.info("Attempting to download payslip %s for user %s", payslip_id, request.env.uid)
+    #             _logger.info("Attempting to download payslip %s for user %s", payslip_id, request.env.uid)
 
-#             # Try to find the payslip report - multiple approaches with detailed logging
-#             report_ref = None
+    #             # Try to find the payslip report - multiple approaches with detailed logging
+    #             report_ref = None
 
-#             # Method 1: Try standard hr_payroll reports with sudo()
-#             report_names = [
-#                 'hr_payroll.action_report_payslip',
-#                 'hr_payroll.payslip_report',
-#                 'hr_payroll.report_payslip',
-#                 'hr_payroll.report_payslip_details'
-#             ]
+    #             # Method 1: Try standard hr_payroll reports with sudo()
+    #             report_names = [
+    #                 'hr_payroll.action_report_payslip',
+    #                 'hr_payroll.payslip_report',
+    #                 'hr_payroll.report_payslip',
+    #                 'hr_payroll.report_payslip_details'
+    #             ]
 
-#             for report_name in report_names:
-#                 try:
-#                     report_ref = request.env.ref(report_name, raise_if_not_found=False)
-#                     if report_ref:
-#                         _logger.info("Found report reference: %s", report_name)
-#                         # Test if we can access this report
-#                         try:
-#                             report_sudo = report_ref.sudo()
-#                             # Try a quick test to see if this report can be used
-#                             if hasattr(report_sudo, 'report_name') or hasattr(report_sudo, '_render_qweb_pdf'):
-#                                 _logger.info("Report %s is accessible and usable", report_name)
-#                                 break
-#                             else:
-#                                 _logger.warning("Report %s found but may not be usable", report_name)
-#                                 report_ref = None
-#                         except Exception as access_test:
-#                             _logger.warning("Report %s access test failed: %s", report_name, str(access_test))
-#                             report_ref = None
-#                             continue
-#                     else:
-#                         _logger.debug("Report %s not found", report_name)
-#                 except Exception as ref_error:
-#                     _logger.debug("Error checking report %s: %s", report_name, str(ref_error))
-#                     continue
+    #             for report_name in report_names:
+    #                 try:
+    #                     report_ref = request.env.ref(report_name, raise_if_not_found=False)
+    #                     if report_ref:
+    #                         _logger.info("Found report reference: %s", report_name)
+    #                         # Test if we can access this report
+    #                         try:
+    #                             report_sudo = report_ref.sudo()
+    #                             # Try a quick test to see if this report can be used
+    #                             if hasattr(report_sudo, 'report_name') or hasattr(report_sudo, '_render_qweb_pdf'):
+    #                                 _logger.info("Report %s is accessible and usable", report_name)
+    #                                 break
+    #                             else:
+    #                                 _logger.warning("Report %s found but may not be usable", report_name)
+    #                                 report_ref = None
+    #                         except Exception as access_test:
+    #                             _logger.warning("Report %s access test failed: %s", report_name, str(access_test))
+    #                             report_ref = None
+    #                             continue
+    #                     else:
+    #                         _logger.debug("Report %s not found", report_name)
+    #                 except Exception as ref_error:
+    #                     _logger.debug("Error checking report %s: %s", report_name, str(ref_error))
+    #                     continue
 
-#             # Method 2: Search for payslip reports if standard ones not found
-#             if not report_ref:
-#                 _logger.info("Standard reports not found, searching for any payslip reports...")
-#                 try:
-#                     reports = request.env['ir.actions.report'].sudo().search([
-#                         ('model', '=', 'hr.payslip'),
-#                         ('report_type', '=', 'qweb-pdf')
-#                     ])
-#                     _logger.info("Found %d payslip reports in system", len(reports))
+    #             # Method 2: Search for payslip reports if standard ones not found
+    #             if not report_ref:
+    #                 _logger.info("Standard reports not found, searching for any payslip reports...")
+    #                 try:
+    #                     reports = request.env['ir.actions.report'].sudo().search([
+    #                         ('model', '=', 'hr.payslip'),
+    #                         ('report_type', '=', 'qweb-pdf')
+    #                     ])
+    #                     _logger.info("Found %d payslip reports in system", len(reports))
 
-#                     for report in reports:
-#                         try:
-#                             # Test each report
-#                             _logger.info("Testing report: %s (ID: %d)", report.sudo().name, report.id)
-#                             report_ref = report
-#                             break
-#                         except Exception as test_error:
-#                             _logger.warning("Report test failed: %s", str(test_error))
-#                             continue
+    #                     for report in reports:
+    #                         try:
+    #                             # Test each report
+    #                             _logger.info("Testing report: %s (ID: %d)", report.sudo().name, report.id)
+    #                             report_ref = report
+    #                             break
+    #                         except Exception as test_error:
+    #                             _logger.warning("Report test failed: %s", str(test_error))
+    #                             continue
 
-#                 except Exception as search_error:
-#                     _logger.error("Error searching for reports: %s", str(search_error))
+    #                 except Exception as search_error:
+    #                     _logger.error("Error searching for reports: %s", str(search_error))
 
-#             if not report_ref:
-#                 _logger.error("No payslip report found for model hr.payslip")
-#                 return request.redirect(MY_EMPLOYEE_URL + '/payslips?error=report_not_found')
+    #             if not report_ref:
+    #                 _logger.error("No payslip report found for model hr.payslip")
+    #                 return request.redirect(MY_EMPLOYEE_URL + '/payslips?error=report_not_found')
 
-#             # Generate PDF using the found report - use sudo() for report access
-#             _logger.info("Attempting to generate PDF with found report (ID: %d)", report_ref.id)
+    #             # Generate PDF using the found report - use sudo() for report access
+    #             _logger.info("Attempting to generate PDF with found report (ID: %d)", report_ref.id)
 
-#             # Use the correct method based on Odoo version with sudo()
-#             pdf_content = None
-#             try:
-#                 report_sudo = report_ref.sudo()
+    #             # Use the correct method based on Odoo version with sudo()
+    #             pdf_content = None
+    #             try:
+    #                 report_sudo = report_ref.sudo()
 
-#                 # Use the standard Odoo report rendering approach
-#                 _logger.info("Using standard report rendering with payslip ID: %d", payslip.id)
+    #                 # Use the standard Odoo report rendering approach
+    #                 _logger.info("Using standard report rendering with payslip ID: %d", payslip.id)
 
-#                 # Method 1: Try _render_qweb_pdf with proper context and parameters
-#                 try:
-#                     # Use the correct Odoo 18 API for report rendering
-#                     # _render_qweb_pdf expects (report_ref, res_ids, data=None)
-#                     pdf_content, _ = report_sudo._render_qweb_pdf(report_sudo.report_name, payslip.ids)
-#                     _logger.info("Successfully used _render_qweb_pdf method")
-#                 except Exception as method_error:
-#                     _logger.warning("_render_qweb_pdf failed: %s", str(method_error))
+    #                 # Method 1: Try _render_qweb_pdf with proper context and parameters
+    #                 try:
+    #                     # Use the correct Odoo 18 API for report rendering
+    #                     # _render_qweb_pdf expects (report_ref, res_ids, data=None)
+    #                     pdf_content, _ = report_sudo._render_qweb_pdf(report_sudo.report_name, payslip.ids)
+    #                     _logger.info("Successfully used _render_qweb_pdf method")
+    #                 except Exception as method_error:
+    #                     _logger.warning("_render_qweb_pdf failed: %s", str(method_error))
 
-#                     # Method 2: Try with render_qweb_pdf (if available)
-#                     try:
-#                         # Try render_qweb_pdf method
-#                         pdf_content, _ = report_sudo.render_qweb_pdf(payslip.ids)
-#                         _logger.info("Successfully used render_qweb_pdf method")
-#                     except Exception as method_error2:
-#                         _logger.warning("render_qweb_pdf method failed: %s", str(method_error2))
+    #                     # Method 2: Try with render_qweb_pdf (if available)
+    #                     try:
+    #                         # Try render_qweb_pdf method
+    #                         pdf_content, _ = report_sudo.render_qweb_pdf(payslip.ids)
+    #                         _logger.info("Successfully used render_qweb_pdf method")
+    #                     except Exception as method_error2:
+    #                         _logger.warning("render_qweb_pdf method failed: %s", str(method_error2))
 
-#                         # Method 3: Try with _render method (with proper parameters)
-#                         try:
-#                             # Use _render with proper report_name and res_ids parameters
-#                             pdf_content, _ = report_sudo._render(report_sudo.report_name, payslip.ids)
-#                             _logger.info("Successfully used _render method")
-#                         except Exception as method_error3:
-#                             _logger.error("All render methods failed: %s", str(method_error3))
-#                             raise Exception("All report render methods failed")
+    #                         # Method 3: Try with _render method (with proper parameters)
+    #                         try:
+    #                             # Use _render with proper report_name and res_ids parameters
+    #                             pdf_content, _ = report_sudo._render(report_sudo.report_name, payslip.ids)
+    #                             _logger.info("Successfully used _render method")
+    #                         except Exception as method_error3:
+    #                             _logger.error("All render methods failed: %s", str(method_error3))
+    #                             raise Exception("All report render methods failed")
 
-#                 if pdf_content and len(pdf_content) > 1000:
-#                     _logger.info("Successfully generated PDF using Odoo report, size: %d bytes", len(pdf_content))
-#                 else:
-#                     _logger.warning("PDF content is empty or too small: %s bytes",
-#                                     len(pdf_content) if pdf_content else 0)
-#                     pdf_content = None
+    #                 if pdf_content and len(pdf_content) > 1000:
+    #                     _logger.info("Successfully generated PDF using Odoo report, size: %d bytes", len(pdf_content))
+    #                 else:
+    #                     _logger.warning("PDF content is empty or too small: %s bytes",
+    #                                     len(pdf_content) if pdf_content else 0)
+    #                     pdf_content = None
 
-#             except Exception as render_error:
-#                 _logger.error("PDF rendering failed with Odoo report: %s", str(render_error))
-#                 pdf_content = None
+    #             except Exception as render_error:
+    #                 _logger.error("PDF rendering failed with Odoo report: %s", str(render_error))
+    #                 pdf_content = None
 
-#             # Only use fallback if we couldn't get a valid PDF from Odoo reports
-#             if not pdf_content or len(pdf_content) < 100:
-#                 _logger.warning("Odoo report failed or returned invalid PDF, using fallback method")
+    #             # Only use fallback if we couldn't get a valid PDF from Odoo reports
+    #             if not pdf_content or len(pdf_content) < 100:
+    #                 _logger.warning("Odoo report failed or returned invalid PDF, using fallback method")
 
-#                 # Fallback: Create a simple HTML-to-PDF conversion
-#                 _logger.info("Attempting simple PDF generation as fallback")
-#                 _logger.info("Attempting simple PDF generation as fallback")
-#                 try:
-#                     # Create simple HTML content
-#                     html_content = f"""
-#                     <!DOCTYPE html>
-#                     <html>
-#                     <head>
-#                         <meta charset="utf-8">
-#                         <title>Payslip {payslip.number or payslip.id}</title>
-#                         <style>
-#                             body {{ font-family: Arial, sans-serif; margin: 20px; }}
-#                             .header {{ text-align: center; margin-bottom: 30px; }}
-#                             .info {{ margin-bottom: 20px; }}
-#                             .line {{ margin: 5px 0; }}
-#                             table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
-#                             th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
-#                             th {{ background-color: #f2f2f2; }}
-#                         </style>
-#                     </head>
-#                     <body>
-#                         <div class="header">
-#                             <h1>PAYSLIP</h1>
-#                             <h2>{payslip.number or payslip.id}</h2>
-#                         </div>
+    #                 # Fallback: Create a simple HTML-to-PDF conversion
+    #                 _logger.info("Attempting simple PDF generation as fallback")
+    #                 _logger.info("Attempting simple PDF generation as fallback")
+    #                 try:
+    #                     # Create simple HTML content
+    #                     html_content = f"""
+    #                     <!DOCTYPE html>
+    #                     <html>
+    #                     <head>
+    #                         <meta charset="utf-8">
+    #                         <title>Payslip {payslip.number or payslip.id}</title>
+    #                         <style>
+    #                             body {{ font-family: Arial, sans-serif; margin: 20px; }}
+    #                             .header {{ text-align: center; margin-bottom: 30px; }}
+    #                             .info {{ margin-bottom: 20px; }}
+    #                             .line {{ margin: 5px 0; }}
+    #                             table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
+    #                             th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+    #                             th {{ background-color: #f2f2f2; }}
+    #                         </style>
+    #                     </head>
+    #                     <body>
+    #                         <div class="header">
+    #                             <h1>PAYSLIP</h1>
+    #                             <h2>{payslip.number or payslip.id}</h2>
+    #                         </div>
 
-#                         <div class="info">
-#                             <div class="line"><strong>Employee:</strong> {payslip.employee_id.name}</div>
-#                             <div class="line"><strong>Period:</strong> {payslip.date_from} to {payslip.date_to}</div>
-#                             <div class="line"><strong>Status:</strong> {dict(payslip._fields['state'].selection).get(payslip.state, payslip.state)}</div>
-#                         </div>
+    #                         <div class="info">
+    #                             <div class="line"><strong>Employee:</strong> {payslip.employee_id.name}</div>
+    #                             <div class="line"><strong>Period:</strong> {payslip.date_from} to {payslip.date_to}</div>
+    #                             <div class="line"><strong>Status:</strong> {dict(payslip._fields['state'].selection).get(payslip.state, payslip.state)}</div>
+    #                         </div>
 
-#                         <table>
-#                             <thead>
-#                                 <tr>
-#                                     <th>Description</th>
-#                                     <th>Amount</th>
-#                                 </tr>
-#                             </thead>
-#                             <tbody>
-#                     """
+    #                         <table>
+    #                             <thead>
+    #                                 <tr>
+    #                                     <th>Description</th>
+    #                                     <th>Amount</th>
+    #                                 </tr>
+    #                             </thead>
+    #                             <tbody>
+    #                     """
 
-#                     # Add payslip lines
-#                     if payslip.line_ids:
-#                         for line in payslip.line_ids:
-#                             html_content += f"""
-#                                 <tr>
-#                                     <td>{line.name}</td>
-#                                     <td>{line.total:.2f}</td>
-#                                 </tr>
-#                             """
-#                     else:
-#                         html_content += "<tr><td colspan='2'>No payslip details available</td></tr>"
+    #                     # Add payslip lines
+    #                     if payslip.line_ids:
+    #                         for line in payslip.line_ids:
+    #                             html_content += f"""
+    #                                 <tr>
+    #                                     <td>{line.name}</td>
+    #                                     <td>{line.total:.2f}</td>
+    #                                 </tr>
+    #                             """
+    #                     else:
+    #                         html_content += "<tr><td colspan='2'>No payslip details available</td></tr>"
 
-#                     html_content += """
-#                             </tbody>
-#                         </table>
-#                     </body>
-#                     </html>
-#                     """
+    #                     html_content += """
+    #                             </tbody>
+    #                         </table>
+    #                     </body>
+    #                     </html>
+    #                     """
 
-#                     # Use wkhtmltopdf if available, otherwise create simple text-based PDF
-#                     try:
-#                         import subprocess
-#                         import tempfile
-#                         import os
+    #                     # Use wkhtmltopdf if available, otherwise create simple text-based PDF
+    #                     try:
+    #                         import subprocess
+    #                         import tempfile
+    #                         import os
 
-#                         # Create temporary HTML file
-#                         with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False) as html_file:
-#                             html_file.write(html_content)
-#                             html_file_path = html_file.name
+    #                         # Create temporary HTML file
+    #                         with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False) as html_file:
+    #                             html_file.write(html_content)
+    #                             html_file_path = html_file.name
 
-#                         # Create temporary PDF file
-#                         pdf_file_path = html_file_path.replace('.html', '.pdf')
+    #                         # Create temporary PDF file
+    #                         pdf_file_path = html_file_path.replace('.html', '.pdf')
 
-#                         # Try wkhtmltopdf
-#                         result = subprocess.run([
-#                             'wkhtmltopdf', '--page-size', 'A4', '--orientation', 'Portrait',
-#                             html_file_path, pdf_file_path
-#                         ], capture_output=True, timeout=30)
+    #                         # Try wkhtmltopdf
+    #                         result = subprocess.run([
+    #                             'wkhtmltopdf', '--page-size', 'A4', '--orientation', 'Portrait',
+    #                             html_file_path, pdf_file_path
+    #                         ], capture_output=True, timeout=30)
 
-#                         if result.returncode == 0 and os.path.exists(pdf_file_path):
-#                             with open(pdf_file_path, 'rb') as pdf_file:
-#                                 pdf_content = pdf_file.read()
-#                             _logger.info("Successfully created PDF using wkhtmltopdf")
-#                         else:
-#                             raise Exception("wkhtmltopdf failed")
+    #                         if result.returncode == 0 and os.path.exists(pdf_file_path):
+    #                             with open(pdf_file_path, 'rb') as pdf_file:
+    #                                 pdf_content = pdf_file.read()
+    #                             _logger.info("Successfully created PDF using wkhtmltopdf")
+    #                         else:
+    #                             raise Exception("wkhtmltopdf failed")
 
-#                         # Cleanup
-#                         os.unlink(html_file_path)
-#                         os.unlink(pdf_file_path)
+    #                         # Cleanup
+    #                         os.unlink(html_file_path)
+    #                         os.unlink(pdf_file_path)
 
-#                     except Exception:
-#                         # Final fallback: Create a very simple text-based response
-#                         _logger.warning("wkhtmltopdf not available, creating simple text response")
-#                         simple_content = f"""
-# PAYSLIP: {payslip.number or payslip.id}
-# Employee: {payslip.employee_id.name}
-# Period: {payslip.date_from} to {payslip.date_to}
-# Status: {dict(payslip._fields['state'].selection).get(payslip.state, payslip.state)}
+    #                     except Exception:
+    #                         # Final fallback: Create a very simple text-based response
+    #                         _logger.warning("wkhtmltopdf not available, creating simple text response")
+    #                         simple_content = f"""
+    # PAYSLIP: {payslip.number or payslip.id}
+    # Employee: {payslip.employee_id.name}
+    # Period: {payslip.date_from} to {payslip.date_to}
+    # Status: {dict(payslip._fields['state'].selection).get(payslip.state, payslip.state)}
 
-# Payslip Details:
-# """
-#                         if payslip.line_ids:
-#                             for line in payslip.line_ids:
-#                                 simple_content += f"{line.name}: {line.total:.2f}\n"
-#                         else:
-#                             simple_content += "No payslip details available\n"
+    # Payslip Details:
+    # """
+    #                         if payslip.line_ids:
+    #                             for line in payslip.line_ids:
+    #                                 simple_content += f"{line.name}: {line.total:.2f}\n"
+    #                         else:
+    #                             simple_content += "No payslip details available\n"
 
-#                         # Return as text file instead of PDF
-#                         safe_number = (payslip.number or str(payslip.id)).replace('/', '_').replace('\\', '_')
-#                         safe_date = payslip.date_from.strftime('%Y-%m') if payslip.date_from else 'unknown'
-#                         filename = f"Payslip_{safe_number}_{safe_date}.txt"
+    #                         # Return as text file instead of PDF
+    #                         safe_number = (payslip.number or str(payslip.id)).replace('/', '_').replace('\\', '_')
+    #                         safe_date = payslip.date_from.strftime('%Y-%m') if payslip.date_from else 'unknown'
+    #                         filename = f"Payslip_{safe_number}_{safe_date}.txt"
 
-#                         headers = [
-#                             ('Content-Type', 'text/plain'),
-#                             ('Content-Length', len(simple_content.encode('utf-8'))),
-#                             ('Content-Disposition', f'attachment; filename="{filename}"'),
-#                             ('Cache-Control', 'no-cache'),
-#                             ('Pragma', 'no-cache')
-#                         ]
+    #                         headers = [
+    #                             ('Content-Type', 'text/plain'),
+    #                             ('Content-Length', len(simple_content.encode('utf-8'))),
+    #                             ('Content-Disposition', f'attachment; filename="{filename}"'),
+    #                             ('Cache-Control', 'no-cache'),
+    #                             ('Pragma', 'no-cache')
+    #                         ]
 
-#                         _logger.info("Payslip %s downloaded as text file by user %s", payslip_id, request.env.uid)
-#                         return request.make_response(simple_content.encode('utf-8'), headers=headers)
+    #                         _logger.info("Payslip %s downloaded as text file by user %s", payslip_id, request.env.uid)
+    #                         return request.make_response(simple_content.encode('utf-8'), headers=headers)
 
-#                 except Exception as fallback_error:
-#                     _logger.error("Fallback PDF generation also failed: %s", str(fallback_error))
-#                     return request.redirect(MY_EMPLOYEE_URL + '/payslips?error=render_failed')
+    #                 except Exception as fallback_error:
+    #                     _logger.error("Fallback PDF generation also failed: %s", str(fallback_error))
+    #                     return request.redirect(MY_EMPLOYEE_URL + '/payslips?error=render_failed')
 
-#             if not pdf_content:
-#                 _logger.error("All PDF generation methods failed - no content generated")
-#                 return request.redirect(MY_EMPLOYEE_URL + '/payslips?error=empty_pdf')
+    #             if not pdf_content:
+    #                 _logger.error("All PDF generation methods failed - no content generated")
+    #                 return request.redirect(MY_EMPLOYEE_URL + '/payslips?error=empty_pdf')
 
-#             # Log which method was used
-#             if len(pdf_content) > 1000:
-#                 _logger.info("Successfully generated PDF - likely from Odoo report system (%d bytes)", len(pdf_content))
-#             else:
-#                 _logger.info("Generated small PDF - likely from fallback method (%d bytes)", len(pdf_content))
+    #             # Log which method was used
+    #             if len(pdf_content) > 1000:
+    #                 _logger.info("Successfully generated PDF - likely from Odoo report system (%d bytes)", len(pdf_content))
+    #             else:
+    #                 _logger.info("Generated small PDF - likely from fallback method (%d bytes)", len(pdf_content))
 
-#             # Create safe filename
-#             safe_number = (payslip.name or str(payslip.id)).replace('/', '_').replace('\\', '_')
-#             safe_date = payslip.date_from.strftime('%Y-%m') if payslip.date_from else 'unknown'
-#             filename = f"Payslip_{safe_number}_{safe_date}.pdf"
+    #             # Create safe filename
+    #             safe_number = (payslip.name or str(payslip.id)).replace('/', '_').replace('\\', '_')
+    #             safe_date = payslip.date_from.strftime('%Y-%m') if payslip.date_from else 'unknown'
+    #             filename = f"Payslip_{safe_number}_{safe_date}.pdf"
 
-#             # Create response with PDF
-#             pdfhttpheaders = [
-#                 ('Content-Type', 'application/pdf'),
-#                 ('Content-Length', len(pdf_content)),
-#                 ('Content-Disposition', f'attachment; filename="{filename}"'),
-#                 ('Cache-Control', 'no-cache'),
-#                 ('Pragma', 'no-cache')
-#             ]
+    #             # Create response with PDF
+    #             pdfhttpheaders = [
+    #                 ('Content-Type', 'application/pdf'),
+    #                 ('Content-Length', len(pdf_content)),
+    #                 ('Content-Disposition', f'attachment; filename="{filename}"'),
+    #                 ('Cache-Control', 'no-cache'),
+    #                 ('Pragma', 'no-cache')
+    #             ]
 
-#             _logger.info("Payslip %s downloaded successfully by user %s, file size: %d bytes",
-#                          payslip_id, request.env.uid, len(pdf_content))
+    #             _logger.info("Payslip %s downloaded successfully by user %s, file size: %d bytes",
+    #                          payslip_id, request.env.uid, len(pdf_content))
 
-#             return request.make_response(pdf_content, headers=pdfhttpheaders)
+    #             return request.make_response(pdf_content, headers=pdfhttpheaders)
 
-#         except Exception as e:
-#             _logger.error("Unexpected error in payslip download for payslip %s: %s", payslip_id, str(e))
-#             import traceback
-#             _logger.error("Full traceback: %s", traceback.format_exc())
-#             return request.redirect(MY_EMPLOYEE_URL + '/payslips?error=download_failed')
+    #         except Exception as e:
+    #             _logger.error("Unexpected error in payslip download for payslip %s: %s", payslip_id, str(e))
+    #             import traceback
+    #             _logger.error("Full traceback: %s", traceback.format_exc())
+    #             return request.redirect(MY_EMPLOYEE_URL + '/payslips?error=download_failed')
 
     @http.route(MY_EMPLOYEE_URL + '/payslips/download/<int:payslip_id>', type='http', auth='user', website=True)
     def portal_payslip_download(self, payslip_id, **kwargs):
@@ -3815,46 +4003,46 @@ class PortalEmployee(http.Controller):
         import logging
         import base64
         _logger = logging.getLogger(__name__)
-    
+
         try:
             payslip = request.env['hr.payslip'].sudo().browse(payslip_id)
             employee = request.env[HR_EMPLOYEE_MODEL].sudo().search([('user_id', '=', request.uid)], limit=1)
-    
+
             # Security check
             if not payslip.exists() or not employee or payslip.employee_id.id != employee.id:
                 _logger.warning("Unauthorized payslip access attempt by user %s for payslip %s", request.uid,
                                 payslip_id)
                 return request.redirect(MY_EMPLOYEE_URL + '/payslips?error=access_denied')
-    
+
             if payslip.state not in ['validated', 'done', 'paid']:
                 return request.redirect(MY_EMPLOYEE_URL + '/payslips?error=not_confirmed')
-    
+
             report_ref = None
-    
+
             report_names = [
                 'hr_payroll.action_report_payslip',
                 'hr_payroll.payslip_report',
                 'hr_payroll.report_payslip',
                 'hr_payroll.report_payslip_details'
             ]
-    
+
             for report_name in report_names:
                 report_ref = request.env.ref(report_name, raise_if_not_found=False)
                 if report_ref:
                     break
-    
+
             if not report_ref:
                 reports = request.env['ir.actions.report'].sudo().search([
                     ('model', '=', 'hr.payslip'),
                     ('report_type', '=', 'qweb-pdf')
                 ])
                 report_ref = reports[:1]
-    
+
             if not report_ref:
                 return request.redirect(MY_EMPLOYEE_URL + '/payslips?error=report_not_found')
-    
+
             pdf_content = None
-    
+
             try:
                 report_sudo = report_ref.sudo()
                 pdf_content, _ = report_sudo._render_qweb_pdf(report_sudo.report_name, payslip.ids)
@@ -3863,22 +4051,21 @@ class PortalEmployee(http.Controller):
                     pdf_content, _ = report_sudo.render_qweb_pdf(payslip.ids)
                 except Exception:
                     pdf_content = None
-    
+
             if not pdf_content:
                 return request.redirect(MY_EMPLOYEE_URL + '/payslips?error=render_failed')
-    
+
             # ================= PASSWORD PROTECTION ADDED HERE =================
             try:
-    
-    
+
                 password = None
                 if payslip.employee_id.birthday:
                     password = payslip.employee_id.birthday.strftime("%d%m%Y")
-    
+
                 if password:
                     pdf_stream = io.BytesIO(pdf_content)
                     output_stream = io.BytesIO()
-    
+
                     with pikepdf.open(pdf_stream) as pdf:
                         pdf.save(
                             output_stream,
@@ -3888,32 +4075,29 @@ class PortalEmployee(http.Controller):
                                 R=4
                             )
                         )
-    
+
                     pdf_content = output_stream.getvalue()
-    
+
             except Exception as enc_error:
                 _logger.error("PDF encryption failed: %s", str(enc_error))
             # =================================================================
-    
+
             safe_number = (payslip.name or str(payslip.id)).replace('/', '_').replace('\\', '_')
             safe_date = payslip.date_from.strftime('%Y-%m') if payslip.date_from else 'unknown'
             filename = f"{payslip.employee_id.name} - {payslip.date_from.strftime('%B %Y')}.pdf"
-    
+
             pdfhttpheaders = [
                 ('Content-Type', 'application/pdf'),
                 ('Content-Length', len(pdf_content)),
                 ('Content-Disposition', f'attachment; filename="{filename}"'),
             ]
-    
+
             return request.make_response(pdf_content, headers=pdfhttpheaders)
-    
+
         except Exception as e:
             import traceback
             _logger.error("Error: %s", traceback.format_exc())
             return request.redirect(MY_EMPLOYEE_URL + '/payslips?error=download_failed')
-
-     
-
 
     @http.route(MY_EMPLOYEE_URL + '/payslips/view/<int:payslip_id>', type='http', auth='user', website=True)
     def portal_payslip_view(self, payslip_id, **kwargs):
