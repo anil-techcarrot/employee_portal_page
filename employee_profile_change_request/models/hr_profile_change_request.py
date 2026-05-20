@@ -88,44 +88,67 @@ FIELD_LABELS = {
     'passport_file': 'Passport Copy',
     'other_documents': 'Other Documents',
     'has_work_permit': 'Work Permit File',
+    # FIX: state field labels so diff table shows names not raw keys
+    'states_id': 'Work Location State',
+    'private_state_id': 'Permanent Address State',
+    'country_residences_id': 'Country of Residency',
+    # ══════════════════════════════════════════════════════
+    # FIX Issue 1: Missing labels added below
+    # ══════════════════════════════════════════════════════
+    'pan': 'PAN',
+    'aadhar_no': 'Aadhar Number',
+    'no_of_career_break': 'No. of Career Break',
+    'career_break': 'Career Break',
+    'career_break_start_date': 'Career Break Start Date',
+    'career_break_end_date': 'Career Break End Date',
+    'institute_name': 'Institution Name',
+    'degree_name': 'Degree Name',
+    'field_of_study': 'Field of Study',
+    'study_field': 'Study Field (Other)',
+    'start_date_of_degree': 'Start Date of Degree',
+    'completion_date_of_degree': 'Completion Date of Degree',
+    'year_of_passing': 'Year of Passing',
+    'score': 'Score',
+    'certification_obtained': 'Certification Obtained',
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
 # MANY2ONE_FIELDS — stored as integer IDs in submitted_data
-# controller stores raw integer string e.g. "105"
-# action_approve writes int(v) for these
-# diff table resolves int → name for display
 # ─────────────────────────────────────────────────────────────────────────────
 MANY2ONE_FIELDS = {
     'nationality_at_birth_id',
     'country_id',
     'issue_countries_id',
     'countries_id',
-    'father_nationalities_id',    # ← NEW
+    'father_nationalities_id',
     'mother_nationalities_id',
-    'religion',# ← NEW
+    'religion',
+    # FIX: state dropdowns are Many2one — must be stored/written as int IDs
+    'states_id',
+    'private_state_id',
+    'country_residences_id',
 }
 
 MANY2ONE_MODEL_MAP = {
     'nationality_at_birth_id': 'res.country',
-    'country_id':              'res.country',
-    'issue_countries_id':      'res.country',
-    'countries_id':            'res.country',
-    'country_residences_id':   'res.country',
-    'states_id':               'res.country.state',
-    'religion':                'tec.religion',  # ← FIXED: points to tec.religion model
+    'country_id': 'res.country',
+    'issue_countries_id': 'res.country',
+    'countries_id': 'res.country',
+    'country_residences_id': 'res.country',
+    # FIX: both state fields resolve via res.country.state
+    'states_id': 'res.country.state',
+    'private_state_id': 'res.country.state',
+    'religion': 'tec.religion',
 }
 
-# Selection fields
 SELECTION_FIELDS = {
     'blood_group', 'sex', 'marital', 'dependent_child_gender_1',
 }
 
-# Skip during approval write
 SKIP_ON_APPROVE = {
     'csrf_token', 'submit',
     'emirates_id_file', 'passport_file', 'other_documents', 'has_work_permit',
-    '_cert_change','_skill_change','_resume_change',
+    '_cert_change'
 }
 
 CODED_VALUE_LABELS = {
@@ -169,8 +192,8 @@ class HrProfileChangeRequest(models.Model):
     )
     state = fields.Selection(
         selection=[
-            ('draft',    'Draft'),
-            ('pending',  'Pending HR Review'),
+            ('draft', 'Draft'),
+            ('pending', 'Pending HR Review'),
             ('approved', 'Approved'),
             ('rejected', 'Rejected'),
         ],
@@ -182,8 +205,8 @@ class HrProfileChangeRequest(models.Model):
         string='Submitted Changes', compute='_compute_changed_fields_display', sanitize=False,
     )
     submission_date = fields.Datetime(string='Submitted On', default=fields.Datetime.now, readonly=True)
-    review_date     = fields.Datetime(string='Reviewed On', readonly=True)
-    reviewed_by     = fields.Many2one(comodel_name='res.users', string='Reviewed By', readonly=True)
+    review_date = fields.Datetime(string='Reviewed On', readonly=True)
+    reviewed_by = fields.Many2one(comodel_name='res.users', string='Reviewed By', readonly=True)
     rejection_reason = fields.Text(string='Rejection Reason', tracking=True)
     trail_ids = fields.One2many(
         comodel_name='hr.profile.change.request.trail',
@@ -191,11 +214,11 @@ class HrProfileChangeRequest(models.Model):
     )
 
     has_emirates_id_doc = fields.Boolean(string='Emirates ID Uploaded', compute='_compute_doc_flags', store=True)
-    has_passport_doc    = fields.Boolean(string='Passport Uploaded',     compute='_compute_doc_flags', store=True)
-    has_other_doc       = fields.Boolean(string='Other Doc Uploaded',    compute='_compute_doc_flags', store=True)
-    has_work_permit_doc = fields.Boolean(string='Work Permit Uploaded',  compute='_compute_doc_flags', store=True)
-    has_any_doc         = fields.Boolean(string='Has Any Document',      compute='_compute_doc_flags', store=True)
-    total_docs_uploaded = fields.Integer(string='Total Documents',       compute='_compute_doc_flags', store=True)
+    has_passport_doc = fields.Boolean(string='Passport Uploaded', compute='_compute_doc_flags', store=True)
+    has_other_doc = fields.Boolean(string='Other Doc Uploaded', compute='_compute_doc_flags', store=True)
+    has_work_permit_doc = fields.Boolean(string='Work Permit Uploaded', compute='_compute_doc_flags', store=True)
+    has_any_doc = fields.Boolean(string='Has Any Document', compute='_compute_doc_flags', store=True)
+    total_docs_uploaded = fields.Integer(string='Total Documents', compute='_compute_doc_flags', store=True)
 
     attachment_ids = fields.Many2many(
         'ir.attachment',
@@ -217,9 +240,9 @@ class HrProfileChangeRequest(models.Model):
     def _compute_doc_flags(self):
         doc_field_map = {
             'emirates_id_file': 'has_emirates_id_doc',
-            'passport_file':    'has_passport_doc',
-            'other_documents':  'has_other_doc',
-            'has_work_permit':  'has_work_permit_doc',
+            'passport_file': 'has_passport_doc',
+            'other_documents': 'has_other_doc',
+            'has_work_permit': 'has_work_permit_doc',
         }
         for rec in self:
             flags = {f: False for f in doc_field_map.values()}
@@ -317,7 +340,6 @@ class HrProfileChangeRequest(models.Model):
             try:
                 data = json.loads(rec.submitted_data)
 
-                # ── Certification change — special rendering ──
                 cert_change = data.get('_cert_change')
                 if cert_change:
                     action_labels = {'add': 'Add Certification', 'edit': 'Edit Certification',
@@ -437,7 +459,6 @@ class HrProfileChangeRequest(models.Model):
                         new_val_display = str(new_val)
                         is_changed = True
 
-                    # Many2one country fields — stored as integer ID
                     elif key in MANY2ONE_FIELDS:
                         try:
                             current_rec = getattr(rec.employee_id, key, False)
@@ -500,7 +521,7 @@ class HrProfileChangeRequest(models.Model):
         self.write({'state': 'pending'})
         self.employee_id.sudo().write({
             'last_portal_submission': self.submitted_data,
-            'last_submission_state':  'pending',
+            'last_submission_state': 'pending',
         })
         self._add_trail(action='submitted', note=f'Submitted by {self.employee_id.name}')
         self._send_mail_to_hr()
@@ -573,7 +594,6 @@ class HrProfileChangeRequest(models.Model):
             if v is None or v == '':
                 continue
 
-
             if k in MANY2ONE_FIELDS:
                 try:
                     int_val = int(str(v))
@@ -591,7 +611,6 @@ class HrProfileChangeRequest(models.Model):
                                     self.name, k, v)
                 continue
 
-
             if k in SELECTION_FIELDS:
                 field_obj = self.employee_id._fields.get(k)
                 if field_obj and hasattr(field_obj, 'selection'):
@@ -604,13 +623,17 @@ class HrProfileChangeRequest(models.Model):
                 continue
 
             if k == 'children':
-                try:    write_vals[k] = int(v)
-                except: pass
+                try:
+                    write_vals[k] = int(v)
+                except:
+                    pass
                 continue
 
             if k == 'last_salary_per_annum_amt':
-                try:    write_vals[k] = float(v)
-                except: pass
+                try:
+                    write_vals[k] = float(v)
+                except:
+                    pass
                 continue
 
             write_vals[k] = v
@@ -638,7 +661,7 @@ class HrProfileChangeRequest(models.Model):
         self._send_mail_to_employee('approved')
         self.employee_id.sudo().write({
             'last_portal_submission': False,
-            'last_submission_state':  'approved',
+            'last_submission_state': 'approved',
         })
         return True
 
@@ -646,7 +669,6 @@ class HrProfileChangeRequest(models.Model):
         action = cert_change.get('cert_action')
         employee = self.employee_id
 
-        # Find attachment linked to this PCR (uploaded by employee)
         pcr_attachments = self.env['ir.attachment'].sudo().search([
             ('res_model', '=', 'hr.profile.change.request'),
             ('res_id', '=', self.id),
@@ -678,7 +700,6 @@ class HrProfileChangeRequest(models.Model):
                 'valid_to': cert_change.get('valid_to') or False,
             })
 
-
             if pcr_attachments:
                 new_att_ids = []
                 for att in pcr_attachments:
@@ -708,7 +729,6 @@ class HrProfileChangeRequest(models.Model):
                 vals['valid_to'] = cert_change['valid_to'] or False
             if vals:
                 skill_record.sudo().write(vals)
-
 
             if pcr_attachments:
                 new_att_ids = []
@@ -877,7 +897,7 @@ class HrProfileChangeRequest(models.Model):
         self.write({'state': 'pending', 'rejection_reason': False,
                     'reviewed_by': False, 'review_date': False})
         self.employee_id.sudo().write({
-            'last_submission_state':  False,
+            'last_submission_state': False,
             'last_portal_submission': False,
         })
         self._add_trail(action='reopened', note=f'Re-opened by {self.env.user.name}')
@@ -885,7 +905,7 @@ class HrProfileChangeRequest(models.Model):
 
     def _add_trail(self, action, note, reason=None):
         self.env['hr.profile.change.request.trail'].sudo().create({
-            'request_id':  self.id, 'action': action, 'note': note,
+            'request_id': self.id, 'action': action, 'note': note,
             'reason': reason or '', 'user_id': self.env.user.id,
             'action_date': fields.Datetime.now(),
         })
@@ -907,8 +927,8 @@ class HrProfileChangeRequest(models.Model):
             email_to = ', '.join(hr_emails)
             hr_names = ', '.join(hr_names_list)
             mail = self.env['mail.mail'].sudo().create({
-                'subject':    f'New Profile Change Request: {self.name} — {self.employee_id.name}',
-                'email_to':   email_to,
+                'subject': f'New Profile Change Request: {self.name} — {self.employee_id.name}',
+                'email_to': email_to,
                 'email_from': self.employee_id.company_id.email or 'notifications@techcarrot-fz-llc1.odoo.com',
                 'auto_delete': False,
                 'body_html': f'''
@@ -945,9 +965,9 @@ class HrProfileChangeRequest(models.Model):
         try:
             emp_user = self.employee_id.user_id
             emp_email = (
-                (emp_user.login if emp_user and '@' in (emp_user.login or '') else None)
-                or self.employee_id.work_email
-                or self.employee_id.private_email
+                    (emp_user.login if emp_user and '@' in (emp_user.login or '') else None)
+                    or self.employee_id.work_email
+                    or self.employee_id.private_email
             )
             if not emp_email:
                 return
@@ -1009,6 +1029,6 @@ def post_init_hook(cr, registry):
             Religion.create({'name': name})
             created.append(name)
     if created:
-        _logger.info('[post_init_hook] ✅ Created %d religion(s): %s', len(created), created)
+        _logger.info('[post_init_hook]  Created %d religion(s): %s', len(created), created)
     else:
-        _logger.info('[post_init_hook] ✅ All religions already exist — nothing to create.')
+        _logger.info('[post_init_hook]  All religions already exist — nothing to create.')

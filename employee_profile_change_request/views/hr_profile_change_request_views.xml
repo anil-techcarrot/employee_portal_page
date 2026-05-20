@@ -142,6 +142,16 @@
         </field>
     </record>
 
+    <!--
+    ════════════════════════════════════════════════════════════
+    ACTIONS — KEY FIX:
+    1. domain = [] — no company filter whatsoever
+    2. context has 'allowed_company_ids': False equivalent is
+       handled by the model's _check_company_auto = False
+    3. Do NOT put company_id in domain here
+    ════════════════════════════════════════════════════════════
+    -->
+
     <!-- All Requests — shows ALL tickets from ALL companies -->
     <record id="action_profile_change_request_all" model="ir.actions.act_window">
         <field name="name">All Change Requests</field>
