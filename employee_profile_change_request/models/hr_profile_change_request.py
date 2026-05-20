@@ -148,7 +148,7 @@ SELECTION_FIELDS = {
 SKIP_ON_APPROVE = {
     'csrf_token', 'submit',
     'emirates_id_file', 'passport_file', 'other_documents', 'has_work_permit',
-    '_cert_change'
+    '_cert_change','_skill_change','_resume_change',
 }
 
 CODED_VALUE_LABELS = {
@@ -386,7 +386,7 @@ class HrProfileChangeRequest(models.Model):
                     </p>'''
                     continue  # skip the normal field-diff rendering
 
-                # ── Skill change — special rendering ──
+                    # ── Skill change — special rendering ──
                 skill_change = data.get('_skill_change')
                 if skill_change:
                     action = skill_change.get('cert_action', '')
@@ -404,50 +404,50 @@ class HrProfileChangeRequest(models.Model):
                                 f'</tr>'
                             )
                         rec.changed_fields_display = f'''
-                        <div style="overflow-x:auto;">
-                          <p style="margin-bottom:8px;font-weight:600;color:#2e7d32;">
-                            <i class="fa fa-plus-circle me-1"></i>Add {len(skills)} Skill(s)
-                          </p>
-                          <table style="width:100%;border-collapse:collapse;font-size:13px;font-family:Arial,sans-serif;">
-                            <thead><tr style="background:#4e73df;color:white;">
-                              <th style="padding:10px 12px;text-align:left;border:1px solid #3a5ec9;">Skill Type</th>
-                              <th style="padding:10px 12px;text-align:left;border:1px solid #3a5ec9;">Skill</th>
-                              <th style="padding:10px 12px;text-align:left;border:1px solid #3a5ec9;">Level</th>
-                            </tr></thead>
-                            <tbody>{rows}</tbody>
-                          </table>
-                        </div>
-                        <p style="font-size:11px;color:#999;margin-top:8px;">
-                          ⚠ These {len(skills)} skill(s) will only be added to Odoo after you click Approve.
-                        </p>'''
+                                    <div style="overflow-x:auto;">
+                                    <p style="margin-bottom:8px;font-weight:600;color:#2e7d32;">
+                                        <i class="fa fa-plus-circle me-1"></i>Add {len(skills)} Skill(s)
+                                        </p>
+                                        <table style="width:100%;border-collapse:collapse;font-size:13px;font-family:Arial,sans-serif;">
+                                        <thead><tr style="background:#4e73df;color:white;">
+                                            <th style="padding:10px 12px;text-align:left;border:1px solid #3a5ec9;">Skill Type</th>
+                                            <th style="padding:10px 12px;text-align:left;border:1px solid #3a5ec9;">Skill</th>
+                                            <th style="padding:10px 12px;text-align:left;border:1px solid #3a5ec9;">Level</th>
+                                        </tr></thead>
+                                        <tbody>{rows}</tbody>
+                                        </table>
+                                    </div>
+                                    <p style="font-size:11px;color:#999;margin-top:8px;">
+                                        ⚠ These {len(skills)} skill(s) will only be added to Odoo after you click Approve.
+                                    </p>'''
                         continue
 
                 resume_change = data.get('_resume_change')
                 if resume_change:
                     filename = resume_change.get('filename', '—')
                     rec.changed_fields_display = f'''
-                    <div style="overflow-x:auto;">
-                      <table style="width:100%;border-collapse:collapse;font-size:13px;font-family:Arial,sans-serif;">
-                        <thead><tr style="background:#4e73df;color:white;">
-                          <th style="padding:10px 12px;text-align:left;border:1px solid #3a5ec9;">Field</th>
-                          <th style="padding:10px 12px;text-align:left;border:1px solid #3a5ec9;">Value</th>
-                        </tr></thead>
-                        <tbody>
-                          <tr style="background:#fffde7;">
-                            <td style="padding:8px 12px;border:1px solid #ddd;"><strong>Action</strong></td>
-                            <td style="padding:8px 12px;border:1px solid #ddd;color:#2e7d32;font-weight:600;">Upload Resume / CV</td>
-                          </tr>
-                          <tr>
-                            <td style="padding:8px 12px;border:1px solid #ddd;"><strong>File Name</strong></td>
-                            <td style="padding:8px 12px;border:1px solid #ddd;"><i class="fa fa-file me-1"></i>{filename}</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                    <p style="font-size:11px;color:#999;margin-top:8px;">
-                      ⚠ The resume file will only be saved to the employee record after HR clicks Approve.
-                      You can download the file from the Supporting Documents section above.
-                    </p>'''
+                                    <div style="overflow-x:auto;">
+                                      <table style="width:100%;border-collapse:collapse;font-size:13px;font-family:Arial,sans-serif;">
+                                        <thead><tr style="background:#4e73df;color:white;">
+                                          <th style="padding:10px 12px;text-align:left;border:1px solid #3a5ec9;">Field</th>
+                                          <th style="padding:10px 12px;text-align:left;border:1px solid #3a5ec9;">Value</th>
+                                        </tr></thead>
+                                        <tbody>
+                                          <tr style="background:#fffde7;">
+                                            <td style="padding:8px 12px;border:1px solid #ddd;"><strong>Action</strong></td>
+                                            <td style="padding:8px 12px;border:1px solid #ddd;color:#2e7d32;font-weight:600;">Upload Resume / CV</td>
+                                          </tr>
+                                          <tr>
+                                            <td style="padding:8px 12px;border:1px solid #ddd;"><strong>File Name</strong></td>
+                                            <td style="padding:8px 12px;border:1px solid #ddd;"><i class="fa fa-file me-1"></i>{filename}</td>
+                                          </tr>
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                    <p style="font-size:11px;color:#999;margin-top:8px;">
+                                      ⚠ Resume will only be saved to the employee record after HR clicks Approve.
+                                      Download the file from Supporting Documents above.
+                                    </p>'''
                     continue
 
                 rows = ''
@@ -551,7 +551,6 @@ class HrProfileChangeRequest(models.Model):
             })
             return True
 
-
         skill_change = data.get('_skill_change')
         if skill_change:
             self._apply_skill_change(skill_change)
@@ -567,21 +566,13 @@ class HrProfileChangeRequest(models.Model):
                 'last_submission_state': 'approved',
             })
             return True
-
         resume_change = data.get('_resume_change')
         if resume_change:
             self._apply_resume_change(resume_change)
-            self.write({
-                'state': 'approved',
-                'reviewed_by': self.env.user.id,
-                'review_date': fields.Datetime.now(),
-            })
+            self.write({'state': 'approved', 'reviewed_by': self.env.user.id, 'review_date': fields.Datetime.now()})
             self._add_trail(action='approved', note=f'Approved by {self.env.user.name}.')
             self._send_mail_to_employee('approved')
-            self.employee_id.sudo().write({
-                'last_portal_submission': False,
-                'last_submission_state': 'approved',
-            })
+            self.employee_id.sudo().write({'last_portal_submission': False, 'last_submission_state': 'approved'})
             return True
 
         write_vals = {}
@@ -754,15 +745,12 @@ class HrProfileChangeRequest(models.Model):
                 skill_record.sudo().unlink()
             _logger.info('Cert DELETE approved: id=%s employee=%s', record_id, employee.name)
 
-
-
     def _apply_skill_change(self, skill_change):
         action = skill_change.get('cert_action')
         employee = self.employee_id
 
         if action == 'add_batch':
             skills = skill_change.get('skills', [])
-
 
             seen_in_batch = set()
             deduped = []
@@ -772,7 +760,6 @@ class HrProfileChangeRequest(models.Model):
                     seen_in_batch.add(sid)
                     deduped.append(item)
             skills = deduped
-
 
             existing_skill_ids = set(
                 self.env['hr.employee.skill'].sudo().search([
@@ -785,7 +772,6 @@ class HrProfileChangeRequest(models.Model):
                 skill_id = int(item.get('skill_id', 0))
                 level_id = item.get('level_id')
                 type_id = item.get('type_id')
-
 
                 if skill_id in existing_skill_ids:
                     _logger.warning(
@@ -805,7 +791,6 @@ class HrProfileChangeRequest(models.Model):
                     'skill_type_id': int(type_id) if type_id else skill.skill_type_id.id,
                     'skill_level_id': int(level_id) if level_id else False,
                 })
-
 
                 existing_skill_ids.add(skill_id)
 
@@ -859,26 +844,20 @@ class HrProfileChangeRequest(models.Model):
             _logger.info('Skill DELETE approved: id=%s for %s', record_id, employee.name)
 
     def _apply_resume_change(self, resume_change):
-        """Copy resume attachment from PCR to employee record on approval."""
         employee = self.employee_id
         pcr_attachment = self.env['ir.attachment'].sudo().search([
             ('res_model', '=', 'hr.profile.change.request'),
             ('res_id', '=', self.id),
             ('description', '=', 'Resume submitted by employee for approval'),
         ], limit=1)
-
         if not pcr_attachment:
-            _logger.warning('PCR %s: No resume attachment found to apply.', self.name)
+            _logger.warning('PCR %s: No resume attachment found.', self.name)
             return
-
-        import base64
         employee.sudo().write({
             'resume_file': pcr_attachment.datas,
             'resume_file_filename': resume_change.get('filename', pcr_attachment.name),
         })
-        _logger.info('Resume approved and saved for employee %s: %s',
-                     employee.name, resume_change.get('filename'))
-
+        _logger.info('Resume approved for employee %s: %s', employee.name, resume_change.get('filename'))
     def action_reject(self):
         self.ensure_one()
         return {

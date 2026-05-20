@@ -2127,7 +2127,6 @@ class PortalEmployee(http.Controller):
         if request.httprequest.method == 'POST':
             action = post.get('action')
             try:
-
                 if action == 'upload_resume':
                     resume_file = request.httprequest.files.get('resume_file')
                     if not resume_file or not resume_file.filename:
@@ -2162,8 +2161,6 @@ class PortalEmployee(http.Controller):
                         'state': 'draft',
                     })
                     pcr.action_submit()
-
-                    # Save file as attachment on the PCR so HR can download it
                     request.env['ir.attachment'].sudo().create({
                         'name': resume_file.filename,
                         'datas': file_data,
@@ -2172,13 +2169,7 @@ class PortalEmployee(http.Controller):
                         'mimetype': resume_file.content_type or 'application/octet-stream',
                         'description': 'Resume submitted by employee for approval',
                     })
-
-                    return request.make_json_response({
-                        'success': True,
-                        'reference': pcr.name,
-                        'message': 'Resume submitted for HR approval.',
-                    })
-
+                    return request.make_json_response({'success': True, 'reference': pcr.name})
 
                 elif action == 'add_skill':
 
@@ -2369,7 +2360,6 @@ class PortalEmployee(http.Controller):
                     })
             except Exception:
                 continue
-
         pending_resume_change = None
         for pcr in pending_skill_pcrs:
             try:
@@ -2381,7 +2371,7 @@ class PortalEmployee(http.Controller):
                     'pcr_name': pcr.name,
                     'filename': resume_change.get('filename', '—'),
                 }
-                break  # only show the latest pending resume PCR
+                break
             except Exception:
                 continue
 
@@ -2393,8 +2383,10 @@ class PortalEmployee(http.Controller):
                 'skill_types': skill_types,
                 'skill_data_json': json_lib.dumps(skill_data),
                 'pending_skill_changes': pending_skill_changes,
+                'pending_resume_change': pending_resume_change,
             }
         )
+
 
     @http.route(MY_EMPLOYEE_URL + '/certification', type='http', auth='user', website=True, methods=['GET', 'POST'])
     def portal_employee_certification(self, **post):
