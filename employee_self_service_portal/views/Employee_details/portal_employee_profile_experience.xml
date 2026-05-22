@@ -6,79 +6,50 @@
             <t t-set="section_content">
 
                 <div id="expMessageContainer" style="display:none; margin-bottom:16px;">
-                    <div id="expSuccessMessage" class="alert alert-success alert-dismissible fade" role="alert"
-                         style="display:none;">
-                        <i class="fa fa-check-circle me-2"></i>
-                        <span id="expSuccessText"></span>
+                    <div id="expSuccessMessage" class="alert alert-success alert-dismissible fade" role="alert" style="display:none;">
+                        <i class="fa fa-check-circle me-2"></i><span id="expSuccessText"></span>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
-                    <div id="expErrorMessage" class="alert alert-danger alert-dismissible fade" role="alert"
-                         style="display:none;">
-                        <i class="fa fa-exclamation-triangle me-2"></i>
-                        <span id="expErrorText"></span>
+                    <div id="expErrorMessage" class="alert alert-danger alert-dismissible fade" role="alert" style="display:none;">
+                        <i class="fa fa-exclamation-triangle me-2"></i><span id="expErrorText"></span>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 </div>
 
                 <t t-if="pending_skill_changes">
                     <div class="card mb-4 shadow-sm border-warning" id="pendingSkillCard">
-                        <div class="card-header d-flex align-items-center gap-2"
-                             style="background:#fff8e1; border-bottom:1px solid #ffe082;">
+                        <div class="card-header d-flex align-items-center gap-2" style="background:#fff8e1; border-bottom:1px solid #ffe082;">
                             <i class="fa fa-clock-o text-warning" style="font-size:16px;"></i>
                             <h5 class="mb-0" style="color:#856404;">Pending HR Approval — Skills</h5>
                             <span class="badge bg-warning text-dark ms-2" style="font-size:12px;">
-                                <t t-esc="len(pending_skill_changes)"/>
-                                request(s)
+                                <t t-esc="len(pending_skill_changes)"/> request(s)
                             </span>
                         </div>
                         <div class="card-body p-0">
                             <table class="table mb-0">
                                 <thead style="background:#fffde7;">
                                     <tr>
-                                        <th style="padding:11px 18px; font-size:12px; color:#856404; text-transform:uppercase;">
-                                            Reference
-                                        </th>
-                                        <th style="padding:11px 18px; font-size:12px; color:#856404; text-transform:uppercase;">
-                                            Skill Type
-                                        </th>
-                                        <th style="padding:11px 18px; font-size:12px; color:#856404; text-transform:uppercase;">
-                                            Skill
-                                        </th>
-                                        <th style="padding:11px 18px; font-size:12px; color:#856404; text-transform:uppercase;">
-                                            Level
-                                        </th>
-                                        <th style="padding:11px 18px; font-size:12px; color:#856404; text-transform:uppercase;">
-                                            Status
-                                        </th>
+                                        <th style="padding:11px 18px; font-size:12px; color:#856404; text-transform:uppercase;">Reference</th>
+                                        <th style="padding:11px 18px; font-size:12px; color:#856404; text-transform:uppercase;">Skill Type</th>
+                                        <th style="padding:11px 18px; font-size:12px; color:#856404; text-transform:uppercase;">Skill</th>
+                                        <th style="padding:11px 18px; font-size:12px; color:#856404; text-transform:uppercase;">Level</th>
+                                        <th style="padding:11px 18px; font-size:12px; color:#856404; text-transform:uppercase;">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <t t-foreach="pending_skill_changes" t-as="psc">
                                         <tr style="background:#fffef5;">
-                                            <td style="padding:12px 18px; vertical-align:middle; font-size:13px;">
-                                                <span class="text-muted fw-semibold">
-                                                    <t t-esc="psc['pcr_name']"/>
-                                                </span>
-                                            </td>
-                                            <td style="padding:12px 18px; vertical-align:middle; font-size:14px;">
-                                                <t t-esc="psc['type_name']"/>
-                                            </td>
-                                            <td style="padding:12px 18px; vertical-align:middle; font-size:14px; font-weight:600;">
-                                                <t t-esc="psc['skill_name']"/>
-                                            </td>
+                                            <td style="padding:12px 18px; vertical-align:middle; font-size:13px;"><span class="text-muted fw-semibold"><t t-esc="psc['pcr_name']"/></span></td>
+                                            <td style="padding:12px 18px; vertical-align:middle; font-size:14px;"><t t-esc="psc['type_name']"/></td>
+                                            <td style="padding:12px 18px; vertical-align:middle; font-size:14px; font-weight:600;"><t t-esc="psc['skill_name']"/></td>
                                             <td style="padding:12px 18px; vertical-align:middle; font-size:13px;">
                                                 <t t-if="psc.get('level_name') and psc['level_name'] != '—'">
-                                                    <span class="badge bg-primary">
-                                                        <t t-esc="psc['level_name']"/>
-                                                    </span>
+                                                    <span class="badge bg-primary"><t t-esc="psc['level_name']"/></span>
                                                 </t>
-                                                <t t-else="">
-                                                    <span class="text-muted">—</span>
-                                                </t>
+                                                <t t-else=""><span class="text-muted">—</span></t>
                                             </td>
                                             <td style="padding:12px 18px; vertical-align:middle;">
-                                                <span class="badge rounded-pill"
-                                                      style="background:#fff3cd; color:#856404; border:1px solid #ffe082; font-size:12px; padding:5px 10px;">
+                                                <span class="badge rounded-pill" style="background:#fff3cd; color:#856404; border:1px solid #ffe082; font-size:12px; padding:5px 10px;">
                                                     <i class="fa fa-hourglass-half me-1"></i>Awaiting HR Review
                                                 </span>
                                             </td>
@@ -87,21 +58,16 @@
                                 </tbody>
                             </table>
                         </div>
-                        <div class="card-footer"
-                             style="background:#fffde7; border-top:1px solid #ffe082; padding:10px 18px;">
-                            <small class="text-muted"><i class="fa fa-info-circle me-1"></i>These skill changes are
-                                awaiting HR approval and will appear in your skills once approved.
-                            </small>
+                        <div class="card-footer" style="background:#fffde7; border-top:1px solid #ffe082; padding:10px 18px;">
+                            <small class="text-muted"><i class="fa fa-info-circle me-1"></i>These skill changes are awaiting HR approval and will appear in your skills once approved.</small>
                         </div>
                     </div>
                 </t>
 
                 <div class="card mb-4 shadow-sm">
                     <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="fa fa-cogs text-primary me-2"></i>Skills &amp; Competencies
-                        </h5>
-                        <button type="button" class="btn btn-success" id="openSkillModal"
-                                style="display:none; font-weight:600; background:#2C5B32; border-color:#2C5B32; color:white;">
+                        <h5 class="mb-0"><i class="fa fa-cogs text-primary me-2"></i>Skills &amp; Competencies</h5>
+                        <button type="button" class="btn btn-success" id="openSkillModal" style="display:none; font-weight:600; background:#2C5B32; border-color:#2C5B32; color:white;">
                             <i class="fa fa-plus me-1"></i>Add Skills
                         </button>
                     </div>
@@ -123,37 +89,15 @@
                                         t-att-data-type-id="sk.skill_type_id.id"
                                         t-att-data-level-name="sk.skill_level_id.name if sk.skill_level_id else ''"
                                         t-att-data-level-id="sk.skill_level_id.id if sk.skill_level_id else ''">
-                                        <td style="padding:13px 18px; vertical-align:middle; font-size:14px;"
-                                            class="col-type-name">
-                                            <t t-esc="sk.skill_type_id.name"/>
+                                        <td style="padding:13px 18px; vertical-align:middle; font-size:14px;" class="col-type-name"><t t-esc="sk.skill_type_id.name"/></td>
+                                        <td style="padding:13px 18px; vertical-align:middle; font-size:14px;" class="col-skill-name"><t t-esc="sk.skill_id.name"/></td>
+                                        <td style="padding:13px 18px; vertical-align:middle; font-size:14px;" class="col-level-name">
+                                            <t t-if="sk.skill_level_id"><span class="badge bg-primary"><t t-esc="sk.skill_level_id.name"/></span></t>
+                                            <t t-else=""><span class="text-muted">—</span></t>
                                         </td>
-                                        <td style="padding:13px 18px; vertical-align:middle; font-size:14px;"
-                                            class="col-skill-name">
-                                            <t t-esc="sk.skill_id.name"/>
-                                        </td>
-                                        <td style="padding:13px 18px; vertical-align:middle; font-size:14px;"
-                                            class="col-level-name">
-                                            <t t-if="sk.skill_level_id">
-                                                <span class="badge bg-primary">
-                                                    <t t-esc="sk.skill_level_id.name"/>
-                                                </span>
-                                            </t>
-                                            <t t-else="">
-                                                <span class="text-muted">—</span>
-                                            </t>
-                                        </td>
-                                        <td class="skill-action-col"
-                                            style="display:none; padding:13px 18px; vertical-align:middle; text-align:right; white-space:nowrap;">
-                                            <button type="button"
-                                                    class="btn btn-sm btn-outline-warning ess-btn-edit-skill me-1"
-                                                    t-att-data-id="sk.id" title="Edit">
-                                                <i class="fa fa-pencil"></i>
-                                            </button>
-                                            <button type="button"
-                                                    class="btn btn-sm btn-outline-danger ess-btn-delete-skill"
-                                                    t-att-data-id="sk.id" title="Delete">
-                                                <i class="fa fa-trash"></i>
-                                            </button>
+                                        <td class="skill-action-col" style="display:none; padding:13px 18px; vertical-align:middle; text-align:right; white-space:nowrap;">
+                                            <button type="button" class="btn btn-sm btn-outline-warning ess-btn-edit-skill me-1" t-att-data-id="sk.id" title="Edit"><i class="fa fa-pencil"></i></button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger ess-btn-delete-skill" t-att-data-id="sk.id" title="Delete"><i class="fa fa-trash"></i></button>
                                         </td>
                                     </tr>
                                 </t>
@@ -161,9 +105,7 @@
                                     <tr id="skillEmptyRow">
                                         <td colspan="4" class="text-center text-muted py-4">
                                             No skills added yet.
-                                            <span id="skillEmptyHint" style="display:none;">Click <strong>Add Skills
-                                            </strong> to get started.
-                                            </span>
+                                            <span id="skillEmptyHint" style="display:none;">Click <strong>Add Skills</strong> to get started.</span>
                                         </td>
                                     </tr>
                                 </t>
@@ -174,52 +116,35 @@
 
                 <div class="card mb-4 shadow-sm">
                     <div class="card-header bg-light">
-                        <h5 class="mb-0"><i class="fa fa-folder-open text-primary me-2"></i>Resume / CV
-                        </h5>
+                        <h5 class="mb-0"><i class="fa fa-folder-open text-primary me-2"></i>Resume / CV</h5>
                     </div>
                     <div class="card-body">
                         <t t-if="pending_resume_change">
-                            <div class="alert mb-3"
-                                 style="background:#fff8e1; border:1px solid #ffe082; border-radius:6px;">
+                            <div class="alert mb-3" style="background:#fff8e1; border:1px solid #ffe082; border-radius:6px;">
                                 <i class="fa fa-clock-o text-warning me-2"></i>
                                 <strong style="color:#856404;">Pending HR Approval:</strong>
-                                <span style="color:#856404; margin-left:6px;">
-                                    <i class="fa fa-file me-1"></i>
-                                    <t t-esc="pending_resume_change['filename']"/>
-                                </span>
-                                <span class="badge rounded-pill ms-2"
-                                      style="background:#fff3cd; color:#856404; border:1px solid #ffe082; font-size:11px;">
-                                    <i class="fa fa-hourglass-half me-1"></i>Awaiting HR Review
-                                </span>
-                                <small class="text-muted d-block mt-1">Ref:
-                                    <t t-esc="pending_resume_change['pcr_name']"/>
-                                </small>
+                                <span style="color:#856404; margin-left:6px;"><i class="fa fa-file me-1"></i><t t-esc="pending_resume_change['filename']"/></span>
+                                <span class="badge rounded-pill ms-2" style="background:#fff3cd; color:#856404; border:1px solid #ffe082; font-size:11px;"><i class="fa fa-hourglass-half me-1"></i>Awaiting HR Review</span>
+                                <small class="text-muted d-block mt-1">Ref: <t t-esc="pending_resume_change['pcr_name']"/></small>
                             </div>
                         </t>
                         <t t-if="employee.resume_file">
                             <div class="mb-2">
-                                <a t-attf-href="/web/content/hr.employee/#{employee.id}/resume_file?download=true"
-                                   class="btn btn-outline-success btn-sm" target="_blank">
-                                    <i class="fa fa-download me-1"></i>
-                                    <t t-esc="employee.resume_file_filename or 'Download Resume'"/>
+                                <a t-attf-href="/web/content/hr.employee/#{employee.id}/resume_file?download=true" class="btn btn-outline-success btn-sm" target="_blank">
+                                    <i class="fa fa-download me-1"></i><t t-esc="employee.resume_file_filename or 'Download Resume'"/>
                                 </a>
                                 <span class="text-muted ms-2" style="font-size:12px;">(current approved file)</span>
                             </div>
                         </t>
-                        <t t-else="">
-                            <p class="text-muted small mb-2">No approved resume on file.</p>
-                        </t>
+                        <t t-else=""><p class="text-muted small mb-2">No approved resume on file.</p></t>
                         <div id="resumeEditSection" style="display:none;">
-                            <input type="file" id="resumeFileInput" class="form-control form-control-sm mt-2"
-                                   accept=".pdf,.doc,.docx" style="max-width:360px;"/>
+                            <input type="file" id="resumeFileInput" class="form-control form-control-sm mt-2" accept=".pdf,.doc,.docx" style="max-width:360px;"/>
                             <small class="text-muted">PDF, DOC, DOCX — Max 10 MB</small>
                             <div id="resumeFileLabel" class="mt-1" style="font-size:13px; color:#2e7d32; display:none;">
-                                <i class="fa fa-file me-1"></i>
-                                <span id="resumeFileName"></span>
+                                <i class="fa fa-file me-1"></i><span id="resumeFileName"></span>
                                 <span class="skill-badge badge-new ms-1">Staged</span>
                             </div>
-                            <div id="resumeFileError" class="text-danger mt-1"
-                                 style="display:none; font-size:13px;"></div>
+                            <div id="resumeFileError" class="text-danger mt-1" style="display:none; font-size:13px;"></div>
                         </div>
                     </div>
                 </div>
@@ -229,43 +154,27 @@
                         <div id="expFormActions" style="display:none;">
                             <div id="expPendingBadge" style="display:none; margin-bottom:12px;">
                                 <span class="badge bg-warning text-dark" style="font-size:13px; padding:6px 12px;">
-                                    <i class="fa fa-clock-o me-1"></i>
-                                    <span id="expPendingCount">0</span>
-                                    pending change(s)
+                                    <i class="fa fa-clock-o me-1"></i><span id="expPendingCount">0</span> pending change(s)
                                 </span>
                             </div>
-                            <div class="alert alert-warning text-start mb-3"
-                                 style="border-left:4px solid #ffc107; border-radius:6px;">
+                            <div class="alert alert-warning text-start mb-3" style="border-left:4px solid #ffc107; border-radius:6px;">
                                 <div class="form-check d-flex align-items-start gap-2">
                                     <input type="checkbox" id="expDisclaimer" class="form-check-input mt-1"/>
                                     <label class="form-check-label" for="expDisclaimer" style="font-size:0.875rem;">
-                                        <strong>Employee Disclaimer</strong>
-                                        – I, hereby confirm that the information updated by me is accurate and complete
-                                        to the best of my knowledge. I agree to keep my data updated at all times and
-                                        consent to the collection and use of such information, for employment
-                                        administration and legal compliances. I acknowledge that any false or incomplete
-                                        information may lead to actions in accordance with company policies and
-                                        applicable laws.
+                                        <strong>Employee Disclaimer</strong> – I, hereby confirm that the information updated by me is accurate and complete to the best of my knowledge. I agree to keep my data updated at all times and consent to the collection and use of such information, for employment administration and legal compliances. I acknowledge that any false or incomplete information may lead to actions in accordance with company policies and applicable laws.
                                     </label>
                                 </div>
                             </div>
-                            <button type="button" class="btn btn-secondary me-2" id="expCancelBtn"
-                                    style="font-size:14px; padding:8px 18px; font-weight:600;">
+                            <button type="button" class="btn btn-secondary me-2" id="expCancelBtn" style="font-size:14px; padding:8px 18px; font-weight:600;">
                                 <i class="fa fa-times me-1"></i>Cancel
                             </button>
-                            <button type="button" id="expSaveBtn" class="btn btn-primary" disabled="disabled"
-                                    style="font-size:14px; padding:8px 18px; font-weight:600; opacity:0.6;">
+                            <button type="button" id="expSaveBtn" class="btn btn-primary" disabled="disabled" style="font-size:14px; padding:8px 18px; font-weight:600; opacity:0.6;">
                                 <i class="fa fa-paper-plane me-1"></i>Submit for HR Approval
                             </button>
                         </div>
                         <div id="expViewActions">
-                            <p class="text-muted mb-3">Last updated:
-                                <strong id="expLastUpdated">
-                                    <t t-esc="employee.write_date.strftime('%d %b, %Y at %I:%M %p') if employee.write_date else 'Never'"/>
-                                </strong>
-                            </p>
-                            <button type="button" class="btn btn-outline-primary" id="expEditBtn"
-                                    style="font-size:14px; padding:8px 18px; font-weight:600;">
+                            <p class="text-muted mb-3">Last updated: <strong id="expLastUpdated"><t t-esc="employee.write_date.strftime('%d %b, %Y at %I:%M %p') if employee.write_date else 'Never'"/></strong></p>
+                            <button type="button" class="btn btn-outline-primary" id="expEditBtn" style="font-size:14px; padding:8px 18px; font-weight:600;">
                                 <i class="fa fa-edit me-1"></i>Edit Skills &amp; Resume
                             </button>
                         </div>
@@ -276,51 +185,34 @@
                 <div class="ess-modal-overlay" id="addSkillModal" style="display:none;">
                     <div class="ess-modal" style="width:640px;">
                         <div class="ess-modal-header">
-                            <h5 class="mb-0 fw-bold"><i class="fa fa-plus-circle text-primary me-2"></i>Add Skills
-                            </h5>
+                            <h5 class="mb-0 fw-bold"><i class="fa fa-plus-circle text-primary me-2"></i>Add Skills</h5>
                             <button type="button" class="btn-close" id="closeSkillModal"></button>
                         </div>
                         <div class="ess-modal-body">
                             <div class="row g-2 mb-3">
                                 <div class="col-12 col-md-4">
-                                    <label class="form-label fw-semibold mb-1" style="font-size:13px;">Skill Type
-                                        <span class="text-danger">*</span>
-                                    </label>
+                                    <label class="form-label fw-semibold mb-1" style="font-size:13px;">Skill Type <span class="text-danger">*</span></label>
                                     <select id="modalSkillType" class="form-select form-select-sm">
                                         <option value="">— Select Type —</option>
                                         <t t-foreach="skill_types" t-as="st">
-                                            <option t-att-value="st.id">
-                                                <t t-esc="st.name"/>
-                                            </option>
+                                            <option t-att-value="st.id"><t t-esc="st.name"/></option>
                                         </t>
                                     </select>
                                 </div>
                                 <div class="col-12 col-md-4">
-                                    <label class="form-label fw-semibold mb-1" style="font-size:13px;">Skill
-                                        <span class="text-danger">*</span>
-                                    </label>
-                                    <select id="modalSkill" class="form-select form-select-sm" disabled="disabled">
-                                        <option value="">— Select Skill —</option>
-                                    </select>
+                                    <label class="form-label fw-semibold mb-1" style="font-size:13px;">Skill <span class="text-danger">*</span></label>
+                                    <select id="modalSkill" class="form-select form-select-sm" disabled="disabled"><option value="">— Select Skill —</option></select>
                                 </div>
                                 <div class="col-12 col-md-4">
-                                    <label class="form-label fw-semibold mb-1" style="font-size:13px;">Level
-                                        <span class="text-danger">*</span>
-                                    </label>
-                                    <select id="modalLevel" class="form-select form-select-sm" disabled="disabled">
-                                        <option value="">— Select Level —</option>
-                                    </select>
+                                    <label class="form-label fw-semibold mb-1" style="font-size:13px;">Level <span class="text-danger">*</span></label>
+                                    <select id="modalLevel" class="form-select form-select-sm" disabled="disabled"><option value="">— Select Level —</option></select>
                                 </div>
                             </div>
                             <div class="text-end mb-3">
-                                <button type="button" class="btn btn-outline-primary btn-sm" id="addSkillToList"><i
-                                        class="fa fa-plus me-1"></i>Add to List
-                                </button>
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="addSkillToList"><i class="fa fa-plus me-1"></i>Add to List</button>
                             </div>
                             <div id="skillStagedSection" style="display:none;">
-                                <div style="font-size:12px; color:#666; font-weight:600; margin-bottom:6px;"><i
-                                        class="fa fa-list me-1"></i>Skills to be submitted for approval:
-                                </div>
+                                <div style="font-size:12px; color:#666; font-weight:600; margin-bottom:6px;"><i class="fa fa-list me-1"></i>Skills to be submitted for approval:</div>
                                 <table class="table table-sm table-bordered mb-0">
                                     <thead class="table-light">
                                         <tr>
@@ -333,11 +225,8 @@
                                     <tbody id="skillStagedBody"></tbody>
                                 </table>
                             </div>
-                            <div class="mt-3 pt-3"
-                                 style="border-top:1px solid #eee; display:flex; gap:10px; align-items:center;">
-                                <button type="button" class="btn btn-primary" id="saveSkillModal"><i
-                                        class="fa fa-check me-1"></i>Save All
-                                </button>
+                            <div class="mt-3 pt-3" style="border-top:1px solid #eee; display:flex; gap:10px; align-items:center;">
+                                <button type="button" class="btn btn-primary" id="saveSkillModal"><i class="fa fa-check me-1"></i>Save All</button>
                                 <button type="button" class="btn btn-secondary" id="closeSkillModal2">Cancel</button>
                                 <span id="modalSkillCount" class="text-muted ms-auto" style="font-size:12px;"></span>
                             </div>
@@ -355,27 +244,14 @@
                         <div class="ess-modal-body">
                             <input type="hidden" id="editRecordId"/>
                             <input type="hidden" id="editTypeId"/>
+                            <div class="mb-3"><label class="form-label fw-semibold">Skill Type</label><input type="text" id="editTypeName" class="form-control bg-light" readonly="readonly"/></div>
+                            <div class="mb-3"><label class="form-label fw-semibold">Skill</label><input type="text" id="editSkillName" class="form-control bg-light" readonly="readonly"/></div>
                             <div class="mb-3">
-                                <label class="form-label fw-semibold">Skill Type</label>
-                                <input type="text" id="editTypeName" class="form-control bg-light" readonly="readonly"/>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold">Skill</label>
-                                <input type="text" id="editSkillName" class="form-control bg-light"
-                                       readonly="readonly"/>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold">Level
-                                    <span class="text-danger">*</span>
-                                </label>
-                                <select id="editLevelSelect" class="form-select">
-                                    <option value="">— Select Level —</option>
-                                </select>
+                                <label class="form-label fw-semibold">Level <span class="text-danger">*</span></label>
+                                <select id="editLevelSelect" class="form-select"><option value="">— Select Level —</option></select>
                             </div>
                             <div class="mt-3 pt-3" style="border-top:1px solid #eee; display:flex; gap:10px;">
-                                <button type="button" class="btn btn-primary" id="saveEditBtn"><i
-                                        class="fa fa-save me-1"></i>Update
-                                </button>
+                                <button type="button" class="btn btn-primary" id="saveEditBtn"><i class="fa fa-save me-1"></i>Update</button>
                                 <button type="button" class="btn btn-secondary" id="closeEditModal2">Cancel</button>
                             </div>
                         </div>
@@ -384,10 +260,8 @@
 
                 <style>
                     .ess-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px;}
-                    .ess-modal{background:#fff;border-radius:12px;width:520px;max-width:100%;box-shadow:0 8px 40px
-                    rgba(0,0,0,0.18);overflow:hidden;max-height:90vh;overflow-y:auto;}
-                    .ess-modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 24px
-                    16px;border-bottom:1px solid #eee;position:sticky;top:0;background:#fff;z-index:1;}
+                    .ess-modal{background:#fff;border-radius:12px;width:520px;max-width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.18);overflow:hidden;max-height:90vh;overflow-y:auto;}
+                    .ess-modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 24px 16px;border-bottom:1px solid #eee;position:sticky;top:0;background:#fff;z-index:1;}
                     .ess-modal-body{padding:20px 24px;}
                     tr.skill-staged-add{background:#f0fff4 !important;}
                     tr.skill-staged-edit{background:#fff8e1 !important;}
@@ -404,7 +278,7 @@
                 <input type="hidden" id="exp_csrf_token" t-att-value="request.csrf_token()"/>
 
                 <script>
-                    //<![CDATA[
+//<![CDATA[
 (function(){
 document.addEventListener('DOMContentLoaded', function(){
 
@@ -574,6 +448,10 @@ document.addEventListener('DOMContentLoaded', function(){
     /* The base template calls essSaveBeforeNav() when a nav tab is clicked */
     window.essSaveBeforeNav = function() {
         saveToStorage();
+    };
+
+    window.essHasUnsavedChanges = function() {
+        return pendingChanges.length > 0;
     };
 
     /* beforeunload removed — base template intercepts tab clicks and
@@ -873,7 +751,7 @@ document.addEventListener('DOMContentLoaded', function(){
         var mergedSkills = [];
         var otherChanges = [];
         pendingChanges.forEach(function(c) {
-            if (c.type === 'add_batch' &amp;&amp; c.payload &amp;&amp; c.payload.batch_skills) {
+            if (c.type === 'add_batch' && c.payload && c.payload.batch_skills) {
                 mergedSkills = mergedSkills.concat(c.payload.batch_skills);
             } else {
                 otherChanges.push(c);
@@ -898,6 +776,7 @@ document.addEventListener('DOMContentLoaded', function(){
                     showMsg('Changes submitted! Reloading to show your pending status...', 'success');
                     pendingChanges = [];
                     isSubmitting = true;
+                    try { localStorage.removeItem(EXP_KEY); } catch(ex) {}
                     /* Disable Add Skills button immediately */
                     var addBtn = document.getElementById('openSkillModal');
                     if (addBtn) { addBtn.disabled = true; addBtn.style.opacity = '0.5'; }
@@ -982,5 +861,3 @@ document.addEventListener('DOMContentLoaded', function(){
 
 
 </odoo>
-
-

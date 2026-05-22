@@ -5,134 +5,69 @@
             <t t-set="section_content">
 
                 <div id="certMessageContainer" style="display:none; margin-bottom:16px;">
-                    <div id="certSuccessMessage" class="alert alert-success alert-dismissible fade" role="alert"
-                         style="display:none;">
-                        <i class="fa fa-check-circle me-2"></i>
-                        <span id="certSuccessText"></span>
+                    <div id="certSuccessMessage" class="alert alert-success alert-dismissible fade" role="alert" style="display:none;">
+                        <i class="fa fa-check-circle me-2"></i><span id="certSuccessText"></span>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
-                    <div id="certErrorMessage" class="alert alert-danger alert-dismissible fade" role="alert"
-                         style="display:none;">
-                        <i class="fa fa-exclamation-triangle me-2"></i>
-                        <span id="certErrorText"></span>
+                    <div id="certErrorMessage" class="alert alert-danger alert-dismissible fade" role="alert" style="display:none;">
+                        <i class="fa fa-exclamation-triangle me-2"></i><span id="certErrorText"></span>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 </div>
 
                 <t t-if="pending_cert_changes">
                     <div class="card mb-4 shadow-sm border-warning" id="pendingCertCard">
-                        <div class="card-header d-flex align-items-center gap-2"
-                             style="background:#fff8e1; border-bottom:1px solid #ffe082;">
+                        <div class="card-header d-flex align-items-center gap-2" style="background:#fff8e1; border-bottom:1px solid #ffe082;">
                             <i class="fa fa-clock-o text-warning" style="font-size:16px;"></i>
                             <h5 class="mb-0" style="color:#856404;">Pending HR Approval</h5>
-                            <span class="badge bg-warning text-dark ms-2" style="font-size:12px;">
-                                <t t-esc="len(pending_cert_changes)"/>
-                                request(s)
-                            </span>
+                            <span class="badge bg-warning text-dark ms-2" style="font-size:12px;"><t t-esc="len(pending_cert_changes)"/> request(s)</span>
                         </div>
                         <div class="card-body p-0">
                             <table class="table mb-0">
                                 <thead style="background:#fffde7;">
                                     <tr>
-                                        <th style="padding:11px 18px;font-size:12px;color:#856404;text-transform:uppercase;">
-                                            Reference
-                                        </th>
-                                        <th style="padding:11px 18px;font-size:12px;color:#856404;text-transform:uppercase;">
-                                            Certificate
-                                        </th>
-                                        <th style="padding:11px 18px;font-size:12px;color:#856404;text-transform:uppercase;">
-                                            Attachment
-                                        </th>
-                                        <th style="padding:11px 18px;font-size:12px;color:#856404;text-transform:uppercase;">
-                                            From
-                                        </th>
-                                        <th style="padding:11px 18px;font-size:12px;color:#856404;text-transform:uppercase;">
-                                            To
-                                        </th>
-                                        <th style="padding:11px 18px;font-size:12px;color:#856404;text-transform:uppercase;">
-                                            Status
-                                        </th>
+                                        <th style="padding:11px 18px;font-size:12px;color:#856404;text-transform:uppercase;">Reference</th>
+                                        <th style="padding:11px 18px;font-size:12px;color:#856404;text-transform:uppercase;">Certificate</th>
+                                        <th style="padding:11px 18px;font-size:12px;color:#856404;text-transform:uppercase;">Attachment</th>
+                                        <th style="padding:11px 18px;font-size:12px;color:#856404;text-transform:uppercase;">From</th>
+                                        <th style="padding:11px 18px;font-size:12px;color:#856404;text-transform:uppercase;">To</th>
+                                        <th style="padding:11px 18px;font-size:12px;color:#856404;text-transform:uppercase;">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <t t-foreach="pending_cert_changes" t-as="pcc">
                                         <tr style="background:#fffef5;">
+                                            <td style="padding:12px 18px;vertical-align:middle;font-size:13px;"><span class="text-muted fw-semibold"><t t-esc="pcc['pcr_name']"/></span></td>
+                                            <td style="padding:12px 18px;vertical-align:middle;font-size:14px;font-weight:600;"><t t-esc="pcc['skill_name']"/></td>
                                             <td style="padding:12px 18px;vertical-align:middle;font-size:13px;">
-                                                <span class="text-muted fw-semibold">
-                                                    <t t-esc="pcc['pcr_name']"/>
-                                                </span>
+                                                <t t-if="pcc['pcr_attachment']"><a t-attf-href="/portal/attachment/preview/#{pcc['pcr_attachment'].id}" target="_blank" style="color:#1a73e8;text-decoration:none;display:inline-flex;align-items:center;gap:4px;"><i class="fa fa-file-o"></i><t t-esc="pcc['pcr_attachment'].name"/></a></t>
+                                                <t t-elif="pcc['attachment_name']"><span class="text-muted"><i class="fa fa-file-o me-1"></i><t t-esc="pcc['attachment_name']"/></span></t>
+                                                <t t-else=""><span class="text-muted">—</span></t>
                                             </td>
-                                            <td style="padding:12px 18px;vertical-align:middle;font-size:14px;font-weight:600;">
-                                                <t t-esc="pcc['skill_name']"/>
-                                            </td>
-                                            <td style="padding:12px 18px;vertical-align:middle;font-size:13px;">
-                                                <t t-if="pcc['pcr_attachment']">
-                                                    <a t-attf-href="/portal/attachment/preview/#{pcc['pcr_attachment'].id}"
-                                                       target="_blank"
-                                                       style="color:#1a73e8;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
-                                                        <i class="fa fa-file-o"></i>
-                                                        <t t-esc="pcc['pcr_attachment'].name"/>
-                                                    </a>
-                                                </t>
-                                                <t t-elif="pcc['attachment_name']">
-                                                    <span class="text-muted">
-                                                        <i class="fa fa-file-o me-1"></i>
-                                                        <t t-esc="pcc['attachment_name']"/>
-                                                    </span>
-                                                </t>
-                                                <t t-else="">
-                                                    <span class="text-muted">—</span>
-                                                </t>
-                                            </td>
-                                            <td style="padding:12px 18px;vertical-align:middle;font-size:13px;">
-                                                <t t-if="pcc['valid_from']">
-                                                    <t t-esc="pcc['valid_from']"/>
-                                                </t>
-                                                <t t-else="">—</t>
-                                            </td>
-                                            <td style="padding:12px 18px;vertical-align:middle;font-size:13px;">
-                                                <t t-if="pcc['valid_to']">
-                                                    <t t-esc="pcc['valid_to']"/>
-                                                </t>
-                                                <t t-else="">
-                                                    <span class="text-muted">Indefinite</span>
-                                                </t>
-                                            </td>
-                                            <td style="padding:12px 18px;vertical-align:middle;">
-                                                <span class="badge rounded-pill"
-                                                      style="background:#fff3cd;color:#856404;border:1px solid #ffe082;font-size:12px;padding:5px 10px;">
-                                                    <i class="fa fa-hourglass-half me-1"></i>Awaiting HR Review
-                                                </span>
-                                            </td>
+                                            <td style="padding:12px 18px;vertical-align:middle;font-size:13px;"><t t-if="pcc['valid_from']"><t t-esc="pcc['valid_from']"/></t><t t-else="">—</t></td>
+                                            <td style="padding:12px 18px;vertical-align:middle;font-size:13px;"><t t-if="pcc['valid_to']"><t t-esc="pcc['valid_to']"/></t><t t-else=""><span class="text-muted">Indefinite</span></t></td>
+                                            <td style="padding:12px 18px;vertical-align:middle;"><span class="badge rounded-pill" style="background:#fff3cd;color:#856404;border:1px solid #ffe082;font-size:12px;padding:5px 10px;"><i class="fa fa-hourglass-half me-1"></i>Awaiting HR Review</span></td>
                                         </tr>
                                     </t>
                                 </tbody>
                             </table>
                         </div>
-                        <div class="card-footer"
-                             style="background:#fffde7;border-top:1px solid #ffe082;padding:10px 18px;">
-                            <small class="text-muted"><i class="fa fa-info-circle me-1"></i>These changes are awaiting
-                                HR approval and will appear in your certifications once approved.
-                            </small>
+                        <div class="card-footer" style="background:#fffde7;border-top:1px solid #ffe082;padding:10px 18px;">
+                            <small class="text-muted"><i class="fa fa-info-circle me-1"></i>These changes are awaiting HR approval and will appear in your certifications once approved.</small>
                         </div>
                     </div>
                 </t>
 
                 <!-- INFO BANNER: explains global submit -->
-                <div class="alert alert-info mb-3" style="border-left:4px solid #0d6efd;border-radius:6px;">
-                    <i class="fa fa-info-circle me-2"></i>
-                    <strong>Tip:</strong>
-                    You can make changes in <strong>any tab</strong> (Personal, Experience, Certifications) and submit
-                    them all at once using the <strong>Submit All for HR Approval</strong> button that appears at the
-                    bottom of the screen.
-                </div>
+<!--                <div class="alert alert-info mb-3" style="border-left:4px solid #0d6efd;border-radius:6px;">-->
+<!--                    <i class="fa fa-info-circle me-2"></i>-->
+<!--                    <strong>Tip:</strong> You can make changes in <strong>any tab</strong> (Personal, Experience, Certifications) and submit them all at once using the <strong>Submit All for HR Approval</strong> button that appears at the bottom of the screen.-->
+<!--                </div>-->
 
                 <div class="card mb-4 shadow-sm">
                     <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="fa fa-certificate text-primary me-2"></i>Certifications
-                        </h5>
-                        <button type="button" class="btn btn-success" id="openAddModal"
-                                style="display:none;font-weight:600;background:#2C5B32;border-color:#2C5B32;color:white;">
+                        <h5 class="mb-0"><i class="fa fa-certificate text-primary me-2"></i>Certifications</h5>
+                        <button type="button" class="btn btn-success" id="openAddModal" style="display:none;font-weight:600;background:#2C5B32;border-color:#2C5B32;color:white;">
                             <i class="fa fa-plus me-1"></i>Add Certificate
                         </button>
                     </div>
@@ -153,65 +88,26 @@
                                         t-att-data-skill-name="cert.skill_id.name"
                                         t-att-data-from="cert.valid_from.strftime('%Y-%m-%d') if cert.valid_from else ''"
                                         t-att-data-to="cert.valid_to.strftime('%Y-%m-%d') if cert.valid_to else ''">
-                                        <td style="padding:13px 18px;vertical-align:middle;font-size:14px;"
-                                            class="col-skill-name">
-                                            <t t-esc="cert.skill_id.name"/>
-                                        </td>
+                                        <td style="padding:13px 18px;vertical-align:middle;font-size:14px;" class="col-skill-name"><t t-esc="cert.skill_id.name"/></td>
                                         <td style="padding:13px 18px;vertical-align:middle;" class="col-attachments">
                                             <t t-if="cert.certificate_attachment_ids">
                                                 <t t-foreach="cert.certificate_attachment_ids" t-as="att">
-                                                    <a t-attf-href="/portal/attachment/preview/#{att.id}"
-                                                       target="_blank" class="me-2"
-                                                       style="color:#1a73e8;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
-                                                        <i class="fa fa-file-o"></i>
-                                                        <t t-esc="att.name"/>
-                                                    </a>
+                                                    <a t-attf-href="/portal/attachment/preview/#{att.id}" target="_blank" class="me-2" style="color:#1a73e8;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;"><i class="fa fa-file-o"></i><t t-esc="att.name"/></a>
                                                 </t>
                                             </t>
-                                            <t t-else="">
-                                                <span class="text-muted" style="font-size:13px;">—</span>
-                                            </t>
+                                            <t t-else=""><span class="text-muted" style="font-size:13px;">—</span></t>
                                         </td>
-                                        <td style="padding:13px 18px;vertical-align:middle;font-size:14px;"
-                                            class="col-from">
-                                            <t t-if="cert.valid_from">
-                                                <t t-esc="cert.valid_from.strftime('%d %b %Y')"/>
-                                            </t>
-                                            <t t-else="">—</t>
-                                        </td>
-                                        <td style="padding:13px 18px;vertical-align:middle;font-size:14px;"
-                                            class="col-to">
-                                            <t t-if="cert.valid_to">
-                                                <t t-esc="cert.valid_to.strftime('%d %b %Y')"/>
-                                            </t>
-                                            <t t-else="">
-                                                <span class="text-muted">Indefinite</span>
-                                            </t>
-                                        </td>
-                                        <td class="cert-action-col"
-                                            style="display:none;padding:13px 18px;vertical-align:middle;text-align:right;white-space:nowrap;">
-                                            <button type="button"
-                                                    class="btn btn-sm btn-outline-warning ess-btn-edit-cert me-1"
-                                                    t-att-data-id="cert.id" title="Edit">
-                                                <i class="fa fa-pencil"></i>
-                                            </button>
-                                            <button type="button"
-                                                    class="btn btn-sm btn-outline-danger ess-btn-delete-cert"
-                                                    t-att-data-id="cert.id" title="Delete">
-                                                <i class="fa fa-trash"></i>
-                                            </button>
+                                        <td style="padding:13px 18px;vertical-align:middle;font-size:14px;" class="col-from"><t t-if="cert.valid_from"><t t-esc="cert.valid_from.strftime('%d %b %Y')"/></t><t t-else="">—</t></td>
+                                        <td style="padding:13px 18px;vertical-align:middle;font-size:14px;" class="col-to"><t t-if="cert.valid_to"><t t-esc="cert.valid_to.strftime('%d %b %Y')"/></t><t t-else=""><span class="text-muted">Indefinite</span></t></td>
+                                        <td class="cert-action-col" style="display:none;padding:13px 18px;vertical-align:middle;text-align:right;white-space:nowrap;">
+                                            <button type="button" class="btn btn-sm btn-outline-warning ess-btn-edit-cert me-1" t-att-data-id="cert.id" title="Edit"><i class="fa fa-pencil"></i></button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger ess-btn-delete-cert" t-att-data-id="cert.id" title="Delete"><i class="fa fa-trash"></i></button>
                                         </td>
                                     </tr>
                                 </t>
                                 <t t-if="not certifications">
                                     <tr id="certEmptyRow">
-                                        <td colspan="5" class="text-center text-muted py-4">No approved certifications
-                                            yet.
-                                            <span id="certEmptyHint" style="display:none;">Click <strong>Add
-                                                Certificate
-                                            </strong> above.
-                                            </span>
-                                        </td>
+                                        <td colspan="5" class="text-center text-muted py-4">No approved certifications yet. <span id="certEmptyHint" style="display:none;">Click <strong>Add Certificate</strong> above.</span></td>
                                     </tr>
                                 </t>
                             </tbody>
@@ -222,42 +118,29 @@
                 <div class="card shadow-sm">
                     <div class="card-body text-center">
                         <div id="certViewActions">
-                            <p class="text-muted mb-3">Last updated:
-                                <strong id="certLastUpdated">
-                                    <t t-esc="employee.write_date.strftime('%d %b, %Y at %I:%M %p') if employee.write_date else 'Never'"/>
-                                </strong>
-                            </p>
-                            <button type="button" class="btn btn-outline-primary" id="certEditBtn"
-                                    style="font-size:14px;padding:8px 20px;font-weight:600;">
+                            <p class="text-muted mb-3">Last updated: <strong id="certLastUpdated"><t t-esc="employee.write_date.strftime('%d %b, %Y at %I:%M %p') if employee.write_date else 'Never'"/></strong></p>
+                            <button type="button" class="btn btn-outline-primary" id="certEditBtn" style="font-size:14px;padding:8px 20px;font-weight:600;">
                                 <i class="fa fa-edit me-1"></i>Edit Certifications
                             </button>
                         </div>
                         <div id="certFormActions" style="display:none;">
                             <div id="certPendingBadge" style="display:none; margin-bottom:12px;">
                                 <span class="badge bg-warning text-dark" style="font-size:13px;padding:6px 12px;">
-                                    <i class="fa fa-clock-o me-1"></i>
-                                    <span id="certPendingCount">0</span>
-                                    pending change(s) — not yet submitted
+                                    <i class="fa fa-clock-o me-1"></i><span id="certPendingCount">0</span> pending change(s) — not yet submitted
                                 </span>
                             </div>
-                            <div class="alert alert-warning text-start mb-3"
-                                 style="border-left:4px solid #ffc107;border-radius:6px;">
+                            <div class="alert alert-warning text-start mb-3" style="border-left:4px solid #ffc107;border-radius:6px;">
                                 <div class="form-check d-flex align-items-start gap-2">
                                     <input type="checkbox" id="certDisclaimer" class="form-check-input mt-1"/>
                                     <label class="form-check-label" for="certDisclaimer" style="font-size:0.875rem;">
-                                        <strong>Employee Disclaimer</strong>
-                                        – I hereby confirm that the information updated by me is accurate and complete
-                                        to the best of my knowledge. I agree to keep my data updated and consent to use
-                                        of such information for employment administration and legal compliances.
+                                        <strong>Employee Disclaimer</strong> – I hereby confirm that the information updated by me is accurate and complete to the best of my knowledge. I agree to keep my data updated and consent to use of such information for employment administration and legal compliances.
                                     </label>
                                 </div>
                             </div>
-                            <button type="button" class="btn btn-secondary me-2" id="certCancelBtn"
-                                    style="background:#E74C2D;border-color:#E74C2D;color:white;">
+                            <button type="button" class="btn btn-secondary me-2" id="certCancelBtn" style="background:#E74C2D;border-color:#E74C2D;color:white;">
                                 <i class="fa fa-times me-1"></i>Cancel
                             </button>
-                            <button type="button" id="certDoneBtn" class="btn btn-primary" disabled="disabled"
-                                    style="opacity:0.6;font-weight:600;font-size:14px;padding:8px 20px;">
+                            <button type="button" id="certDoneBtn" class="btn btn-primary" disabled="disabled" style="opacity:0.6;font-weight:600;font-size:14px;padding:8px 20px;">
                                 <i class="fa fa-paper-plane me-1"></i>Submit for HR Approval
                             </button>
                         </div>
@@ -267,63 +150,31 @@
                 <!-- ADD MODAL -->
                 <div class="ess-modal-overlay" id="addModal" style="display:none;">
                     <div class="ess-modal">
-                        <div class="ess-modal-header">
-                            <h5 class="mb-0 fw-bold">Add Certification</h5>
-                            <button type="button" class="btn-close" id="closeAddModal"></button>
-                        </div>
+                        <div class="ess-modal-header"><h5 class="mb-0 fw-bold">Add Certification</h5><button type="button" class="btn-close" id="closeAddModal"></button></div>
                         <div class="ess-modal-body">
                             <form id="addCertForm" enctype="multipart/form-data">
                                 <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                                 <div class="mb-3">
-                                    <label class="form-label fw-semibold">Certificate Name
-                                        <span class="text-danger">*</span>
-                                    </label>
+                                    <label class="form-label fw-semibold">Certificate Name <span class="text-danger">*</span></label>
                                     <select name="skill_id" id="addSkillSelect" class="form-select" required="required">
                                         <option value="">— Select Certificate —</option>
-                                        <t t-foreach="certificate_skills" t-as="skill">
-                                            <option t-att-value="skill.id" t-att-data-name="skill.name">
-                                                <t t-esc="skill.name"/>
-                                            </option>
-                                        </t>
+                                        <t t-foreach="certificate_skills" t-as="skill"><option t-att-value="skill.id" t-att-data-name="skill.name"><t t-esc="skill.name"/></option></t>
                                     </select>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label fw-semibold">Attachment
-                                        <small class="text-muted fw-normal">(JPG / PDF / Word)</small>
-                                    </label>
+                                    <label class="form-label fw-semibold">Attachment <small class="text-muted fw-normal">(JPG / PDF / Word)</small></label>
                                     <div class="ess-attach-box">
-                                        <div class="ess-attach-info">
-                                            <i class="fa fa-paperclip text-muted me-2"></i>
-                                            <span id="addAttachLabel" class="text-muted" style="font-size:13px;">Nothing
-                                                attached.
-                                            </span>
-                                        </div>
-                                        <label class="ess-attach-trigger mb-0"><i class="fa fa-paperclip me-1"></i>
-                                            Attach file
-                                            <input type="file" name="attachment_file" id="addFileInput"
-                                                   accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" style="display:none;"/>
-                                        </label>
+                                        <div class="ess-attach-info"><i class="fa fa-paperclip text-muted me-2"></i><span id="addAttachLabel" class="text-muted" style="font-size:13px;">Nothing attached.</span></div>
+                                        <label class="ess-attach-trigger mb-0"><i class="fa fa-paperclip me-1"></i>Attach file<input type="file" name="attachment_file" id="addFileInput" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" style="display:none;"/></label>
                                     </div>
                                 </div>
                                 <div class="row g-3">
-                                    <div class="col-6">
-                                        <label class="form-label fw-semibold">From</label>
-                                        <input type="date" name="valid_from" id="addValidFrom" class="form-control"/>
-                                    </div>
-                                    <div class="col-6">
-                                        <label class="form-label fw-semibold">To
-                                            <small class="text-muted fw-normal">(blank = Indefinite)</small>
-                                        </label>
-                                        <input type="date" name="valid_to" id="addValidTo" class="form-control"/>
-                                    </div>
+                                    <div class="col-6"><label class="form-label fw-semibold">From</label><input type="date" name="valid_from" id="addValidFrom" class="form-control"/></div>
+                                    <div class="col-6"><label class="form-label fw-semibold">To <small class="text-muted fw-normal">(blank = Indefinite)</small></label><input type="date" name="valid_to" id="addValidTo" class="form-control"/></div>
                                 </div>
                                 <div class="mt-3 pt-3" style="border-top:1px solid #eee;display:flex;gap:10px;">
-                                    <button type="submit" class="btn btn-primary"><i class="fa fa-plus me-1"></i>Stage
-                                        Change
-                                    </button>
-                                    <button type="button" class="btn btn-secondary" id="closeAddModal2"
-                                            style="background:#E74C2D;border-color:#E74C2D;color:white;">Cancel
-                                    </button>
+                                    <button type="submit" class="btn btn-primary"><i class="fa fa-plus me-1"></i>Stage Change</button>
+                                    <button type="button" class="btn btn-secondary" id="closeAddModal2" style="background:#E74C2D;border-color:#E74C2D;color:white;">Cancel</button>
                                 </div>
                             </form>
                         </div>
@@ -333,51 +184,25 @@
                 <!-- EDIT MODAL -->
                 <div class="ess-modal-overlay" id="editModal" style="display:none;">
                     <div class="ess-modal">
-                        <div class="ess-modal-header">
-                            <h5 class="mb-0 fw-bold">Edit Certification</h5>
-                            <button type="button" class="btn-close" id="closeEditModal"></button>
-                        </div>
+                        <div class="ess-modal-header"><h5 class="mb-0 fw-bold">Edit Certification</h5><button type="button" class="btn-close" id="closeEditModal"></button></div>
                         <div class="ess-modal-body">
                             <form id="editCertForm" enctype="multipart/form-data">
                                 <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
                                 <input type="hidden" name="skill_record_id" id="editSkillRecordId"/>
+                                <div class="mb-3"><label class="form-label fw-semibold">Certificate Name</label><input type="text" id="editSkillName" class="form-control bg-light" readonly="readonly"/></div>
                                 <div class="mb-3">
-                                    <label class="form-label fw-semibold">Certificate Name</label>
-                                    <input type="text" id="editSkillName" class="form-control bg-light"
-                                           readonly="readonly"/>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label fw-semibold">Add / Replace Attachment
-                                        <small class="text-muted fw-normal">(optional)</small>
-                                    </label>
+                                    <label class="form-label fw-semibold">Add / Replace Attachment <small class="text-muted fw-normal">(optional)</small></label>
                                     <div class="ess-attach-box">
-                                        <div class="ess-attach-info">
-                                            <i class="fa fa-paperclip text-muted me-2"></i>
-                                            <span id="editAttachLabel" class="text-muted" style="font-size:13px;">Choose
-                                                a file to add or replace.
-                                            </span>
-                                        </div>
-                                        <label class="ess-attach-trigger mb-0"><i class="fa fa-paperclip me-1"></i>
-                                            Attach file
-                                            <input type="file" name="attachment_file" id="editFileInput"
-                                                   accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" style="display:none;"/>
-                                        </label>
+                                        <div class="ess-attach-info"><i class="fa fa-paperclip text-muted me-2"></i><span id="editAttachLabel" class="text-muted" style="font-size:13px;">Choose a file to add or replace.</span></div>
+                                        <label class="ess-attach-trigger mb-0"><i class="fa fa-paperclip me-1"></i>Attach file<input type="file" name="attachment_file" id="editFileInput" accept=".jpg,.jpeg,.png,.pdf,.doc,.docx" style="display:none;"/></label>
                                     </div>
                                 </div>
                                 <div class="row g-3">
-                                    <div class="col-6">
-                                        <label class="form-label fw-semibold">From</label>
-                                        <input type="date" name="valid_from" class="form-control" id="editValidFrom"/>
-                                    </div>
-                                    <div class="col-6">
-                                        <label class="form-label fw-semibold">To</label>
-                                        <input type="date" name="valid_to" class="form-control" id="editValidTo"/>
-                                    </div>
+                                    <div class="col-6"><label class="form-label fw-semibold">From</label><input type="date" name="valid_from" class="form-control" id="editValidFrom"/></div>
+                                    <div class="col-6"><label class="form-label fw-semibold">To</label><input type="date" name="valid_to" class="form-control" id="editValidTo"/></div>
                                 </div>
                                 <div class="mt-3 pt-3" style="border-top:1px solid #eee;display:flex;gap:10px;">
-                                    <button type="submit" class="btn btn-primary"><i class="fa fa-save me-1"></i>Stage
-                                        Update
-                                    </button>
+                                    <button type="submit" class="btn btn-primary"><i class="fa fa-save me-1"></i>Stage Update</button>
                                     <button type="button" class="btn btn-secondary" id="closeEditModal2">Cancel</button>
                                 </div>
                             </form>
@@ -387,29 +212,24 @@
 
                 <style>
                     .ess-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px;}
-                    .ess-modal{background:#fff;border-radius:12px;width:520px;max-width:100%;box-shadow:0 8px 40px
-                    rgba(0,0,0,0.18);overflow:hidden;}
-                    .ess-modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 24px
-                    16px;border-bottom:1px solid #eee;}
+                    .ess-modal{background:#fff;border-radius:12px;width:520px;max-width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.18);overflow:hidden;}
+                    .ess-modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 24px 16px;border-bottom:1px solid #eee;}
                     .ess-modal-body{padding:20px 24px 20px;}
-                    .ess-attach-box{border:1.5px dashed #d0d0d0;border-radius:8px;padding:10px
-                    14px;background:#fafafa;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;}
+                    .ess-attach-box{border:1.5px dashed #d0d0d0;border-radius:8px;padding:10px 14px;background:#fafafa;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;}
                     .ess-attach-info{display:flex;align-items:center;flex:1;min-width:0;}
-                    .ess-attach-trigger{display:inline-flex;align-items:center;gap:5px;color:#0d6efd;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;padding:4px
-                    10px;border:1px solid #b3d4fc;border-radius:6px;background:#e8f0fe;}
+                    .ess-attach-trigger{display:inline-flex;align-items:center;gap:5px;color:#0d6efd;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;padding:4px 10px;border:1px solid #b3d4fc;border-radius:6px;background:#e8f0fe;}
                     .ess-attach-trigger:hover{background:#d0e4ff;}
                     tr.cert-staged-add{background:#f0fff4 !important;}
                     tr.cert-staged-edit{background:#fff8e1 !important;}
                     tr.cert-staged-delete{background:#fff0f0 !important;opacity:0.6;text-decoration:line-through;}
-                    .cert-staged-badge{font-size:11px;padding:2px
-                    6px;border-radius:4px;margin-left:6px;font-weight:600;}
+                    .cert-staged-badge{font-size:11px;padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:600;}
                     .badge-staged-add{background:#d4edda;color:#155724;}
                     .badge-staged-edit{background:#fff3cd;color:#856404;}
                     .badge-staged-delete{background:#f8d7da;color:#721c24;}
                 </style>
 
                 <script>
-                    //<![CDATA[
+//<![CDATA[
 (function(){
 document.addEventListener('DOMContentLoaded', function(){
 
@@ -513,6 +333,10 @@ document.addEventListener('DOMContentLoaded', function(){
     /* ── Save before navigating to another portal tab ── */
     window.essSaveBeforeNav = function() {
         saveToStorage();
+    };
+
+    window.essHasUnsavedChanges = function() {
+        return pendingChanges.length > 0;
     };
 
     /* beforeunload removed — base template intercepts tab clicks and
@@ -914,5 +738,3 @@ document.addEventListener('DOMContentLoaded', function(){
 
 
 </odoo>
-
-

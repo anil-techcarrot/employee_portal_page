@@ -1936,21 +1936,9 @@ class PortalEmployee(http.Controller):
             # GET - pass all required variables to template
             notification = None
             try:
-                all_requests = request.env['hr.profile.change.request'].sudo().search(
-                    [('employee_id', '=', employee.id)], order='id desc'
+                latest_request = request.env['hr.profile.change.request'].sudo().search(
+                    [('employee_id', '=', employee.id)], order='id desc', limit=1
                 )
-                # Only show lock banner for personal detail PCRs, not skill/cert PCRs
-                latest_request = None
-                for req in all_requests:
-                    try:
-                        import json as _json
-                        data = _json.loads(req.submitted_data or '{}')
-                        if '_skill_change' not in data and '_cert_change' not in data and '_resume_change' not in data:
-                            latest_request = req
-                            break
-                    except Exception:
-                        latest_request = req
-                        break
                 notification = self._get_notification(latest_request)
             except Exception as e:
                 _logger.warning("Could not load notification for employee %s: %s", employee.id, str(e))
@@ -2405,7 +2393,7 @@ class PortalEmployee(http.Controller):
         employee = self._get_employee()
 
         skill_types = request.env['hr.skill.type'].sudo().search([
-            ('name', 'ilike', 'certif')
+            ('is_certification', '=', 'True')
         ])
         certificate_skills = request.env['hr.skill'].sudo().search([
             ('skill_type_id', 'in', skill_types.ids)
@@ -2516,7 +2504,7 @@ class PortalEmployee(http.Controller):
 
         certifications = request.env['hr.employee.skill'].sudo().search([
             ('employee_id', '=', employee.id),
-            ('skill_type_id.name', 'ilike', 'certif'),
+            ('skill_type_id.is_certification', '=', True),
         ], order='id desc')
 
         pending_pcrs = request.env['hr.profile.change.request'].sudo().search([

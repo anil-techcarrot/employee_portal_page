@@ -1800,7 +1800,7 @@ has_work_permit and any other restricted binary fields).
                                 </button>
                                 <button type="submit" id="personalSaveBtn" class="btn btn-primary" disabled="disabled"
                                         style="opacity:0.6;">
-                                    <i class="fa fa-check me-1"></i>Save Changes
+                                    <i class="fa fa-check me-1"></i>Submit for HR approval
                                 </button>
                             </div>
                             <div id="viewActions">
@@ -2240,9 +2240,15 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('#personalDetailsForm input[type="file"].file-upload-input').forEach(fi => { fi.setAttribute('disabled', 'disabled'); });
     const draftRaw = localStorage.getItem('profileDraft');
     const wasEditing = localStorage.getItem('profileEditActive') === '1';
+
+    window.essHasUnsavedChanges = function() {
+        return isEditMode === true;
+    };
+
     localStorage.removeItem('profileEditActive');
+    sessionStorage.removeItem('ess_discarded');
     window.addEventListener('beforeunload', function() {
-        if (isEditMode) {
+    if (isEditMode && sessionStorage.getItem('ess_discarded') !== '1') {
             const draftData = {};
             document.querySelectorAll('#personalDetailsForm input, #personalDetailsForm select').forEach(function(input) {
                 if (input.type === 'hidden' || input.type === 'file') return;

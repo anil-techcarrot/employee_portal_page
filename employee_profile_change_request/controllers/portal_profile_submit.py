@@ -165,6 +165,9 @@ class EmployeePortalProfileSubmit(http.Controller):
         type='http', auth='user', website=True, methods=['GET'],
     )
     def portal_employee_document(self, field_name, download=False, **kwargs):
+        # download param comes as string from URL
+        if isinstance(download, str):
+            download = download.lower() in ('true', '1', 'yes')
         if field_name not in ALLOWED_DOCUMENT_FIELDS:
             return request.not_found()
         employee = _get_employee()
@@ -219,10 +222,22 @@ class EmployeePortalProfileSubmit(http.Controller):
         notification = None
         state = employee.last_submission_state
 
-        pending_req = request.env['hr.profile.change.request'].sudo().search([
+        # Only lock personal tab for personal detail PCRs (not skill/cert/resume PCRs)
+        all_pending = request.env['hr.profile.change.request'].sudo().search([
             ('employee_id', '=', employee.id),
             ('state', '=', 'pending'),
-        ], order='create_date desc', limit=1)
+        ], order='create_date desc')
+
+        pending_req = None
+        for _pcr in all_pending:
+            try:
+                _data = json.loads(_pcr.submitted_data or '{}')
+                if '_skill_change' not in _data and '_cert_change' not in _data and '_resume_change' not in _data:
+                    pending_req = _pcr
+                    break
+            except Exception:
+                pending_req = _pcr
+                break
 
         if pending_req:
             if state != 'pending':
@@ -874,10 +889,3 @@ class EmployeePortalProfileSubmit(http.Controller):
                 'pending_cert_changes': pending_cert_changes,
             }
         )
-
-
-
-
-
-
-
