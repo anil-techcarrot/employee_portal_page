@@ -13,8 +13,7 @@ class HrSalaryAttachment(models.Model):
     currency_id = fields.Many2one('res.currency', string='Currency', required=True, readonly=False, related=False,
                                   default=lambda self: self.env.company.currency_id)
     date_estimated_end = fields.Date(
-        'Estimated End Date', compute='_compute_estimated_end',
-        help='Approximated end date.',
+        'Estimated End Date', help='Approximated end date.'
     )
 
     # @api.constrains('currency_id')
