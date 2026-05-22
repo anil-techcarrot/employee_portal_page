@@ -19,8 +19,7 @@
                                     </p>
                                     <hr class="my-2"/>
                                     <small class="text-muted">
-                                        <i class="fa fa-info-circle me-1"></i>
-                                        Reference:
+                                        <i class="fa fa-info-circle me-1"></i>Reference:
                                         <strong t-esc="notification['request_name']"/>
                                         — Your profile is now up to date.
                                     </small>
@@ -42,8 +41,7 @@
                                     </div>
                                     <hr class="my-2"/>
                                     <small class="text-muted">
-                                        <i class="fa fa-info-circle me-1"></i>
-                                        Reference:
+                                        <i class="fa fa-info-circle me-1"></i>Reference:
                                         <strong t-esc="notification['request_name']"/>
                                         — Please correct and resubmit.
                                     </small>
@@ -60,8 +58,7 @@
                                     </p>
                                     <hr class="my-2"/>
                                     <small class="text-muted">
-                                        <i class="fa fa-info-circle me-1"></i>
-                                        Reference:
+                                        <i class="fa fa-info-circle me-1"></i>Reference:
                                         <strong t-esc="notification['request_name']"/>
                                         — HR will notify you once reviewed.
                                     </small>
@@ -147,8 +144,6 @@
                     <!-- ============================================================ -->
                     <!--  TAB: BASIC INFO                                              -->
                     <!-- ============================================================ -->
-
-                    <!-- Basic Information -->
                     <div class="card mb-4 shadow-sm profile-tab-section" data-tab-group="basic">
                         <div class="card-header bg-light d-flex justify-content-between align-items-center">
                             <h5 class="mb-0"><i class="fa fa-user text-primary me-2"></i>Basic Information
@@ -161,7 +156,6 @@
                         </div>
                         <div class="card-body">
                             <div class="row g-3">
-                                <!-- ALWAYS READONLY -->
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">Employee First Name</label>
                                     <input type="text" class="form-control"
@@ -209,21 +203,17 @@
                                            t-att-value="employee.currency_id.name or ''" data-always-readonly="1"
                                            readonly="readonly"/>
                                 </div>
-
-                                <!-- WORK EMAIL — always readonly -->
                                 <div class="col-md-6">
-                                    <label class="form-label fw-bold">
-                                        <i class="fa fa-envelope text-muted me-1"></i>Work Email
+                                    <label class="form-label fw-bold"><i class="fa fa-envelope text-muted me-1"></i>Work
+                                        Email
                                         <span class="text-danger">*</span>
                                     </label>
                                     <input type="email" class="form-control" t-att-value="employee.work_email"
                                            data-always-readonly="1" readonly="readonly"/>
                                 </div>
-
-                                <!-- WORK PHONE — editable -->
                                 <div class="col-md-6">
-                                    <label class="form-label fw-bold">
-                                        <i class="fa fa-phone text-muted me-1"></i>Work Phone
+                                    <label class="form-label fw-bold"><i class="fa fa-phone text-muted me-1"></i>Work
+                                        Phone
                                     </label>
                                     <input type="tel" name="work_phone" class="form-control"
                                            t-att-value="portal_overlay.get('work_phone') or employee.work_phone or ''"
@@ -231,8 +221,6 @@
                                     <div class="invalid-feedback"></div>
                                     <small class="text-muted">Digits only, optional leading + for country code</small>
                                 </div>
-
-                                <!-- ══ NATIONALITY — dropdown (editable) ══ -->
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Nationality</label>
                                     <select name="country_id" class="form-select" disabled="disabled">
@@ -257,14 +245,12 @@
                         </div>
                         <div class="card-body">
                             <div class="row g-3">
-                                <!-- Legal Name — editable -->
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Legal Name</label>
                                     <input name="legal_name" class="form-control"
                                            t-att-value="portal_overlay.get('legal_name') or employee.legal_name or ''"
                                            readonly="readonly"/>
                                 </div>
-                                <!-- Place of Birth — editable -->
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Place of Birth</label>
                                     <input name="place_of_birth" class="form-control"
@@ -273,32 +259,32 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Marital Status</label>
-                                    <select name="marital" class="form-select"
-                                            disabled="disabled">
+                                    <t t-set="marital_val"
+                                       t-value="portal_overlay.get('marital') or employee.marital or ''"/>
+                                    <select name="marital" class="form-select" disabled="disabled">
                                         <option value="">Select Status</option>
                                         <option value="single"
-                                                t-att-selected="'selected' if employee.marital == 'single' else None">
+                                                t-att-selected="'selected' if marital_val == 'single' else None">
                                             Single
                                         </option>
                                         <option value="married"
-                                                t-att-selected="'selected' if employee.marital == 'married' else None">
+                                                t-att-selected="'selected' if marital_val == 'married' else None">
                                             Married
                                         </option>
                                         <option value="cohabitant"
-                                                t-att-selected="'selected' if employee.marital == 'cohabitant' else None">
+                                                t-att-selected="'selected' if marital_val == 'cohabitant' else None">
                                             Legal Cohabitant
                                         </option>
                                         <option value="widower"
-                                                t-att-selected="'selected' if employee.marital == 'widower' else None">
+                                                t-att-selected="'selected' if marital_val == 'widower' else None">
                                             Widower
                                         </option>
                                         <option value="divorced"
-                                                t-att-selected="'selected' if employee.marital == 'divorced' else None">
+                                                t-att-selected="'selected' if marital_val == 'divorced' else None">
                                             Divorced
                                         </option>
                                     </select>
                                 </div>
-
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Nationality At Birth</label>
                                     <select name="nationality_at_birth_id" class="form-select" disabled="disabled">
@@ -313,7 +299,8 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">
-                                        <i class="fa fa-venus-mars text-muted me-1"></i>Gender
+                                        <i class="fa fa-venus-mars text-muted me-1"></i>
+                                        Gender
                                     </label>
                                     <select name="sex" class="form-select" data-always-readonly="1" disabled="disabled">
                                         <option value="">Select Gender</option>
@@ -328,22 +315,19 @@
                                         </option>
                                     </select>
                                 </div>
-
-                                <!-- DATE OF BIRTH — editable -->
                                 <div class="col-md-6">
-                                    <label class="form-label fw-bold">
-                                        <i class="fa fa-calendar text-muted me-1"></i>Date of Birth
+                                    <label class="form-label fw-bold"><i class="fa fa-calendar text-muted me-1"></i>Date
+                                        of Birth
                                     </label>
                                     <input type="date" name="birthday" class="form-control"
                                            t-att-value="employee.birthday"
                                            readonly="readonly" data-validation="past-date"/>
                                     <div class="invalid-feedback"></div>
                                 </div>
-
-                                <!-- Personal Email -->
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">
-                                        <i class="fa fa-envelope text-muted me-1"></i>Personal Email
+                                        <i class="fa fa-envelope text-muted me-1"></i>
+                                        Personal Email
                                     </label>
                                     <input type="email" name="private_email" class="form-control"
                                            t-att-value="portal_overlay.get('private_email') or employee.private_email or ''"
@@ -352,7 +336,8 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">
-                                        <i class="fa fa-phone text-muted me-1"></i>Personal Phone
+                                        <i class="fa fa-phone text-muted me-1"></i>
+                                        Personal Phone
                                     </label>
                                     <input type="tel" name="private_phone" class="form-control"
                                            t-att-value="portal_overlay.get('private_phone') or employee.private_phone or ''"
@@ -368,8 +353,6 @@
                                     <div class="invalid-feedback"></div>
                                     <small class="text-muted">Digits only, optional leading + for country code</small>
                                 </div>
-
-                                <!-- Blood Group -->
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Blood Group</label>
                                     <select name="blood_group" class="form-select" disabled="disabled">
@@ -406,7 +389,6 @@
                                         </option>
                                     </select>
                                 </div>
-
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Religion</label>
                                     <select name="religion" class="form-select" disabled="disabled">
@@ -426,27 +408,26 @@
                     <!-- Identity Documents -->
                     <div class="card mb-4 shadow-sm profile-tab-section" data-tab-group="basic"
                          id="identityDocsSection">
-
                         <div class="card-header bg-light">
                             <h5 class="mb-0"><i class="fa fa-id-card text-primary me-2"></i>Identity Documents
                             </h5>
                         </div>
                         <div class="card-body">
                             <div class="row g-3">
-                                <!-- Passport Number — editable -->
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">
-                                        <i class="fa fa-passport text-muted me-1"></i>Passport Number
+                                        <i class="fa fa-passport text-muted me-1"></i>
+                                        Passport Number
                                     </label>
                                     <input type="text" name="passport_id" class="form-control"
                                            t-att-value="portal_overlay.get('passport_id') or employee.passport_id or ''"
                                            readonly="readonly" data-validation="alphanumeric"/>
                                     <div class="invalid-feedback"></div>
                                 </div>
-                                <!-- Passport Issuing Country -->
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">
-                                        <i class="fa fa-globe text-muted me-1"></i>Passport Issuing Country
+                                        <i class="fa fa-globe text-muted me-1"></i>
+                                        Passport Issuing Country
                                     </label>
                                     <select name="issue_countries_id" class="form-select" disabled="disabled">
                                         <option value="">-- Select Country --</option>
@@ -459,27 +440,25 @@
                                     </select>
                                     <div class="invalid-feedback"></div>
                                 </div>
-                                <!-- Passport Issue Date -->
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">
-                                        <i class="fa fa-calendar text-muted me-1"></i>Passport Issue Date
+                                        <i class="fa fa-calendar text-muted me-1"></i>
+                                        Passport Issue Date
                                     </label>
                                     <input type="date" name="issue_date" class="form-control"
                                            t-att-value="portal_overlay.get('issue_date') or employee.issue_date or ''"
                                            readonly="readonly" data-validation="past-date"/>
                                     <div class="invalid-feedback"></div>
                                 </div>
-                                <!-- Passport Expiry Date -->
                                 <div class="col-md-6">
-                                    <label class="form-label fw-bold">
-                                        <i class="fa fa-calendar-times text-muted me-1"></i>Passport Expiry Date
+                                    <label class="form-label fw-bold"><i
+                                            class="fa fa-calendar-times text-muted me-1"></i>Passport Expiry Date
                                     </label>
                                     <input type="date" name="expiry_date" class="form-control"
                                            t-att-value="portal_overlay.get('expiry_date') or (employee.expiry_date.strftime('%Y-%m-%d') if employee.expiry_date else '')"
                                            readonly="readonly" data-validation="future-date"/>
                                     <div class="invalid-feedback"></div>
                                 </div>
-                                <!-- Identification No -->
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Identification No</label>
                                     <input name="identification_id" class="form-control"
@@ -488,7 +467,6 @@
                                     <div class="invalid-feedback"></div>
                                     <small class="text-muted">Letters and digits only</small>
                                 </div>
-                                <!-- FIX Issue 1: Aadhar with portal_overlay fallback -->
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Aadhar Number</label>
                                     <input type="text" name="aadhar_no" class="form-control"
@@ -497,7 +475,6 @@
                                     <div class="invalid-feedback"></div>
                                     <small class="text-muted">12 digits only</small>
                                 </div>
-                                <!-- FIX Issue 1: PAN with portal_overlay fallback -->
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">PAN</label>
                                     <input type="text" name="pan" class="form-control"
@@ -529,7 +506,8 @@
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">
-                                        <i class="fa fa-id-badge text-muted me-1"></i>Emirates ID
+                                        <i class="fa fa-id-badge text-muted me-1"></i>
+                                        Emirates ID
                                     </label>
                                     <input type="text" name="emirates_id_number" class="form-control"
                                            t-att-value="portal_overlay.get('emirates_id_number') or employee.emirates_id_number or ''"
@@ -537,10 +515,9 @@
                                     <div class="invalid-feedback"></div>
                                     <small class="text-muted">Enter your unique 15-digit UAE Emirates ID number</small>
                                 </div>
-                                <!-- Emirates ID Expiry -->
                                 <div class="col-md-6">
-                                    <label class="form-label fw-bold">
-                                        <i class="fa fa-calendar-times text-muted me-1"></i>Emirates ID Expiry
+                                    <label class="form-label fw-bold"><i
+                                            class="fa fa-calendar-times text-muted me-1"></i>Emirates ID Expiry
                                     </label>
                                     <input type="date" name="emirates_expiry_date" class="form-control"
                                            t-att-value="portal_overlay.get('emirates_expiry_date') or employee.emirates_expiry_date or ''"
@@ -567,7 +544,7 @@
                         </div>
                     </div>
 
-                    <!-- Permanent Address — FIX Issue 1: unique IDs for country/state dropdowns -->
+                    <!-- Permanent Address -->
                     <div class="card mb-4 shadow-sm profile-tab-section" data-tab-group="basic">
                         <div class="card-header bg-light">
                             <h5 class="mb-0"><i class="fa fa-address-book text-primary me-2"></i>Permanent Address
@@ -577,7 +554,8 @@
                             <div class="row g-3">
                                 <div class="col-md-12">
                                     <label class="form-label fw-bold">
-                                        <i class="fa fa-map-marker text-muted me-1"></i>Address Line 1
+                                        <i class="fa fa-map-marker text-muted me-1"></i>
+                                        Address Line 1
                                     </label>
                                     <input type="text" name="private_street" class="form-control"
                                            t-att-value="portal_overlay.get('private_street') or employee.private_street or ''"
@@ -585,7 +563,8 @@
                                 </div>
                                 <div class="col-md-12">
                                     <label class="form-label fw-bold">
-                                        <i class="fa fa-map-marker text-muted me-1"></i>Address Line 2
+                                        <i class="fa fa-map-marker text-muted me-1"></i>
+                                        Address Line 2
                                     </label>
                                     <input type="text" name="private_street2" class="form-control"
                                            t-att-value="portal_overlay.get('private_street2') or employee.private_street2 or ''"
@@ -598,39 +577,56 @@
                                            readonly="readonly"/>
                                 </div>
 
-                                <!-- FIX Issue 2: unique id for permanent address country -->
+                                <!--
+                                    FIX CHANGE 1: Permanent Address Country
+                                    OLD BUG: t-att-selected used employee.countries_id.id (work location country — WRONG field)
+                                    FIX: Uses employee.private_country_id.id (correct permanent address country field)
+                                    Also supports portal_overlay pre-selection for pending/rejected state display.
+                                -->
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Country</label>
+                                    <t t-set="perm_country_id"
+                                       t-value="int(portal_overlay.get('private_country_id') or 0) if portal_overlay.get('private_country_id') else (employee.private_country_id.id if employee.private_country_id else 0)"/>
                                     <select name="private_country_id" id="permanentCountryDropdown"
                                             class="form-select" disabled="disabled"
                                             onchange="loadStatesByCountry(this.value, 'permanentStateDropdown')">
                                         <option value="">-- Select Country --</option>
                                         <t t-foreach="countries" t-as="country">
                                             <option t-att-value="country.id"
-                                                    t-att-selected="'selected' if country.id == employee.countries_id.id else None">
+                                                    t-att-selected="'selected' if country.id == perm_country_id else None">
                                                 <t t-esc="country.name"/>
                                             </option>
                                         </t>
                                     </select>
                                 </div>
-                                <!-- FIX Issue 2: unique id for permanent address state -->
+
+                                <!--
+                                    FIX CHANGE 2: Permanent Address State
+                                    OLD BUG: data-saved-country used employee.countries_id.id (wrong — work location country)
+                                             data-saved-value always used employee.private_state_id.id (ignored portal_overlay)
+                                    FIX: data-saved-country now uses employee.private_country_id.id (correct field)
+                                         data-saved-value prefers portal_overlay value so pending/rejected state shows correctly
+                                -->
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">State</label>
+                                    <t t-set="perm_state_saved"
+                                       t-value="int(portal_overlay.get('private_state_id') or 0) if portal_overlay.get('private_state_id') else (employee.private_state_id.id if employee.private_state_id else 0)"/>
+                                    <t t-set="perm_country_saved"
+                                       t-value="int(portal_overlay.get('private_country_id') or 0) if portal_overlay.get('private_country_id') else (employee.private_country_id.id if employee.private_country_id else 0)"/>
                                     <select name="private_state_id" id="permanentStateDropdown"
                                             class="form-select" disabled="disabled"
-                                            t-att-data-saved-value="employee.private_state_id.id if employee.private_state_id else 0">
+                                            t-att-data-saved-value="perm_state_saved"
+                                            t-att-data-saved-country="perm_country_saved">
                                         <option value="">-- Select State --</option>
                                         <t t-if="employee.private_state_id">
-                                            <option t-att-value="employee.private_state_id.id"
-                                                    selected="selected">
+                                            <option t-att-value="employee.private_state_id.id" selected="selected">
                                                 <t t-esc="employee.private_state_id.name"/>
                                             </option>
                                         </t>
                                     </select>
-                                    <small class="text-muted">
-                                        Select Country first to load states
-                                    </small>
+                                    <small class="text-muted">Select Country first to load states</small>
                                 </div>
+
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">ZIP/Postal Code</label>
                                     <input type="text" name="private_zip" class="form-control"
@@ -682,7 +678,6 @@
                     <!-- ============================================================ -->
                     <!--  TAB: PROFESSIONAL                                            -->
                     <!-- ============================================================ -->
-
                     <div class="card mb-4 shadow-sm profile-tab-section" data-tab-group="professional">
                         <div class="card-header bg-light d-flex justify-content-between align-items-center">
                             <h5 class="mb-0"><i class="fa fa-briefcase text-primary me-2"></i>Work Information
@@ -731,7 +726,6 @@
                                            t-att-value="employee.employment_status_id.name if employee.employment_status_id else ''"
                                            data-always-readonly="1" readonly="readonly"/>
                                 </div>
-
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Practice</label>
                                     <input type="text" class="form-control"
@@ -754,7 +748,7 @@
                         </div>
                     </div>
 
-                    <!-- Work Location — FIX Issue 2: unique dropdown IDs -->
+                    <!-- Work Location -->
                     <div class="card mb-4 shadow-sm profile-tab-section" data-tab-group="professional">
                         <div class="card-header bg-light">
                             <h5 class="mb-0"><i class="fa fa-map-marker text-primary me-2"></i>Work Location
@@ -791,7 +785,6 @@
                                            t-att-value="portal_overlay.get('city') or employee.city or ''"
                                            readonly="readonly"/>
                                 </div>
-                                <!-- FIX Issue 2: unique id workLocationCountryDropdown -->
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Country</label>
                                     <select name="countries_id" id="workLocationCountryDropdown"
@@ -806,23 +799,20 @@
                                         </t>
                                     </select>
                                 </div>
-                                <!-- FIX Issue 2: unique id workLocationStateDropdown -->
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">State</label>
                                     <select name="states_id" id="workLocationStateDropdown"
                                             class="form-select" disabled="disabled"
-                                            t-att-data-saved-value="employee.states_id.id if employee.states_id else 0">
+                                            t-att-data-saved-value="employee.states_id.id if employee.states_id else 0"
+                                            t-att-data-saved-country="employee.countries_id.id if employee.countries_id else 0">
                                         <option value="">-- Select State --</option>
                                         <t t-if="employee.states_id">
-                                            <option t-att-value="employee.states_id.id"
-                                                    selected="selected">
+                                            <option t-att-value="employee.states_id.id" selected="selected">
                                                 <t t-esc="employee.states_id.name"/>
                                             </option>
                                         </t>
                                     </select>
-                                    <small class="text-muted">
-                                        Select Country first to load states
-                                    </small>
+                                    <small class="text-muted">Select Country first to load states</small>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Zip Code</label>
@@ -952,7 +942,7 @@
                         </div>
                     </div>
 
-                    <!-- FIX Issue 1: Career Details — added portal_overlay fallbacks -->
+                    <!-- Career Details -->
                     <div class="card mb-4 shadow-sm profile-tab-section" data-tab-group="professional">
                         <div class="card-header bg-light">
                             <h5 class="mb-0"><i class="fa fa-history text-primary me-2"></i>Career Details
@@ -1075,7 +1065,6 @@
                     <!-- ============================================================ -->
                     <!--  TAB: FAMILY                                                  -->
                     <!-- ============================================================ -->
-
                     <div class="card mb-4 shadow-sm profile-tab-section" data-tab-group="family">
                         <div class="card-header bg-light d-flex justify-content-between align-items-center">
                             <h5 class="mb-0"><i class="fa fa-ambulance text-primary me-2"></i>Emergency Contact
@@ -1122,7 +1111,7 @@
                         </div>
                     </div>
 
-                    <!-- FIX Issue 1: Emergency Contact Person — added portal_overlay fallbacks, all fields present -->
+                    <!-- Emergency Contact Person -->
                     <div class="card mb-4 shadow-sm profile-tab-section" data-tab-group="family">
                         <div class="card-header bg-light">
                             <h5 class="mb-0"><i class="fa fa-ambulance text-primary me-2"></i>Emergency Contact Person
@@ -1136,12 +1125,43 @@
                                            t-att-value="portal_overlay.get('emergency_contact_person_name') or employee.emergency_contact_person_name or ''"
                                            readonly="readonly"/>
                                 </div>
+
+                                <!--
+                                    FIX CHANGE 3: Relationship with Employee
+                                    Field: relationship_with_emp_id = fields.Many2one('employee.relationship')
+                                    OLD BUG: Was a plain text <input> — wrong for Many2one field.
+                                             Submitting text string can't save to a Many2one field.
+                                    FIX: Changed to <select> dropdown using 'relationships' context variable
+                                         (loaded in controller from employee.relationship model).
+                                         portal_overlay pre-selection handled via rel_selected_id.
+                                         Fallback to readonly text if relationships list is empty.
+                                -->
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Relationship with Employee</label>
-                                    <input type="text" class="form-control"
-                                           t-att-value="employee.relationship_with_emp_id.name if employee.relationship_with_emp_id else ''"
-                                           readonly="readonly"/>
+                                    <t t-set="rel_overlay_id"
+                                       t-value="int(portal_overlay.get('relationship_with_emp_id') or 0) if portal_overlay.get('relationship_with_emp_id') else 0"/>
+                                    <t t-set="rel_current_id"
+                                       t-value="employee.relationship_with_emp_id.id if employee.relationship_with_emp_id else 0"/>
+                                    <t t-set="rel_selected_id"
+                                       t-value="rel_overlay_id if rel_overlay_id else rel_current_id"/>
+                                    <t t-if="relationships">
+                                        <select name="relationship_with_emp_id" class="form-select" disabled="disabled">
+                                            <option value="">-- Select Relationship --</option>
+                                            <t t-foreach="relationships" t-as="rel">
+                                                <option t-att-value="rel.id"
+                                                        t-att-selected="'selected' if rel.id == rel_selected_id else None">
+                                                    <t t-esc="rel.name"/>
+                                                </option>
+                                            </t>
+                                        </select>
+                                    </t>
+                                    <t t-else="">
+                                        <input type="text" class="form-control"
+                                               t-att-value="employee.relationship_with_emp_id.name if employee.relationship_with_emp_id else ''"
+                                               readonly="readonly"/>
+                                    </t>
                                 </div>
+
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Contact Person Phone</label>
                                     <input type="tel" name="emergency_contact_person_phone" class="form-control"
@@ -1166,8 +1186,8 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Relationship with Employee (1)</label>
-                                    <input type="text" class="form-control"
-                                           t-att-value="employee.second_relation_with_employee or ''"
+                                    <input type="text" name="second_relation_with_employee" class="form-control"
+                                           t-att-value="portal_overlay.get('second_relation_with_employee') or employee.second_relation_with_employee or ''"
                                            readonly="readonly"/>
                                 </div>
                                 <div class="col-md-6">
@@ -1211,7 +1231,6 @@
                                            t-att-value="portal_overlay.get('spouse_passport_no') or employee.spouse_passport_no or ''"
                                            readonly="readonly" data-validation="alphanumeric"/>
                                     <div class="invalid-feedback"></div>
-                                    <small class="text-muted">Letters and digits only</small>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Passport Issue Date</label>
@@ -1229,9 +1248,18 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Passport Issuing Country</label>
-                                    <input type="text" class="form-control"
-                                           t-att-value="employee.spouse_passport_issuing_countries_id.name if employee.spouse_passport_issuing_countries_id else ''"
-                                           readonly="readonly"/>
+                                    <t t-set="spouse_ppt_country_id"
+                                       t-value="int(portal_overlay.get('spouse_passport_issuing_countries_id') or 0) if portal_overlay.get('spouse_passport_issuing_countries_id') else (employee.spouse_passport_issuing_countries_id.id if employee.spouse_passport_issuing_countries_id else 0)"/>
+                                    <select name="spouse_passport_issuing_countries_id" class="form-select"
+                                            disabled="disabled">
+                                        <option value="">-- Select Country --</option>
+                                        <t t-foreach="countries" t-as="country">
+                                            <option t-att-value="country.id"
+                                                    t-att-selected="'selected' if country.id == spouse_ppt_country_id else None">
+                                                <t t-esc="country.name"/>
+                                            </option>
+                                        </t>
+                                    </select>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Visa No</label>
@@ -1239,7 +1267,6 @@
                                            t-att-value="portal_overlay.get('spouse_visa_no') or employee.spouse_visa_no or ''"
                                            readonly="readonly" data-validation="alphanumeric"/>
                                     <div class="invalid-feedback"></div>
-                                    <small class="text-muted">Letters and digits only</small>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Visa Expiration Date</label>
@@ -1254,7 +1281,6 @@
                                            t-att-value="portal_overlay.get('spouse_emirates_id_no') or employee.spouse_emirates_id_no or ''"
                                            readonly="readonly" data-validation="emirates-id"/>
                                     <div class="invalid-feedback"></div>
-                                    <small class="text-muted">Enter your unique 15-digit UAE Emirates ID number</small>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Emirates Issue Date</label>
@@ -1304,18 +1330,20 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Child 1 Gender</label>
+                                    <t t-set="child1_gender_val"
+                                       t-value="portal_overlay.get('dependent_child_gender_1') or employee.dependent_child_gender_1 or ''"/>
                                     <select name="dependent_child_gender_1" class="form-select" disabled="disabled">
                                         <option value="">Select Gender</option>
                                         <option value="male"
-                                                t-att-selected="'selected' if employee.dependent_child_gender_1 == 'male' else None">
+                                                t-att-selected="'selected' if child1_gender_val == 'male' else None">
                                             Male
                                         </option>
                                         <option value="female"
-                                                t-att-selected="'selected' if employee.dependent_child_gender_1 == 'female' else None">
+                                                t-att-selected="'selected' if child1_gender_val == 'female' else None">
                                             Female
                                         </option>
                                         <option value="other"
-                                                t-att-selected="'selected' if employee.dependent_child_gender_1 == 'other' else None">
+                                                t-att-selected="'selected' if child1_gender_val == 'other' else None">
                                             Other
                                         </option>
                                     </select>
@@ -1326,7 +1354,6 @@
                                            t-att-value="portal_overlay.get('dependent_child_passport_no') or employee.dependent_child_passport_no or ''"
                                            readonly="readonly" data-validation="alphanumeric"/>
                                     <div class="invalid-feedback"></div>
-                                    <small class="text-muted">Letters and digits only</small>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Child 1 Passport Issue Date</label>
@@ -1345,12 +1372,14 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Child 1 Passport Issuing Country</label>
+                                    <t t-set="child1_ppt_country_id"
+                                       t-value="int(portal_overlay.get('dependent_child_passport_issuing_countries_1_id') or 0) if portal_overlay.get('dependent_child_passport_issuing_countries_1_id') else (employee.dependent_child_passport_issuing_countries_1_id.id if employee.dependent_child_passport_issuing_countries_1_id else 0)"/>
                                     <select name="dependent_child_passport_issuing_countries_1_id" class="form-select"
                                             disabled="disabled">
                                         <option value="">-- Select Country --</option>
                                         <t t-foreach="all_countries" t-as="country">
                                             <option t-att-value="country.id"
-                                                    t-att-selected="'selected' if country.id == employee.dependent_child_passport_issuing_countries_1_id.id else None">
+                                                    t-att-selected="'selected' if country.id == child1_ppt_country_id else None">
                                                 <t t-esc="country.name"/>
                                             </option>
                                         </t>
@@ -1362,7 +1391,6 @@
                                            t-att-value="portal_overlay.get('dependent_child_visa_no_1') or employee.dependent_child_visa_no_1 or ''"
                                            readonly="readonly" data-validation="alphanumeric"/>
                                     <div class="invalid-feedback"></div>
-                                    <small class="text-muted">Letters and digits only</small>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Child 1 Visa Expiration Date</label>
@@ -1378,7 +1406,6 @@
                                            t-att-value="portal_overlay.get('dependent_child_emirates_id_no_1') or employee.dependent_child_emirates_id_no_1 or ''"
                                            readonly="readonly" data-validation="emirates-id"/>
                                     <div class="invalid-feedback"></div>
-                                    <small class="text-muted">Enter your unique 15-digit UAE Emirates ID number</small>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Child 1 Emirates ID Issue Date</label>
@@ -1434,8 +1461,6 @@
                                            t-att-value="employee.dependent_status or ''" data-always-readonly="1"
                                            readonly="readonly"/>
                                 </div>
-
-                                <!-- ── Father Group ── -->
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Father Name</label>
                                     <input type="text" name="father_name" class="form-control"
@@ -1461,8 +1486,6 @@
                                         </t>
                                     </select>
                                 </div>
-
-                                <!-- ── Mother Group ── -->
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Mother Name</label>
                                     <input type="text" name="mother_name" class="form-control"
@@ -1524,8 +1547,6 @@
                     <!-- ============================================================ -->
                     <!--  TAB: EDUCATION                                               -->
                     <!-- ============================================================ -->
-
-                    <!-- FIX Issue 1: Education — added portal_overlay fallbacks and name attributes -->
                     <div class="card mb-4 shadow-sm profile-tab-section" data-tab-group="education">
                         <div class="card-header bg-light d-flex justify-content-between align-items-center">
                             <h5 class="mb-0"><i class="fa fa-graduation-cap text-primary me-2"></i>Employee Education
@@ -1577,8 +1598,7 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Year of Passing</label>
-                                    <select name="year_of_passing" class="form-select"
-                                             disabled="disabled">
+                                    <select name="year_of_passing" class="form-select" disabled="disabled">
                                         <option value="">-- Select Year --</option>
                                         <t t-foreach="range(2030, 1959, -1)" t-as="yr">
                                             <option t-att-value="str(yr)"
@@ -1608,8 +1628,16 @@
                     <!-- ============================================================ -->
                     <!--  TAB: DOCUMENTS                                               -->
                     <!-- ============================================================ -->
+                    <!--
+=======================================================================
+COMPLETE DOCUMENTS TAB CARD — replace the entire documents tab card
+in portal_employee_profile_personal.xml
 
-                    <!-- FIX Issue 1: Documents — files uploaded and shown properly -->
+ALL document URLs now use /my/employee/document/<field> route
+which reads with sudo() to bypass ACL restrictions (fixes 404 on
+has_work_permit and any other restricted binary fields).
+=======================================================================
+-->
                     <div class="card mb-4 shadow-sm profile-tab-section" data-tab-group="documents">
                         <div class="card-header bg-light d-flex justify-content-between align-items-center">
                             <h5 class="mb-0"><i class="fa fa-folder-open text-primary me-2"></i>Document Management
@@ -1622,85 +1650,123 @@
                         </div>
                         <div class="card-body">
                             <div class="row g-3">
+
+                                <!-- Emirates ID Copy -->
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">
-                                        <i class="fa fa-id-card text-muted me-1"></i>
-                                        Emirates ID Copy
+                                        <i class="fa fa-id-card text-muted me-1"></i>Emirates ID Copy
                                     </label>
                                     <t t-if="employee.emirates_id_file">
                                         <div class="mb-2">
-                                            <a t-att-href="'/web/content/hr.employee/%s/emirates_id_file?download=true' % employee.id"
-                                               class="btn btn-sm btn-outline-primary" target="_blank">
-                                                <i class="fa fa-download me-1"></i>Download Current File
+                                            <a href="/my/employee/document/emirates_id_file?download=True"
+                                               class="btn btn-sm btn-outline-primary me-1" target="_blank">
+                                                <i class="fa fa-download me-1"></i>Download
+                                            </a>
+                                            <a href="/my/employee/document/emirates_id_file"
+                                               class="btn btn-sm btn-outline-secondary" target="_blank">
+                                                <i class="fa fa-eye me-1"></i>View
                                             </a>
                                         </div>
                                     </t>
                                     <t t-else="">
-                                        <p class="text-muted small mb-1"><i class="fa fa-info-circle me-1"></i>No file uploaded yet.</p>
+                                        <p class="text-muted small mb-1"><i class="fa fa-info-circle me-1"></i>No file
+                                            uploaded yet.
+                                        </p>
                                     </t>
                                     <input type="file" name="emirates_id_file" class="form-control file-upload-input"
                                            accept=".pdf,.jpg,.jpeg,.png" disabled="disabled"/>
                                     <small class="text-muted">PDF, JPG, PNG accepted</small>
                                 </div>
+
+                                <!-- Passport Copy -->
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">
-                                        <i class="fa fa-passport text-muted me-1"></i>
-                                        Passport Copy
+                                        <i class="fa fa-passport text-muted me-1"></i>Passport Copy
                                     </label>
                                     <t t-if="employee.passport_file">
                                         <div class="mb-2">
-                                            <a t-att-href="'/web/content/hr.employee/%s/passport_file?download=true' % employee.id"
-                                               class="btn btn-sm btn-outline-primary" target="_blank">
-                                                <i class="fa fa-download me-1"></i>Download Current File
+                                            <a href="/my/employee/document/passport_file?download=True"
+                                               class="btn btn-sm btn-outline-primary me-1" target="_blank">
+                                                <i class="fa fa-download me-1"></i>Download
+                                            </a>
+                                            <a href="/my/employee/document/passport_file"
+                                               class="btn btn-sm btn-outline-secondary" target="_blank">
+                                                <i class="fa fa-eye me-1"></i>View
                                             </a>
                                         </div>
                                     </t>
                                     <t t-else="">
-                                        <p class="text-muted small mb-1"><i class="fa fa-info-circle me-1"></i>No file uploaded yet.</p>
+                                        <p class="text-muted small mb-1"><i class="fa fa-info-circle me-1"></i>No file
+                                            uploaded yet.
+                                        </p>
                                     </t>
                                     <input type="file" name="passport_file" class="form-control file-upload-input"
                                            accept=".pdf,.jpg,.jpeg,.png" disabled="disabled"/>
                                     <small class="text-muted">PDF, JPG, PNG accepted</small>
                                 </div>
+
+                                <!-- Other Documents -->
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">
-                                        <i class="fa fa-file-text text-muted me-1"></i>
-                                        Other Documents
+                                        <i class="fa fa-file-text text-muted me-1"></i>Other Documents
                                     </label>
                                     <t t-if="employee.other_documents">
                                         <div class="mb-2">
-                                            <a t-att-href="'/web/content/hr.employee/%s/other_documents?download=true' % employee.id"
-                                               class="btn btn-sm btn-outline-primary" target="_blank">
-                                                <i class="fa fa-download me-1"></i>Download Current File
+                                            <a href="/my/employee/document/other_documents?download=True"
+                                               class="btn btn-sm btn-outline-primary me-1" target="_blank">
+                                                <i class="fa fa-download me-1"></i>Download
+                                            </a>
+                                            <a href="/my/employee/document/other_documents"
+                                               class="btn btn-sm btn-outline-secondary" target="_blank">
+                                                <i class="fa fa-eye me-1"></i>View
                                             </a>
                                         </div>
                                     </t>
                                     <t t-else="">
-                                        <p class="text-muted small mb-1"><i class="fa fa-info-circle me-1"></i>No file uploaded yet.</p>
+                                        <p class="text-muted small mb-1"><i class="fa fa-info-circle me-1"></i>No file
+                                            uploaded yet.
+                                        </p>
                                     </t>
                                     <input type="file" name="other_documents" class="form-control file-upload-input"
                                            accept=".pdf,.jpg,.jpeg,.png" disabled="disabled"/>
                                     <small class="text-muted">PDF, JPG, PNG accepted</small>
                                 </div>
+
+                                <!-- Work Permit -->
+                                <!--
+                                    FIX Issue 1: Work Permit 404/ACL Error
+                                    OLD: /web/content/hr.employee/ID/has_work_permit
+                                         → Fails with "Access Denied by ACLs" for portal users
+                                    NEW: /my/employee/document/has_work_permit
+                                         → Uses sudo() in our controller to read + stream the file
+                                         → No ACL error, works for all portal users
+                                -->
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">
                                         <i class="fa fa-file text-muted me-1"></i>Work Permit
                                     </label>
                                     <t t-if="employee.has_work_permit">
                                         <div class="mb-2">
-                                            <a t-att-href="'/web/content/hr.employee/%s/has_work_permit?download=true' % employee.id"
-                                               target="_blank" class="btn btn-sm btn-outline-primary">
-                                                <i class="fa fa-download me-1"></i>Download Current File
+                                            <a href="/my/employee/document/has_work_permit?download=True"
+                                               class="btn btn-sm btn-outline-primary me-1" target="_blank">
+                                                <i class="fa fa-download me-1"></i>Download
+                                            </a>
+                                            <a href="/my/employee/document/has_work_permit"
+                                               class="btn btn-sm btn-outline-secondary" target="_blank">
+                                                <i class="fa fa-eye me-1"></i>View
                                             </a>
                                         </div>
                                     </t>
                                     <t t-else="">
-                                        <p class="text-muted small mb-1"><i class="fa fa-info-circle me-1"></i>No file uploaded yet.</p>
+                                        <p class="text-muted small mb-1"><i class="fa fa-info-circle me-1"></i>No file
+                                            uploaded yet.
+                                        </p>
                                     </t>
                                     <input type="file" name="has_work_permit" class="form-control file-upload-input"
                                            accept=".pdf,.jpg,.jpeg,.png" disabled="disabled"/>
                                     <small class="text-muted">PDF, JPG, PNG accepted</small>
                                 </div>
+
                             </div>
                         </div>
                     </div>
@@ -1755,7 +1821,10 @@
 
                 </form>
 
-                <!-- ===== JAVASCRIPT ===== -->
+
+
+
+                <!-- ===== JAVASCRIPT (unchanged from doc7) ===== -->
                 <script type="text/javascript">
                     <![CDATA[
 var PENDING_LOCKED = (function() {
@@ -1767,7 +1836,6 @@ let isEditMode = false;
 let originalFormData = {};
 let activeProfileTab = 'basic';
 
-/* ── Fix last updated timezone ── */
 (function fixLastUpdatedTimezone() {
     var el = document.getElementById('profileLastUpdated');
     if (!el) return;
@@ -1795,32 +1863,16 @@ let activeProfileTab = 'basic';
     } catch(e) {}
 })();
 
-/* ══════════════════════════════════════════════════════
-   FIX Issue 2: loadStatesByCountry — fetches states from server
-   and populates the given dropdown element ID.
-   Called by onchange on country dropdowns.
-   ══════════════════════════════════════════════════════ */
 function loadStatesByCountry(countryId, stateDropdownId) {
     var stateDropdown = document.getElementById(stateDropdownId);
     if (!stateDropdown) return;
     var currentVal = stateDropdown.getAttribute('data-saved-value') || '0';
-
-    // Reset dropdown
     stateDropdown.innerHTML = '<option value="">-- Select State --</option>';
-
     if (!countryId || countryId === '0' || countryId === '') return;
-
-    // Fetch states via JSON RPC
     fetch('/portal/get_states', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            jsonrpc: '2.0',
-            method: 'call',
-            params: { country_id: parseInt(countryId) }
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', method: 'call', params: { country_id: parseInt(countryId) } })
     })
     .then(function(r) { return r.json(); })
     .then(function(data) {
@@ -1829,20 +1881,14 @@ function loadStatesByCountry(countryId, stateDropdownId) {
             var opt = document.createElement('option');
             opt.value = state.id;
             opt.textContent = state.name;
-            if (String(state.id) === String(currentVal)) {
-                opt.selected = true;
-            }
+            if (String(state.id) === String(currentVal)) { opt.selected = true; }
             stateDropdown.appendChild(opt);
         });
-        // Clear saved value after initial load to avoid re-selecting on subsequent changes
         stateDropdown.removeAttribute('data-saved-value');
     })
-    .catch(function(e) {
-        console.error('Failed to load states:', e);
-    });
+    .catch(function(e) { console.error('Failed to load states:', e); });
 }
 
-/* ── _fetchStates helper (used in DOMContentLoaded init) ── */
 function _fetchStates(stateDropdownEl, countryId, savedStateId) {
     if (!stateDropdownEl || !countryId || countryId === '0') return;
     stateDropdownEl.setAttribute('data-saved-value', savedStateId || '0');
@@ -1856,11 +1902,7 @@ function autosaveDraftNow() {
         document.querySelectorAll('#personalDetailsForm input, #personalDetailsForm select').forEach(function(input) {
             if (input.type === 'hidden' || input.type === 'file') return;
             if (!input.name) return;
-            if (input.type === 'checkbox') {
-                draftData[input.name] = input.checked ? 'on' : '';
-            } else {
-                draftData[input.name] = input.value;
-            }
+            draftData[input.name] = input.type === 'checkbox' ? (input.checked ? 'on' : '') : input.value;
         });
         localStorage.setItem('profileDraft', JSON.stringify(draftData));
     } catch(e) { console.error('autosave error', e); }
@@ -1869,9 +1911,7 @@ function autosaveDraftNow() {
 function switchProfileTab(tabKey) {
     const previousTab = activeProfileTab;
     activeProfileTab = tabKey;
-    if (!isEditMode && previousTab && previousTab !== tabKey) {
-        clearValidationStates(previousTab);
-    }
+    if (!isEditMode && previousTab && previousTab !== tabKey) { clearValidationStates(previousTab); }
     document.querySelectorAll('#personalDetailsForm .profile-tab-section').forEach(card => {
         card.style.display = (card.getAttribute('data-tab-group') === tabKey) ? '' : 'none';
     });
@@ -1883,11 +1923,7 @@ function switchProfileTab(tabKey) {
 }
 
 function syncAndToggleEditMode(sourceCheckbox) {
-    if (PENDING_LOCKED) {
-        sourceCheckbox.checked = false;
-        alert('Editing is disabled while your profile update is pending HR review.');
-        return;
-    }
+    if (PENDING_LOCKED) { sourceCheckbox.checked = false; alert('Editing is disabled while your profile update is pending HR review.'); return; }
     document.querySelectorAll('.edit-mode-toggle').forEach(t => { t.checked = sourceCheckbox.checked; });
     sourceCheckbox.checked ? enableEditMode() : disableEditMode();
 }
@@ -1897,22 +1933,12 @@ function escapeHtml(str) {
 }
 
 function enableEditMode() {
-    if (PENDING_LOCKED) {
-        alert('Editing is disabled while your profile update is pending HR review.');
-        return;
-    }
-
+    if (PENDING_LOCKED) { alert('Editing is disabled while your profile update is pending HR review.'); return; }
     isEditMode = true;
     document.querySelectorAll('.edit-mode-toggle').forEach(t => t.checked = true);
     storeOriginalFormData();
-
     var editBtn = document.getElementById('editProfileBtn');
-    if (editBtn) {
-        editBtn.classList.remove('btn-outline-primary');
-        editBtn.classList.add('btn-primary', 'edit-active');
-        editBtn.innerHTML = '<i class="fa fa-pencil me-1"></i>Editing Mode ON';
-    }
-
+    if (editBtn) { editBtn.classList.remove('btn-outline-primary'); editBtn.classList.add('btn-primary', 'edit-active'); editBtn.innerHTML = '<i class="fa fa-pencil me-1"></i>Editing Mode ON'; }
     document.querySelectorAll('#personalDetailsForm input, #personalDetailsForm select').forEach(input => {
         if (input.type === 'hidden') return;
         if (input.classList.contains('edit-mode-toggle')) return;
@@ -1923,81 +1949,51 @@ function enableEditMode() {
             input.style.setProperty('background-color', '#e9ecef');
             return;
         }
-        if (input.type === 'file') {
-            input.removeAttribute('disabled');
-            return;
-        }
-        input.removeAttribute('readonly');
-        input.removeAttribute('disabled');
-        input.style.removeProperty('pointer-events');
-        input.style.removeProperty('background-color');
+        if (input.type === 'file') { input.removeAttribute('disabled'); return; }
+        input.removeAttribute('readonly'); input.removeAttribute('disabled');
+        input.style.removeProperty('pointer-events'); input.style.removeProperty('background-color');
     });
-
     document.getElementById('formActions').style.display = 'block';
     document.getElementById('viewActions').style.display = 'none';
     const disc = document.getElementById('personalDisclaimer');
     if (disc) disc.checked = false;
     const btn = document.getElementById('personalSaveBtn');
     if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
-
     document.querySelectorAll('#personalDetailsForm input[type="file"].file-upload-input').forEach(fileInput => {
         fileInput.addEventListener('change', function() {
-            if (this.files && this.files.length > 0) {
-                showFilePreview(this, this.files[0]);
-            } else {
-                this.value = '';
-                clearFilePreview(this);
-            }
+            if (this.files && this.files.length > 0) { showFilePreview(this, this.files[0]); }
+            else { this.value = ''; clearFilePreview(this); }
         });
     });
-
     document.querySelectorAll('#personalDetailsForm input:not([type="file"]), #personalDetailsForm select').forEach(input => {
-        input.removeEventListener('input', validateField);
-        input.removeEventListener('blur', validateField);
-        input.removeEventListener('change', autosaveDraftNow);
-        input.removeEventListener('input', autosaveDraftNow);
-        input.addEventListener('input', validateField);
-        input.addEventListener('blur', validateField);
-        input.addEventListener('input', autosaveDraftNow);
-        input.addEventListener('change', autosaveDraftNow);
+        input.removeEventListener('input', validateField); input.removeEventListener('blur', validateField);
+        input.removeEventListener('change', autosaveDraftNow); input.removeEventListener('input', autosaveDraftNow);
+        input.addEventListener('input', validateField); input.addEventListener('blur', validateField);
+        input.addEventListener('input', autosaveDraftNow); input.addEventListener('change', autosaveDraftNow);
     });
 }
 
 function disableEditMode() {
     isEditMode = false;
-    localStorage.removeItem('profileEditActive');
-    localStorage.removeItem('profileDraft');
+    localStorage.removeItem('profileEditActive'); localStorage.removeItem('profileDraft');
     document.querySelectorAll('.edit-mode-toggle').forEach(t => t.checked = false);
-
     var editBtn = document.getElementById('editProfileBtn');
-    if (editBtn) {
-        editBtn.classList.remove('btn-primary', 'edit-active');
-        editBtn.classList.add('btn-outline-primary');
-        editBtn.innerHTML = '<i class="fa fa-edit me-1"></i>Edit Profile';
-    }
-
+    if (editBtn) { editBtn.classList.remove('btn-primary', 'edit-active'); editBtn.classList.add('btn-outline-primary'); editBtn.innerHTML = '<i class="fa fa-edit me-1"></i>Edit Profile'; }
     document.querySelectorAll('#personalDetailsForm input, #personalDetailsForm select').forEach(input => {
         if (input.type === 'hidden') return;
         if (input.classList.contains('edit-mode-toggle')) return;
         if (input.hasAttribute('data-always-readonly')) {
             input.setAttribute('readonly', 'readonly');
             if (input.tagName === 'SELECT' || input.type === 'checkbox') input.setAttribute('disabled', 'disabled');
-            input.style.setProperty('pointer-events', 'none');
-            input.style.setProperty('background-color', '#e9ecef');
+            input.style.setProperty('pointer-events', 'none'); input.style.setProperty('background-color', '#e9ecef');
             return;
         }
-        if (input.type === 'file') {
-            input.setAttribute('disabled', 'disabled');
-            input.value = '';
-            return;
-        }
+        if (input.type === 'file') { input.setAttribute('disabled', 'disabled'); input.value = ''; return; }
         input.setAttribute('readonly', 'readonly');
         if (input.tagName === 'SELECT' || input.type === 'checkbox') input.setAttribute('disabled', 'disabled');
         input.classList.remove('is-valid', 'is-invalid');
-        input.style.removeProperty('pointer-events');
-        input.style.removeProperty('background-color');
+        input.style.removeProperty('pointer-events'); input.style.removeProperty('background-color');
     });
-
     document.getElementById('formActions').style.display = 'none';
     document.getElementById('viewActions').style.display = 'block';
     ['basic', 'professional', 'family', 'education', 'documents'].forEach(t => clearValidationStates(t));
@@ -2011,8 +2007,7 @@ function disableEditMode() {
 function toggleSaveBtn(checkboxId, btnId) {
     const checked = document.getElementById(checkboxId).checked;
     const btn = document.getElementById(btnId);
-    btn.disabled = !checked;
-    btn.style.opacity = checked ? '1' : '0.6';
+    btn.disabled = !checked; btn.style.opacity = checked ? '1' : '0.6';
 }
 
 function storeOriginalFormData() {
@@ -2020,11 +2015,7 @@ function storeOriginalFormData() {
     document.querySelectorAll('#personalDetailsForm input, #personalDetailsForm select').forEach(input => {
         if (input.type === 'hidden' || input.type === 'file') return;
         if (!input.name) return;
-        if (input.type === 'checkbox') {
-            originalFormData[input.name] = input.checked;
-        } else {
-            originalFormData[input.name] = input.value;
-        }
+        originalFormData[input.name] = input.type === 'checkbox' ? input.checked : input.value;
     });
 }
 
@@ -2032,43 +2023,29 @@ function cancelEdit() {
     Object.entries(originalFormData).forEach(([key, value]) => {
         const input = document.querySelector(`[name="${key}"]`);
         if (!input || input.type === 'hidden' || input.type === 'file') return;
-        if (input.type === 'checkbox') {
-            input.checked = value;
-        } else {
-            input.value = value;
-        }
+        if (input.type === 'checkbox') { input.checked = value; } else { input.value = value; }
     });
-    localStorage.removeItem('profileDraft');
-    localStorage.removeItem('profileEditActive');
+    localStorage.removeItem('profileDraft'); localStorage.removeItem('profileEditActive');
     disableEditMode();
     showTabMessage(activeProfileTab, 'Changes cancelled.', 'info');
 }
 
-function saveAsDraft() {
-    autosaveDraftNow();
-    showTabMessage(activeProfileTab, 'Profile saved as draft.', 'info');
-}
+function saveAsDraft() { autosaveDraftNow(); showTabMessage(activeProfileTab, 'Profile saved as draft.', 'info'); }
 
 function showSaveError(html) {
     let box = document.getElementById('saveErrorBox');
     if (!box) {
-        box = document.createElement('div');
-        box.id = 'saveErrorBox';
-        box.className = 'alert alert-danger';
+        box = document.createElement('div'); box.id = 'saveErrorBox'; box.className = 'alert alert-danger';
         box.style.cssText = 'margin-bottom:12px;border-left:4px solid #dc3545;';
         const saveBtn = document.getElementById('personalSaveBtn');
         if (saveBtn) saveBtn.parentNode.insertBefore(box, saveBtn);
         else document.getElementById('formActions').appendChild(box);
     }
-    box.innerHTML = html;
-    box.style.display = 'block';
+    box.innerHTML = html; box.style.display = 'block';
     setTimeout(() => box.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
 }
 
-function hideSaveError() {
-    const box = document.getElementById('saveErrorBox');
-    if (box) box.style.display = 'none';
-}
+function hideSaveError() { const box = document.getElementById('saveErrorBox'); if (box) box.style.display = 'none'; }
 
 function validateField(event) {
     if (!isEditMode) return true;
@@ -2089,16 +2066,9 @@ function validateField(event) {
     switch (validationType) {
         case 'email': if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) { isValid = false; errorMessage = 'Please enter a valid email address.'; } break;
         case 'phone': const pc = val.replace(/\s/g, ''); if (!/^\+?[0-9]+$/.test(pc)) { isValid = false; errorMessage = 'Phone number must contain digits only. A leading + is allowed.'; } else { const d = pc.replace('+', ''); if (d.length < 7 || d.length > 15) { isValid = false; errorMessage = 'Phone number must be between 7 and 15 digits.'; } } break;
-        case 'isd-code': if (!/^\+[1-9][0-9]{0,2}$/.test(val.replace(/\s/g, ''))) { isValid = false; errorMessage = 'ISD code must start with + followed by 1-3 digits (e.g. +91, +971).'; } break;
         case 'digits-only': if (!/^[0-9]+$/.test(val)) { isValid = false; errorMessage = 'This field must contain digits only.'; } break;
         case 'alphanumeric': if (!/^[A-Za-z0-9]+$/.test(val)) { isValid = false; errorMessage = 'Letters and digits only (no spaces or special characters).'; } break;
-        case 'emirates-id':
-            var eidClean = val.replace(/-/g, '');
-            if (!/^[0-9]{15}$/.test(eidClean)) {
-                isValid = false;
-                errorMessage = 'Please enter your unique 15-digit UAE Emirates ID number.';
-            }
-            break;
+        case 'emirates-id': var eidClean = val.replace(/-/g, ''); if (!/^[0-9]{15}$/.test(eidClean)) { isValid = false; errorMessage = 'Please enter your unique 15-digit UAE Emirates ID number.'; } break;
         case 'aadhar': if (!/^[0-9]{12}$/.test(val)) { isValid = false; errorMessage = 'Aadhar number must be exactly 12 digits.'; } break;
         case 'pan': if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(val.toUpperCase())) { isValid = false; errorMessage = 'PAN must be in format: ABCDE1234F'; } break;
         case 'past-date': const pd = new Date(val); const td1 = new Date(); td1.setHours(0,0,0,0); if (isNaN(pd.getTime())) { isValid = false; errorMessage = 'Please enter a valid date.'; } else if (pd > td1) { isValid = false; errorMessage = 'This date cannot be in the future.'; } break;
@@ -2110,8 +2080,7 @@ function validateField(event) {
         if (feedback) { feedback.textContent = errorMessage; feedback.style.display = 'block'; }
         else { const errDiv = document.createElement('div'); errDiv.className = 'invalid-feedback dynamic-error'; errDiv.style.cssText = 'display:block;color:#dc3545;font-size:0.8rem;margin-top:3px;'; errDiv.textContent = errorMessage; field.insertAdjacentElement('afterend', errDiv); }
     }
-    updateTabErrorBadges();
-    return isValid;
+    updateTabErrorBadges(); return isValid;
 }
 
 function updateTabErrorBadges() {
@@ -2123,8 +2092,7 @@ function updateTabErrorBadges() {
         const count = document.querySelectorAll(`.profile-tab-section[data-tab-group="${tabKey}"] .is-invalid`).length;
         if (count > 0) {
             const badge = document.createElement('span');
-            badge.className = 'tab-error-badge badge bg-danger ms-1';
-            badge.textContent = count;
+            badge.className = 'tab-error-badge badge bg-danger ms-1'; badge.textContent = count;
             tabBtn.appendChild(badge);
         }
     });
@@ -2142,117 +2110,41 @@ function clearValidationStates(tabKey) {
 
 function clearFilePreview(inputEl) {
     const existing = inputEl.parentNode.querySelector('.file-preview-box');
-    if (existing) {
-        if (existing._objectURL) URL.revokeObjectURL(existing._objectURL);
-        existing.remove();
-    }
+    if (existing) { if (existing._objectURL) URL.revokeObjectURL(existing._objectURL); existing.remove(); }
 }
 
 function viewUploadedFile(objectURL, fileType, fileName) {
     if (fileType.startsWith('image/')) {
         const overlay = document.createElement('div');
-        overlay.style.cssText = [
-            'position:fixed', 'inset:0', 'z-index:9999',
-            'background:rgba(0,0,0,0.75)',
-            'display:flex', 'flex-direction:column',
-            'align-items:center', 'justify-content:center', 'gap:12px'
-        ].join(';');
-        overlay.innerHTML =
-            `<div style="position:relative;max-width:90vw;max-height:85vh;">
-                <img src="${objectURL}" alt="${escapeHtml(fileName)}"
-                     style="max-width:90vw;max-height:85vh;border-radius:8px;
-                            display:block;box-shadow:0 8px 32px rgba(0,0,0,0.4);"/>
-             </div>
-             <div style="display:flex;gap:12px;align-items:center;">
-                <span style="color:#fff;font-size:0.85rem;opacity:0.8;">${escapeHtml(fileName)}</span>
-                <button onclick="this.closest('div[style*=fixed]').remove()"
-                        style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.4);
-                               color:#fff;border-radius:6px;padding:5px 16px;cursor:pointer;font-size:0.85rem;">
-                    <i class="fa fa-times me-1"></i>Close
-                </button>
-             </div>`;
-        overlay.addEventListener('click', function(e) {
-            if (e.target === overlay) overlay.remove();
-        });
-        const escHandler = function(e) {
-            if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', escHandler); }
-        };
-        document.addEventListener('keydown', escHandler);
-        document.body.appendChild(overlay);
-    } else {
-        window.open(objectURL, '_blank');
-    }
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.75);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px';
+        overlay.innerHTML = `<div style="position:relative;max-width:90vw;max-height:85vh;"><img src="${objectURL}" alt="${escapeHtml(fileName)}" style="max-width:90vw;max-height:85vh;border-radius:8px;display:block;box-shadow:0 8px 32px rgba(0,0,0,0.4);"/></div><div style="display:flex;gap:12px;align-items:center;"><span style="color:#fff;font-size:0.85rem;opacity:0.8;">${escapeHtml(fileName)}</span><button onclick="this.closest('div[style*=fixed]').remove()" style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.4);color:#fff;border-radius:6px;padding:5px 16px;cursor:pointer;font-size:0.85rem;"><i class="fa fa-times me-1"></i>Close</button></div>`;
+        overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+        const escHandler = function(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', escHandler); } };
+        document.addEventListener('keydown', escHandler); document.body.appendChild(overlay);
+    } else { window.open(objectURL, '_blank'); }
 }
 
 function cancelFileUpload(removeBtn) {
-    const preview = removeBtn.closest('.file-preview-box');
-    if (!preview) return;
+    const preview = removeBtn.closest('.file-preview-box'); if (!preview) return;
     const inputEl = preview.previousElementSibling;
-    if (inputEl && inputEl.type === 'file') {
-        inputEl.value = '';
-    }
-    if (preview._objectURL) {
-        URL.revokeObjectURL(preview._objectURL);
-    }
+    if (inputEl && inputEl.type === 'file') { inputEl.value = ''; }
+    if (preview._objectURL) { URL.revokeObjectURL(preview._objectURL); }
     preview.remove();
 }
 
 function showFilePreview(inputEl, file) {
     clearFilePreview(inputEl);
     const sizeKB = (file.size / 1024).toFixed(1);
-    const sizeTxt = file.size > 1024 * 1024
-        ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
-        : sizeKB + ' KB';
-    const isImage = file.type.startsWith('image/');
-    const isPDF   = file.type === 'application/pdf';
+    const sizeTxt = file.size > 1024 * 1024 ? (file.size / (1024 * 1024)).toFixed(1) + ' MB' : sizeKB + ' KB';
+    const isImage = file.type.startsWith('image/'); const isPDF = file.type === 'application/pdf';
     const objectURL = URL.createObjectURL(file);
-    const preview = document.createElement('div');
-    preview.className = 'file-preview-box';
+    const preview = document.createElement('div'); preview.className = 'file-preview-box';
     let thumbHtml = '';
-    if (isImage) {
-        thumbHtml = `<img src="${objectURL}" alt="preview"
-            style="width:40px;height:40px;object-fit:cover;border-radius:4px;
-                   border:0.5px solid #dee2e6;flex-shrink:0;"
-            onerror="this.style.display='none'"/>`;
-    } else if (isPDF) {
-        thumbHtml = `<span style="width:40px;height:40px;display:flex;align-items:center;
-                          justify-content:center;background:#fff3f3;border-radius:4px;
-                          border:0.5px solid #f5c6cb;flex-shrink:0;">
-                       <i class="fa fa-file-pdf-o" style="color:#dc3545;font-size:1.3rem;"></i>
-                     </span>`;
-    } else {
-        thumbHtml = `<span style="width:40px;height:40px;display:flex;align-items:center;
-                          justify-content:center;background:#f8f9fa;border-radius:4px;
-                          border:0.5px solid #dee2e6;flex-shrink:0;">
-                       <i class="fa fa-file" style="color:#6c757d;font-size:1.3rem;"></i>
-                     </span>`;
-    }
-    preview.style.cssText = [
-        'display:flex', 'align-items:center', 'gap:10px',
-        'margin-top:8px', 'padding:8px 12px',
-        'border:1px solid #198754', 'border-radius:6px',
-        'background:#f0fdf4', 'font-size:0.85rem'
-    ].join(';');
-    preview.innerHTML =
-        thumbHtml +
-        `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#155724;">
-            <strong>${escapeHtml(file.name)}</strong>
-            <span style="margin-left:8px;color:#6c757d;font-size:0.78rem;">${sizeTxt}</span>
-         </span>
-         <button type="button"
-                 title="View file"
-                 onclick="viewUploadedFile('${objectURL}', '${escapeHtml(file.type)}', '${escapeHtml(file.name)}')"
-                 style="background:none;border:1px solid #0d6efd;color:#0d6efd;border-radius:5px;
-                        padding:3px 8px;font-size:0.78rem;cursor:pointer;white-space:nowrap;">
-             <i class="fa fa-eye me-1"></i>View
-         </button>
-         <button type="button"
-                 title="Remove file"
-                 class="btn btn-sm btn-outline-danger py-0 px-2"
-                 style="font-size:0.78rem;line-height:1.6;white-space:nowrap;"
-                 onclick="cancelFileUpload(this)">
-             <i class="fa fa-times me-1"></i>Remove
-         </button>`;
+    if (isImage) { thumbHtml = `<img src="${objectURL}" alt="preview" style="width:40px;height:40px;object-fit:cover;border-radius:4px;border:0.5px solid #dee2e6;flex-shrink:0;" onerror="this.style.display='none'"/>`; }
+    else if (isPDF) { thumbHtml = `<span style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:#fff3f3;border-radius:4px;border:0.5px solid #f5c6cb;flex-shrink:0;"><i class="fa fa-file-pdf-o" style="color:#dc3545;font-size:1.3rem;"></i></span>`; }
+    else { thumbHtml = `<span style="width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:#f8f9fa;border-radius:4px;border:0.5px solid #dee2e6;flex-shrink:0;"><i class="fa fa-file" style="color:#6c757d;font-size:1.3rem;"></i></span>`; }
+    preview.style.cssText = 'display:flex;align-items:center;gap:10px;margin-top:8px;padding:8px 12px;border:1px solid #198754;border-radius:6px;background:#f0fdf4;font-size:0.85rem';
+    preview.innerHTML = thumbHtml + `<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#155724;"><strong>${escapeHtml(file.name)}</strong><span style="margin-left:8px;color:#6c757d;font-size:0.78rem;">${sizeTxt}</span></span><button type="button" title="View file" onclick="viewUploadedFile('${objectURL}', '${escapeHtml(file.type)}', '${escapeHtml(file.name)}')" style="background:none;border:1px solid #0d6efd;color:#0d6efd;border-radius:5px;padding:3px 8px;font-size:0.78rem;cursor:pointer;white-space:nowrap;"><i class="fa fa-eye me-1"></i>View</button><button type="button" title="Remove file" class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size:0.78rem;line-height:1.6;white-space:nowrap;" onclick="cancelFileUpload(this)"><i class="fa fa-times me-1"></i>Remove</button>`;
     preview._objectURL = objectURL;
     inputEl.parentNode.insertBefore(preview, inputEl.nextSibling);
 }
@@ -2276,7 +2168,6 @@ document.getElementById('personalDetailsForm').addEventListener('submit', functi
     if (PENDING_LOCKED) { showSaveError('<i class="fa fa-lock me-2"></i>Editing is locked while your submission is pending HR review.'); return; }
     const disc = document.getElementById('personalDisclaimer');
     if (disc && !disc.checked) { showSaveError('<i class="fa fa-exclamation-triangle me-2"></i>Please read and accept the Employee Disclaimer before saving.'); return; }
-
     const allTabs = ['basic', 'professional', 'family', 'education', 'documents'];
     const tabNames = {'basic': 'Basic Info', 'professional': 'Professional', 'family': 'Family', 'education': 'Education', 'documents': 'Documents'};
     const tabsWithErrors = [];
@@ -2292,7 +2183,6 @@ document.getElementById('personalDetailsForm').addEventListener('submit', functi
         return;
     }
     hideSaveError();
-
     const toReenable = [];
     document.querySelectorAll('#personalDetailsForm select[disabled], #personalDetailsForm input[type="checkbox"][disabled]').forEach(el => {
         if (!el.hasAttribute('data-always-readonly') && el.type !== 'file') { el.removeAttribute('disabled'); toReenable.push(el); }
@@ -2300,14 +2190,12 @@ document.getElementById('personalDetailsForm').addEventListener('submit', functi
     const formData = new FormData(this);
     const csrfToken = document.querySelector('input[name="csrf_token"]').value;
     toReenable.forEach(el => el.setAttribute('disabled', 'disabled'));
-
     fetch('/my/employee/personal', { method: 'POST', body: formData, headers: { 'X-CSRFToken': csrfToken } })
     .then(r => r.json())
     .then(data => {
         if (data.success) {
             disableEditMode();
-            localStorage.removeItem('profileDraft');
-            localStorage.removeItem('profileEditActive');
+            localStorage.removeItem('profileDraft'); localStorage.removeItem('profileEditActive');
             if (data.no_change) {
                 showTabMessage(activeProfileTab, 'No changes were detected. Your profile data is already up to date.', 'info');
             } else {
@@ -2316,6 +2204,9 @@ document.getElementById('personalDetailsForm').addEventListener('submit', functi
                     'Your changes have been submitted to HR for review and approval.' +
                     (ref ? ' Reference: <strong>' + ref + '</strong>' : '') +
                     ' You will receive an email once HR approves or rejects your request.', 'success');
+                document.querySelectorAll('.alert-danger[role="alert"]').forEach(function(el) {
+                    if (el.querySelector('.alert-heading') && el.querySelector('.alert-heading').textContent.includes('Rejected')) { el.remove(); }
+                });
             }
         } else {
             showTabMessage(activeProfileTab, 'Error: ' + (data.error || 'Unknown error'), 'error');
@@ -2324,25 +2215,32 @@ document.getElementById('personalDetailsForm').addEventListener('submit', functi
     .catch(err => { console.error('Error:', err); showTabMessage(activeProfileTab, 'Network error. Please try again.', 'error'); });
 });
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('#personalDetailsForm .profile-tab-button').forEach(button => {
         button.addEventListener('click', function() { switchProfileTab(this.getAttribute('data-tab-target')); });
     });
     switchProfileTab(activeProfileTab);
-
     document.querySelectorAll('.edit-mode-toggle').forEach(t => t.checked = false);
     document.getElementById('formActions').style.display = 'none';
     document.getElementById('viewActions').style.display = 'block';
     isEditMode = false;
-
-    document.querySelectorAll('#personalDetailsForm input[type="file"].file-upload-input').forEach(fi => {
-        fi.setAttribute('disabled', 'disabled');
-    });
-
+    document.querySelectorAll('#personalDetailsForm input[type="file"].file-upload-input').forEach(fi => { fi.setAttribute('disabled', 'disabled'); });
     const draftRaw = localStorage.getItem('profileDraft');
     const wasEditing = localStorage.getItem('profileEditActive') === '1';
     localStorage.removeItem('profileEditActive');
-
     window.addEventListener('beforeunload', function() {
         if (isEditMode) {
             const draftData = {};
@@ -2354,7 +2252,6 @@ document.addEventListener('DOMContentLoaded', function() {
             try { localStorage.setItem('profileDraft', JSON.stringify(draftData)); localStorage.setItem('profileEditActive', '1'); } catch(e) {}
         }
     });
-
     if (draftRaw && wasEditing && !PENDING_LOCKED) {
         try {
             const draft = JSON.parse(draftRaw);
@@ -2362,16 +2259,11 @@ document.addEventListener('DOMContentLoaded', function() {
             Object.entries(draft).forEach(function([key, value]) {
                 const input = document.querySelector('[name="' + key + '"]');
                 if (!input || input.type === 'hidden' || input.type === 'file') return;
-                if (input.type === 'checkbox') {
-                    input.checked = value === 'on';
-                } else {
-                    input.value = value;
-                }
+                if (input.type === 'checkbox') { input.checked = value === 'on'; } else { input.value = value; }
             });
             showTabMessage(activeProfileTab, 'Your unsaved changes have been restored. Please review and click Save Changes.', 'info');
         } catch (ex) { console.error('Error loading draft:', ex); localStorage.removeItem('profileDraft'); }
     }
-
     if (PENDING_LOCKED) {
         document.querySelectorAll('.edit-mode-toggle').forEach(t => {
             t.closest('.form-check.form-switch') && (t.closest('.form-check.form-switch').style.display = 'none');
@@ -2379,33 +2271,35 @@ document.addEventListener('DOMContentLoaded', function() {
         var editBtn = document.getElementById('editProfileBtn');
         if (editBtn) { editBtn.disabled = true; editBtn.title = 'Editing locked — pending HR review'; }
     }
-
-    /* ══════════════════════════════════════════════════════════════════════
-       FIX Issue 2: Page Load — Populate state dropdowns using unique IDs.
-       Each dropdown pair has its own country/state IDs so no conflicts.
-    ══════════════════════════════════════════════════════════════════════ */
     setTimeout(function() {
-        /* 1. Work Location: workLocationCountryDropdown → workLocationStateDropdown */
         var workCountrySel = document.getElementById('workLocationCountryDropdown');
         var workStateSel   = document.getElementById('workLocationStateDropdown');
-        if (workCountrySel && workCountrySel.value && workStateSel) {
+        if (workCountrySel && workStateSel) {
+            var workCountryId = workCountrySel.value || workStateSel.getAttribute('data-saved-country') || '0';
             var savedWork = workStateSel.getAttribute('data-saved-value') || '0';
-            _fetchStates(workStateSel, workCountrySel.value, savedWork);
+            if (workCountryId && workCountryId !== '0') {
+                if (!workCountrySel.value && workCountryId !== '0') { workCountrySel.value = workCountryId; }
+                _fetchStates(workStateSel, workCountryId, savedWork);
+            }
         }
-
-        /* 2. Permanent Address: permanentCountryDropdown → permanentStateDropdown */
         var permCountrySel = document.getElementById('permanentCountryDropdown');
         var permStateSel   = document.getElementById('permanentStateDropdown');
-        if (permCountrySel && permCountrySel.value && permStateSel) {
+        if (permCountrySel && permStateSel) {
+            var permCountryId = permCountrySel.value || permStateSel.getAttribute('data-saved-country') || '0';
             var savedPerm = permStateSel.getAttribute('data-saved-value') || '0';
-            _fetchStates(permStateSel, permCountrySel.value, savedPerm);
+            if (permCountryId && permCountryId !== '0') {
+                if (!permCountrySel.value && permCountryId !== '0') { permCountrySel.value = permCountryId; }
+                _fetchStates(permStateSel, permCountryId, savedPerm);
+            }
         }
     }, 300);
 });
+
+
                     ]]>
                 </script>
 
-                <!-- ===== CSS ===== -->
+                <!-- ===== CSS (unchanged from doc7) ===== -->
                 <style>
                     <![CDATA[
 .form-label { font-weight: 600; color: #495057; margin-bottom: 0.5rem; }

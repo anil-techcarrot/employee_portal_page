@@ -5,25 +5,23 @@
             <t t-set="section" t-value="'experience'"/>
             <t t-set="section_content">
 
-                <!-- MESSAGES -->
                 <div id="expMessageContainer" style="display:none; margin-bottom:16px;">
-                    <div id="expSuccessMessage" class="alert alert-success alert-dismissible fade"
-                         role="alert" style="display:none;">
+                    <div id="expSuccessMessage" class="alert alert-success alert-dismissible fade" role="alert"
+                         style="display:none;">
                         <i class="fa fa-check-circle me-2"></i>
                         <span id="expSuccessText"></span>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
-                    <div id="expErrorMessage" class="alert alert-danger alert-dismissible fade"
-                         role="alert" style="display:none;">
+                    <div id="expErrorMessage" class="alert alert-danger alert-dismissible fade" role="alert"
+                         style="display:none;">
                         <i class="fa fa-exclamation-triangle me-2"></i>
                         <span id="expErrorText"></span>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 </div>
 
-                <!-- PENDING SKILL CHANGES CARD -->
                 <t t-if="pending_skill_changes">
-                    <div class="card mb-4 shadow-sm border-warning">
+                    <div class="card mb-4 shadow-sm border-warning" id="pendingSkillCard">
                         <div class="card-header d-flex align-items-center gap-2"
                              style="background:#fff8e1; border-bottom:1px solid #ffe082;">
                             <i class="fa fa-clock-o text-warning" style="font-size:16px;"></i>
@@ -40,9 +38,6 @@
                                         <th style="padding:11px 18px; font-size:12px; color:#856404; text-transform:uppercase;">
                                             Reference
                                         </th>
-<!--                                        <th style="padding:11px 18px; font-size:12px; color:#856404; text-transform:uppercase;">-->
-<!--                                            Action-->
-<!--                                        </th>-->
                                         <th style="padding:11px 18px; font-size:12px; color:#856404; text-transform:uppercase;">
                                             Skill Type
                                         </th>
@@ -65,26 +60,6 @@
                                                     <t t-esc="psc['pcr_name']"/>
                                                 </span>
                                             </td>
-<!--                                            <td style="padding:12px 18px; vertical-align:middle;">-->
-<!--                                                <t t-if="psc['cert_action'] == 'add'">-->
-<!--                                                    <span class="badge"-->
-<!--                                                          style="background:#d4edda; color:#155724; font-size:12px;"><i-->
-<!--                                                            class="fa fa-plus me-1"></i>Add-->
-<!--                                                    </span>-->
-<!--                                                </t>-->
-<!--                                                <t t-elif="psc['cert_action'] == 'edit'">-->
-<!--                                                    <span class="badge"-->
-<!--                                                          style="background:#fff3cd; color:#856404; font-size:12px;"><i-->
-<!--                                                            class="fa fa-pencil me-1"></i>Edit-->
-<!--                                                    </span>-->
-<!--                                                </t>-->
-<!--                                                <t t-elif="psc['cert_action'] == 'delete'">-->
-<!--                                                    <span class="badge"-->
-<!--                                                          style="background:#f8d7da; color:#721c24; font-size:12px;"><i-->
-<!--                                                            class="fa fa-trash me-1"></i>Delete-->
-<!--                                                    </span>-->
-<!--                                                </t>-->
-<!--                                            </td>-->
                                             <td style="padding:12px 18px; vertical-align:middle; font-size:14px;">
                                                 <t t-esc="psc['type_name']"/>
                                             </td>
@@ -114,20 +89,16 @@
                         </div>
                         <div class="card-footer"
                              style="background:#fffde7; border-top:1px solid #ffe082; padding:10px 18px;">
-                            <small class="text-muted">
-                                <i class="fa fa-info-circle me-1"></i>
-                                These skill changes are awaiting HR approval and will appear in your skills once
-                                approved.
+                            <small class="text-muted"><i class="fa fa-info-circle me-1"></i>These skill changes are
+                                awaiting HR approval and will appear in your skills once approved.
                             </small>
                         </div>
                     </div>
                 </t>
 
-                <!-- SKILLS CARD -->
                 <div class="card mb-4 shadow-sm">
                     <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">
-                            <i class="fa fa-cogs text-primary me-2"></i>Skills &amp; Competencies
+                        <h5 class="mb-0"><i class="fa fa-cogs text-primary me-2"></i>Skills &amp; Competencies
                         </h5>
                         <button type="button" class="btn btn-success" id="openSkillModal"
                                 style="display:none; font-weight:600; background:#2C5B32; border-color:#2C5B32; color:white;">
@@ -190,8 +161,8 @@
                                     <tr id="skillEmptyRow">
                                         <td colspan="4" class="text-center text-muted py-4">
                                             No skills added yet.
-                                            <span id="skillEmptyHint" style="display:none;">
-                                                Click <strong>Add Skills</strong> to get started.
+                                            <span id="skillEmptyHint" style="display:none;">Click <strong>Add Skills
+                                            </strong> to get started.
                                             </span>
                                         </td>
                                     </tr>
@@ -201,16 +172,12 @@
                     </div>
                 </div>
 
-                <!-- RESUME / CV -->
                 <div class="card mb-4 shadow-sm">
                     <div class="card-header bg-light">
-                        <h5 class="mb-0">
-                            <i class="fa fa-folder-open text-primary me-2"></i>Resume / CV
+                        <h5 class="mb-0"><i class="fa fa-folder-open text-primary me-2"></i>Resume / CV
                         </h5>
                     </div>
                     <div class="card-body">
-
-                        <!-- Pending resume approval notice -->
                         <t t-if="pending_resume_change">
                             <div class="alert mb-3"
                                  style="background:#fff8e1; border:1px solid #ffe082; border-radius:6px;">
@@ -224,14 +191,11 @@
                                       style="background:#fff3cd; color:#856404; border:1px solid #ffe082; font-size:11px;">
                                     <i class="fa fa-hourglass-half me-1"></i>Awaiting HR Review
                                 </span>
-                                <small class="text-muted d-block mt-1">
-                                    Ref:
+                                <small class="text-muted d-block mt-1">Ref:
                                     <t t-esc="pending_resume_change['pcr_name']"/>
                                 </small>
                             </div>
                         </t>
-
-                        <!-- Current approved resume -->
                         <t t-if="employee.resume_file">
                             <div class="mb-2">
                                 <a t-attf-href="/web/content/hr.employee/#{employee.id}/resume_file?download=true"
@@ -245,13 +209,9 @@
                         <t t-else="">
                             <p class="text-muted small mb-2">No approved resume on file.</p>
                         </t>
-
-                        <!-- File input — only shown in edit mode -->
                         <div id="resumeEditSection" style="display:none;">
-                            <input type="file" id="resumeFileInput"
-                                   class="form-control form-control-sm mt-2"
-                                   accept=".pdf,.doc,.docx"
-                                   style="max-width:360px;"/>
+                            <input type="file" id="resumeFileInput" class="form-control form-control-sm mt-2"
+                                   accept=".pdf,.doc,.docx" style="max-width:360px;"/>
                             <small class="text-muted">PDF, DOC, DOCX — Max 10 MB</small>
                             <div id="resumeFileLabel" class="mt-1" style="font-size:13px; color:#2e7d32; display:none;">
                                 <i class="fa fa-file me-1"></i>
@@ -264,11 +224,8 @@
                     </div>
                 </div>
 
-                <!-- BOTTOM CARD -->
                 <div class="card shadow-sm">
                     <div class="card-body text-center">
-
-                        <!-- Edit mode -->
                         <div id="expFormActions" style="display:none;">
                             <div id="expPendingBadge" style="display:none; margin-bottom:12px;">
                                 <span class="badge bg-warning text-dark" style="font-size:13px; padding:6px 12px;">
@@ -296,18 +253,13 @@
                                     style="font-size:14px; padding:8px 18px; font-weight:600;">
                                 <i class="fa fa-times me-1"></i>Cancel
                             </button>
-                            <button type="button" id="expSaveBtn"
-                                    class="btn btn-primary"
-                                    disabled="disabled"
+                            <button type="button" id="expSaveBtn" class="btn btn-primary" disabled="disabled"
                                     style="font-size:14px; padding:8px 18px; font-weight:600; opacity:0.6;">
                                 <i class="fa fa-paper-plane me-1"></i>Submit for HR Approval
                             </button>
                         </div>
-
-                        <!-- View mode -->
                         <div id="expViewActions">
-                            <p class="text-muted mb-3">
-                                Last updated:
+                            <p class="text-muted mb-3">Last updated:
                                 <strong id="expLastUpdated">
                                     <t t-esc="employee.write_date.strftime('%d %b, %Y at %I:%M %p') if employee.write_date else 'Never'"/>
                                 </strong>
@@ -317,7 +269,6 @@
                                 <i class="fa fa-edit me-1"></i>Edit Skills &amp; Resume
                             </button>
                         </div>
-
                     </div>
                 </div>
 
@@ -325,16 +276,14 @@
                 <div class="ess-modal-overlay" id="addSkillModal" style="display:none;">
                     <div class="ess-modal" style="width:640px;">
                         <div class="ess-modal-header">
-                            <h5 class="mb-0 fw-bold">
-                                <i class="fa fa-plus-circle text-primary me-2"></i>Add Skills
+                            <h5 class="mb-0 fw-bold"><i class="fa fa-plus-circle text-primary me-2"></i>Add Skills
                             </h5>
                             <button type="button" class="btn-close" id="closeSkillModal"></button>
                         </div>
                         <div class="ess-modal-body">
                             <div class="row g-2 mb-3">
                                 <div class="col-12 col-md-4">
-                                    <label class="form-label fw-semibold mb-1" style="font-size:13px;">
-                                        Skill Type
+                                    <label class="form-label fw-semibold mb-1" style="font-size:13px;">Skill Type
                                         <span class="text-danger">*</span>
                                     </label>
                                     <select id="modalSkillType" class="form-select form-select-sm">
@@ -347,8 +296,7 @@
                                     </select>
                                 </div>
                                 <div class="col-12 col-md-4">
-                                    <label class="form-label fw-semibold mb-1" style="font-size:13px;">
-                                        Skill
+                                    <label class="form-label fw-semibold mb-1" style="font-size:13px;">Skill
                                         <span class="text-danger">*</span>
                                     </label>
                                     <select id="modalSkill" class="form-select form-select-sm" disabled="disabled">
@@ -356,8 +304,7 @@
                                     </select>
                                 </div>
                                 <div class="col-12 col-md-4">
-                                    <label class="form-label fw-semibold mb-1" style="font-size:13px;">
-                                        Level
+                                    <label class="form-label fw-semibold mb-1" style="font-size:13px;">Level
                                         <span class="text-danger">*</span>
                                     </label>
                                     <select id="modalLevel" class="form-select form-select-sm" disabled="disabled">
@@ -366,13 +313,13 @@
                                 </div>
                             </div>
                             <div class="text-end mb-3">
-                                <button type="button" class="btn btn-outline-primary btn-sm" id="addSkillToList">
-                                    <i class="fa fa-plus me-1"></i>Add to List
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="addSkillToList"><i
+                                        class="fa fa-plus me-1"></i>Add to List
                                 </button>
                             </div>
                             <div id="skillStagedSection" style="display:none;">
-                                <div style="font-size:12px; color:#666; font-weight:600; margin-bottom:6px;">
-                                    <i class="fa fa-list me-1"></i>Skills to be submitted for approval:
+                                <div style="font-size:12px; color:#666; font-weight:600; margin-bottom:6px;"><i
+                                        class="fa fa-list me-1"></i>Skills to be submitted for approval:
                                 </div>
                                 <table class="table table-sm table-bordered mb-0">
                                     <thead class="table-light">
@@ -388,8 +335,8 @@
                             </div>
                             <div class="mt-3 pt-3"
                                  style="border-top:1px solid #eee; display:flex; gap:10px; align-items:center;">
-                                <button type="button" class="btn btn-primary" id="saveSkillModal">
-                                    <i class="fa fa-check me-1"></i>Save All
+                                <button type="button" class="btn btn-primary" id="saveSkillModal"><i
+                                        class="fa fa-check me-1"></i>Save All
                                 </button>
                                 <button type="button" class="btn btn-secondary" id="closeSkillModal2">Cancel</button>
                                 <span id="modalSkillCount" class="text-muted ms-auto" style="font-size:12px;"></span>
@@ -426,8 +373,8 @@
                                 </select>
                             </div>
                             <div class="mt-3 pt-3" style="border-top:1px solid #eee; display:flex; gap:10px;">
-                                <button type="button" class="btn btn-primary" id="saveEditBtn">
-                                    <i class="fa fa-save me-1"></i>Update
+                                <button type="button" class="btn btn-primary" id="saveEditBtn"><i
+                                        class="fa fa-save me-1"></i>Update
                                 </button>
                                 <button type="button" class="btn btn-secondary" id="closeEditModal2">Cancel</button>
                             </div>
@@ -435,7 +382,6 @@
                     </div>
                 </div>
 
-                <!-- STYLES -->
                 <style>
                     .ess-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px;}
                     .ess-modal{background:#fff;border-radius:12px;width:520px;max-width:100%;box-shadow:0 8px 40px
@@ -451,9 +397,9 @@
                     .badge-edited{background:#fff3cd;color:#856404;}
                     .badge-delete{background:#f8d7da;color:#721c24;}
                     input[type="file"]:disabled{background-color:#e9ecef;cursor:not-allowed;opacity:0.65;}
+                    #expEditBtn.btn-warning{background:#ffc107;border-color:#ffc107;color:#212529;}
                 </style>
 
-                <!-- Data container + CSRF -->
                 <div id="skillDataContainer" t-att-data-skill-json="skill_data_json" style="display:none;"></div>
                 <input type="hidden" id="exp_csrf_token" t-att-value="request.csrf_token()"/>
 
@@ -462,20 +408,95 @@
 (function(){
 document.addEventListener('DOMContentLoaded', function(){
 
-    /* ─── Server data ─── */
     var skillData = {};
-    try {
-        skillData = JSON.parse(document.getElementById('skillDataContainer').dataset.skillJson || '{}');
-    } catch(e) { skillData = {skills:{}, levels:{}}; }
+    try { skillData = JSON.parse(document.getElementById('skillDataContainer').dataset.skillJson || '{}'); }
+    catch(e) { skillData = {skills:{}, levels:{}}; }
 
-    var BASE_URL  = '/my/employee/experience';
-    var csrfToken = (document.getElementById('exp_csrf_token') || {}).value || '';
+    var BASE_URL      = '/my/employee/experience';
+    var EXP_KEY       = 'ess_exp_staging';
+    var csrfToken     = (document.getElementById('exp_csrf_token') || {}).value || '';
+    var pendingChanges = [];
 
-    var pendingChanges = [];   /* staged operations waiting for Save */
-    var modalQueue     = [];   /* items queued inside Add Skills modal */
-    var tempId         = -1;   /* counter for temp row IDs */
+    /* ── Restore staged changes from localStorage when page loads ── */
+    (function restoreFromStorage() {
+        try {
+            var stored = JSON.parse(localStorage.getItem(EXP_KEY) || 'null');
+            if (!stored || !stored.changes || stored.changes.length === 0) return;
+            stored.changes.forEach(function(c) {
+                if (c.type === 'add_batch' &amp;&amp; c.payload &amp;&amp; c.payload.batch_skills) {
+                    pendingChanges.push(c);
+                    var tbody = document.getElementById('skillTableBody');
+                    var emptyRow = document.getElementById('skillEmptyRow');
+                    if (emptyRow) emptyRow.remove();
+                    c.payload.batch_skills.forEach(function(item) {
+                        var rowTempId = --tempId;
+                        var tr = document.createElement('tr');
+                        tr.setAttribute('data-id', rowTempId);
+                        tr.setAttribute('data-skill-name', item.skill_name || '');
+                        tr.setAttribute('data-type-name',  item.type_name  || '');
+                        tr.setAttribute('data-type-id',    item.type_id    || '');
+                        tr.setAttribute('data-level-name', item.level_name || '');
+                        tr.setAttribute('data-level-id',   item.level_id   || '');
+                        tr.classList.add('skill-staged-add');
+                        tr.innerHTML =
+                            '<td style="padding:13px 18px;vertical-align:middle;font-size:14px;" class="col-type-name">' + esc(item.type_name) + '</td>' +
+                            '<td style="padding:13px 18px;vertical-align:middle;font-size:14px;" class="col-skill-name">' + esc(item.skill_name) + '<span class="skill-badge badge-new">New</span></td>' +
+                            '<td style="padding:13px 18px;vertical-align:middle;font-size:14px;" class="col-level-name"><span class="badge bg-primary">' + esc(item.level_name) + '</span></td>' +
+                            '<td class="skill-action-col" style="display:none;padding:13px 18px;vertical-align:middle;text-align:right;">' +
+                            '<button type="button" class="btn btn-sm btn-outline-danger ess-btn-delete-skill" data-id="' + rowTempId + '"><i class="fa fa-trash"></i></button></td>';
+                        if (tbody) { tbody.appendChild(tr); bindDelete(tr); }
+                    });
+                } else if (c.type === 'edit' && c.rowId) {
+                    pendingChanges.push(c);
+                    var row = getRow(c.rowId);
+                    if (row && c.payload) {
+                        row.setAttribute('data-level-id',   c.payload.level_id   || '');
+                        row.setAttribute('data-level-name', c.payload.level_name || '');
+                        row.querySelector('.col-level-name').innerHTML = '<span class="badge bg-primary">' + esc(c.payload.level_name) + '</span>';
+                        row.classList.add('skill-staged-edit');
+                        setBadge(row, 'edit');
+                    }
+                } else if (c.type === 'delete' && c.rowId) {
+                    pendingChanges.push(c);
+                    var row = getRow(c.rowId);
+                    if (row) {
+                        row.classList.add('skill-staged-delete');
+                        setBadge(row, 'delete');
+                        row.querySelector('.skill-action-col').innerHTML =
+                            '<button type="button" class="btn btn-sm btn-outline-secondary ess-btn-undo" data-id="' + c.rowId + '"><i class="fa fa-undo me-1"></i>Undo</button>';
+                        bindUndo(row);
+                    }
+                }
+            });
+            /* If we restored anything, auto-enter edit mode */
+            if (pendingChanges.length > 0) {
+                enableEdit();
+            }
+        } catch(e) {}
+    })();
+    var modalQueue     = [];
+    var tempId         = -1;
+    var isSubmitting   = false;
 
-    /* ─── Utility ─── */
+    /* ── Fix last-updated timezone ── */
+    (function(){
+        var el = document.getElementById('expLastUpdated');
+        if(!el) return;
+        var raw = (el.textContent||'').trim().replace(/\u00a0/g,' ');
+        if(!raw || raw === 'Never') return;
+        try{
+            var m = raw.match(/(\d{1,2})\s+(\w+),?\s+(\d{4})\s+at\s+(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+            if(!m) return;
+            var mo = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+            var hr = parseInt(m[4],10), isPM = m[6].toUpperCase()==='PM';
+            if(isPM&&hr<12)hr+=12; if(!isPM&&hr===12)hr=0;
+            var dt = new Date(Date.UTC(parseInt(m[3],10), mo[m[2].toLowerCase().substring(0,3)], parseInt(m[1],10), hr, parseInt(m[5],10)));
+            if(!isNaN(dt.getTime()))
+                el.textContent = dt.toLocaleString(undefined,{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true});
+        }catch(e){}
+    })();
+
+    /* ── Helpers ── */
     function showMsg(text, type) {
         var c  = document.getElementById('expMessageContainer');
         var s  = document.getElementById('expSuccessMessage');
@@ -494,17 +515,12 @@ document.addEventListener('DOMContentLoaded', function(){
         setTimeout(function(){ s.classList.remove('show'); er.classList.remove('show'); }, 6000);
     }
 
-    function esc(str){
-        return String(str||'')
-            .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-            .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-    }
-
+    function esc(str){ return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
     function openModal(id)  { document.getElementById(id).style.display='flex'; }
     function closeModal(id) { document.getElementById(id).style.display='none'; }
     function getRow(id)     { return document.querySelector('#skillTableBody tr[data-id="'+id+'"]'); }
-
     function clearBadge(row){ var b=row.querySelector('.skill-badge'); if(b) b.remove(); }
+
     function setBadge(row, type){
         clearBadge(row);
         var labels  = {add:'New', edit:'Edited', delete:'To Delete'};
@@ -523,32 +539,55 @@ document.addEventListener('DOMContentLoaded', function(){
         el.style.display = pendingChanges.length > 0 ? 'block' : 'none';
     }
 
-    /* ─── Fix last-updated timezone ─── */
-    (function(){
-        var el = document.getElementById('expLastUpdated');
-        if(!el) return;
-        var raw = (el.textContent||'').trim().replace(/\u00a0/g,' ');
-        if(!raw || raw === 'Never') return;
-        try{
-            var m = raw.match(/(\d{1,2})\s+(\w+),?\s+(\d{4})\s+at\s+(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-            if(!m) return;
-            var mo = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
-            var hr = parseInt(m[4],10), isPM = m[6].toUpperCase()==='PM';
-            if(isPM&&hr<12)hr+=12; if(!isPM&&hr===12)hr=0;
-            var dt = new Date(Date.UTC(parseInt(m[3],10), mo[m[2].toLowerCase().substring(0,3)], parseInt(m[1],10), hr, parseInt(m[5],10)));
-            if(!isNaN(dt.getTime()))
-                el.textContent = dt.toLocaleString(undefined,{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true});
-        }catch(e){}
+    /* Save serialisable pending changes to localStorage so the global
+       submit bar in base.xml can read and submit them from any tab */
+    function saveToStorage() {
+        try {
+            var toStore = pendingChanges.filter(function(c) {
+                return c.type !== 'resume'; /* files cannot go in localStorage */
+            }).map(function(c) {
+                return { type: c.type, rowId: c.rowId, payload: c.payload };
+            });
+            if (toStore.length > 0) {
+                localStorage.setItem(EXP_KEY, JSON.stringify({ changes: toStore }));
+            } else {
+                localStorage.removeItem(EXP_KEY);
+            }
+        } catch(e) {}
+    }
+
+    /* ── FIX 1: Lock Edit button if pending HR approval exists ── */
+    (function lockIfPending(){
+        var hasPending = document.getElementById('pendingSkillCard');
+        var editBtn    = document.getElementById('expEditBtn');
+        if (hasPending && editBtn) {
+            editBtn.disabled = true;
+            editBtn.innerHTML = '<i class="fa fa-lock me-1"></i>Pending HR Review';
+            editBtn.classList.remove('btn-outline-primary');
+            editBtn.classList.add('btn-warning');
+            editBtn.style.cursor = 'not-allowed';
+            editBtn.title = 'Editing locked — a skill change is pending HR review';
+        }
     })();
 
-    /* ─── Disclaimer gates Save button ─── */
+    /* ── Save before navigating to another portal tab (no browser dialog) ── */
+    /* The base template calls essSaveBeforeNav() when a nav tab is clicked */
+    window.essSaveBeforeNav = function() {
+        saveToStorage();
+    };
+
+    /* beforeunload removed — base template intercepts tab clicks and
+       calls essSaveBeforeNav() before navigating, so no dialog appears.
+       Only browser close/refresh would lose data, which is acceptable. */
+
+    /* ── Disclaimer gates Save button ── */
     document.getElementById('expDisclaimer').addEventListener('change', function(){
         var btn = document.getElementById('expSaveBtn');
         btn.disabled    = !this.checked;
         btn.style.opacity = this.checked ? '1' : '0.6';
     });
 
-    /* ─── Resume file input ─── */
+    /* ── Resume file input ── */
     var resumeFileInput = document.getElementById('resumeFileInput');
     if(resumeFileInput){
         resumeFileInput.addEventListener('change', function(){
@@ -556,29 +595,23 @@ document.addEventListener('DOMContentLoaded', function(){
             var lblEl  = document.getElementById('resumeFileLabel');
             var nameEl = document.getElementById('resumeFileName');
             errEl.style.display = 'none';
-
             if(!this.files || this.files.length === 0){
                 lblEl.style.display = 'none';
                 pendingChanges = pendingChanges.filter(function(c){ return c.type !== 'resume'; });
-                updateBadge();
-                return;
+                updateBadge(); return;
             }
             var file = this.files[0];
-            var allowed = ['application/pdf','application/msword',
-                           'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+            var allowed = ['application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
             if(allowed.indexOf(file.type) === -1){
                 errEl.textContent = 'Only PDF, DOC, and DOCX files are allowed.';
-                errEl.style.display = 'block';
-                this.value = ''; return;
+                errEl.style.display = 'block'; this.value = ''; return;
             }
             if(file.size > 10 * 1024 * 1024){
                 errEl.textContent = 'File size must not exceed 10 MB.';
-                errEl.style.display = 'block';
-                this.value = ''; return;
+                errEl.style.display = 'block'; this.value = ''; return;
             }
             nameEl.textContent = file.name;
             lblEl.style.display = 'block';
-            /* Stage the resume change */
             pendingChanges = pendingChanges.filter(function(c){ return c.type !== 'resume'; });
             pendingChanges.push({ type:'resume', rowId:null, payload:{ filename: file.name } });
             updateBadge();
@@ -586,7 +619,7 @@ document.addEventListener('DOMContentLoaded', function(){
         });
     }
 
-    /* ─── Cascading dropdowns ─── */
+    /* ── Cascading dropdowns ── */
     var typeSelect  = document.getElementById('modalSkillType');
     var skillSelect = document.getElementById('modalSkill');
     var levelSelect = document.getElementById('modalLevel');
@@ -598,18 +631,16 @@ document.addEventListener('DOMContentLoaded', function(){
         skillSelect.disabled = true; levelSelect.disabled = true;
         if(!typeId) return;
         (skillData.skills[typeId]||[]).forEach(function(sk){
-            var opt = document.createElement('option'); opt.value=sk.id; opt.textContent=sk.name;
-            skillSelect.appendChild(opt);
+            var opt = document.createElement('option'); opt.value=sk.id; opt.textContent=sk.name; skillSelect.appendChild(opt);
         });
         skillSelect.disabled = (skillData.skills[typeId]||[]).length === 0;
         (skillData.levels[typeId]||[]).forEach(function(lv){
-            var opt = document.createElement('option'); opt.value=lv.id; opt.textContent=lv.name;
-            levelSelect.appendChild(opt);
+            var opt = document.createElement('option'); opt.value=lv.id; opt.textContent=lv.name; levelSelect.appendChild(opt);
         });
         levelSelect.disabled = (skillData.levels[typeId]||[]).length === 0;
     });
 
-    /* ─── Add Skills Modal ─── */
+    /* ── Add Skills Modal ── */
     function renderModalQueue(){
         var tbody = document.getElementById('skillStagedBody');
         var sec   = document.getElementById('skillStagedSection');
@@ -620,8 +651,7 @@ document.addEventListener('DOMContentLoaded', function(){
         ctr.textContent = modalQueue.length + ' skill(s) ready to save';
         modalQueue.forEach(function(item, idx){
             var tr = document.createElement('tr');
-            tr.innerHTML =
-                '<td style="font-size:12px;">'+esc(item.typeName)+'</td>'+
+            tr.innerHTML = '<td style="font-size:12px;">'+esc(item.typeName)+'</td>'+
                 '<td style="font-size:12px;">'+esc(item.skillName)+'</td>'+
                 '<td style="font-size:12px;"><span class="badge bg-primary">'+esc(item.levelName)+'</span></td>'+
                 '<td><button type="button" class="btn btn-sm btn-link text-danger p-0" data-idx="'+idx+'"><i class="fa fa-times"></i></button></td>';
@@ -629,8 +659,7 @@ document.addEventListener('DOMContentLoaded', function(){
         });
         tbody.querySelectorAll('button[data-idx]').forEach(function(btn){
             btn.addEventListener('click', function(){
-                modalQueue.splice(parseInt(this.dataset.idx),1);
-                renderModalQueue();
+                modalQueue.splice(parseInt(this.dataset.idx),1); renderModalQueue();
             });
         });
     }
@@ -654,13 +683,11 @@ document.addEventListener('DOMContentLoaded', function(){
         if(!typeSelect.value)  { showMsg('Please select a Skill Type.','error'); return; }
         if(!skillSelect.value) { showMsg('Please select a Skill.','error'); return; }
         if(!levelSelect.value) { showMsg('Please select a Level.','error'); return; }
-        if(modalQueue.some(function(i){ return i.skillId===skillSelect.value; })){
-            showMsg('This skill is already in the list.','error'); return;
-        }
+        if(modalQueue.some(function(i){ return i.skillId===skillSelect.value; })){ showMsg('This skill is already in the list.','error'); return; }
         modalQueue.push({
-            typeId: typeSelect.value, typeName: typeOpt?typeOpt.textContent:'',
-            skillId: skillSelect.value, skillName: skillOpt?skillOpt.textContent:'',
-            levelId: levelSelect.value, levelName: levelOpt?levelOpt.textContent:'',
+            typeId:typeSelect.value, typeName:typeOpt?typeOpt.textContent:'',
+            skillId:skillSelect.value, skillName:skillOpt?skillOpt.textContent:'',
+            levelId:levelSelect.value, levelName:levelOpt?levelOpt.textContent:'',
         });
         renderModalQueue();
         skillSelect.value=''; levelSelect.value='';
@@ -670,15 +697,10 @@ document.addEventListener('DOMContentLoaded', function(){
         if(modalQueue.length === 0){ showMsg('Please add at least one skill.','error'); return; }
         var emptyRow = document.getElementById('skillEmptyRow');
         if(emptyRow) emptyRow.remove();
-
         var batchItems = modalQueue.map(function(item){
-            return { skill_id:item.skillId, skill_name:item.skillName,
-                     level_id:item.levelId, level_name:item.levelName,
-                     type_id:item.typeId,   type_name:item.typeName };
+            return { skill_id:item.skillId, skill_name:item.skillName, level_id:item.levelId, level_name:item.levelName, type_id:item.typeId, type_name:item.typeName };
         });
         pendingChanges.push({ type:'add_batch', rowId:null, payload:{ batch_skills:batchItems } });
-
-        /* Visual rows */
         var tbody = document.getElementById('skillTableBody');
         modalQueue.forEach(function(item){
             var rowTempId = tempId--;
@@ -697,20 +719,19 @@ document.addEventListener('DOMContentLoaded', function(){
             tbody.appendChild(tr);
             bindDelete(tr);
         });
-
         updateBadge();
+        saveToStorage();
         closeModal('addSkillModal');
         showMsg(modalQueue.length+' skill(s) staged. Accept the disclaimer and click "Submit for HR Approval".','info');
         modalQueue = [];
     });
 
-    /* ─── Edit Skill Modal ─── */
+    /* ── Edit Skill Modal ── */
     function bindEdit(){
         document.querySelectorAll('.ess-btn-edit-skill').forEach(function(btn){
             btn.addEventListener('click', function(){
                 var rowId = this.dataset.id;
-                var row   = getRow(rowId);
-                if(!row) return;
+                var row   = getRow(rowId); if(!row) return;
                 document.getElementById('editRecordId').value  = rowId;
                 document.getElementById('editTypeId').value    = row.dataset.typeId||'';
                 document.getElementById('editTypeName').value  = row.dataset.typeName||'';
@@ -718,8 +739,7 @@ document.addEventListener('DOMContentLoaded', function(){
                 var lsel = document.getElementById('editLevelSelect');
                 lsel.innerHTML = '<option value="">— Select Level —</option>';
                 (skillData.levels[row.dataset.typeId]||[]).forEach(function(lv){
-                    var opt=document.createElement('option'); opt.value=lv.id; opt.textContent=lv.name;
-                    lsel.appendChild(opt);
+                    var opt=document.createElement('option'); opt.value=lv.id; opt.textContent=lv.name; lsel.appendChild(opt);
                 });
                 lsel.value = row.dataset.levelId||'';
                 openModal('editSkillModal');
@@ -748,16 +768,14 @@ document.addEventListener('DOMContentLoaded', function(){
         updateBadge(); closeModal('editSkillModal'); showMsg('Edit staged.','info');
     });
 
-    /* ─── Delete staging ─── */
+    /* ── Delete staging ── */
     function bindDelete(row){
-        var btn = row.querySelector('.ess-btn-delete-skill');
-        if(!btn) return;
+        var btn = row.querySelector('.ess-btn-delete-skill'); if(!btn) return;
         btn.addEventListener('click', function(){
             var rowId  = this.dataset.id;
             var isTemp = parseInt(rowId,10) < 0;
             if(!confirm('Remove this skill?')) return;
             if(isTemp){
-                /* Remove the whole batch if this was a staged-new row */
                 pendingChanges = pendingChanges.filter(function(c){ return c.type !== 'add_batch'; });
                 var r = getRow(rowId); if(r) r.remove();
             } else {
@@ -768,8 +786,7 @@ document.addEventListener('DOMContentLoaded', function(){
                     r.classList.remove('skill-staged-edit'); r.classList.add('skill-staged-delete');
                     setBadge(r,'delete');
                     r.querySelector('.skill-action-col').innerHTML =
-                        '<button type="button" class="btn btn-sm btn-outline-secondary ess-btn-undo" data-id="'+rowId+'" title="Undo">'+
-                            '<i class="fa fa-undo me-1"></i>Undo</button>';
+                        '<button type="button" class="btn btn-sm btn-outline-secondary ess-btn-undo" data-id="'+rowId+'" title="Undo"><i class="fa fa-undo me-1"></i>Undo</button>';
                     bindUndo(r);
                 }
             }
@@ -778,8 +795,7 @@ document.addEventListener('DOMContentLoaded', function(){
     }
 
     function bindUndo(row){
-        var btn = row.querySelector('.ess-btn-undo');
-        if(!btn) return;
+        var btn = row.querySelector('.ess-btn-undo'); if(!btn) return;
         btn.addEventListener('click', function(){
             var rowId = this.dataset.id;
             pendingChanges = pendingChanges.filter(function(c){ return !(c.rowId==rowId&&c.type==='delete'); });
@@ -791,10 +807,9 @@ document.addEventListener('DOMContentLoaded', function(){
         });
     }
 
-    /* Bind on existing server-rendered rows */
     document.querySelectorAll('#skillTableBody tr[data-id]').forEach(function(row){ bindDelete(row); });
 
-    /* ─── Edit mode toggle ─── */
+    /* ── Edit mode toggle ── */
     function enableEdit(){
         document.getElementById('openSkillModal').style.display='inline-flex';
         document.getElementById('skillActionHeader').style.display='';
@@ -803,7 +818,6 @@ document.addEventListener('DOMContentLoaded', function(){
         var rs=document.getElementById('resumeEditSection'); if(rs) rs.style.display='block';
         document.getElementById('expViewActions').style.display='none';
         document.getElementById('expFormActions').style.display='block';
-        /* Reset disclaimer + Save button on each entry */
         var disc=document.getElementById('expDisclaimer'); if(disc) disc.checked=false;
         var btn=document.getElementById('expSaveBtn'); if(btn){ btn.disabled=true; btn.style.opacity='0.6'; }
         updateBadge();
@@ -814,7 +828,6 @@ document.addEventListener('DOMContentLoaded', function(){
         document.getElementById('skillActionHeader').style.display='none';
         document.querySelectorAll('.skill-action-col').forEach(function(td){ td.style.display='none'; });
         var h=document.getElementById('skillEmptyHint'); if(h) h.style.display='none';
-        /* Hide + reset resume section */
         var rs=document.getElementById('resumeEditSection'); if(rs) rs.style.display='none';
         var rfi=document.getElementById('resumeFileInput'); if(rfi) rfi.value='';
         var rfl=document.getElementById('resumeFileLabel'); if(rfl) rfl.style.display='none';
@@ -824,14 +837,20 @@ document.addEventListener('DOMContentLoaded', function(){
         var btn=document.getElementById('expSaveBtn'); if(btn){ btn.disabled=true; btn.style.opacity='0.6'; }
     }
 
-    document.getElementById('expEditBtn').addEventListener('click', enableEdit);
+    document.getElementById('expEditBtn').addEventListener('click', function(){
+        if(this.disabled) return;
+        enableEdit();
+    });
 
     document.getElementById('expCancelBtn').addEventListener('click', function(){
         if(pendingChanges.length>0 && !confirm('Discard all unsaved changes?')) return;
-        pendingChanges=[]; disableEdit(); location.reload();
+        pendingChanges=[];
+        isSubmitting=true;
+        disableEdit();
+        location.reload();
     });
 
-    /* ─── SUBMIT FOR HR APPROVAL ─── */
+    /* ── FIX 3: Submit — immediately lock edit mode, single submission only ── */
     document.getElementById('expSaveBtn').addEventListener('click', function(){
         var disc = document.getElementById('expDisclaimer');
         if(disc && !disc.checked){
@@ -841,24 +860,61 @@ document.addEventListener('DOMContentLoaded', function(){
         if(pendingChanges.length === 0){ disableEdit(); return; }
 
         var btn = this;
+
+        /* Immediately lock everything — no second click possible during submit */
         btn.disabled = true;
         btn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i>Submitting...';
+        document.getElementById('expCancelBtn').disabled = true;
+        document.getElementById('expDisclaimer').disabled = true;
+        document.getElementById('openSkillModal').style.display = 'none';
+        document.querySelectorAll('.skill-action-col').forEach(function(td){ td.style.display='none'; });
 
-        var changes = pendingChanges.slice();
+        /* Merge all add_batch entries into one single batch — ONE PCR for all skills */
+        var mergedSkills = [];
+        var otherChanges = [];
+        pendingChanges.forEach(function(c) {
+            if (c.type === 'add_batch' &amp;&amp; c.payload &amp;&amp; c.payload.batch_skills) {
+                mergedSkills = mergedSkills.concat(c.payload.batch_skills);
+            } else {
+                otherChanges.push(c);
+            }
+        });
+        if (mergedSkills.length > 0) {
+            otherChanges.unshift({ type:'add_batch', rowId:null, payload:{ batch_skills: mergedSkills } });
+        }
+        var changes = otherChanges;
         var errors  = [];
 
-        /* ── processes each pending change sequentially ── */
         function next(i){
             if(i >= changes.length){
-                /* All done */
                 if(errors.length > 0){
                     showMsg('Some changes failed: ' + errors.join('; '), 'error');
+                    /* Re-enable on partial failure for retry */
                     btn.disabled = false;
                     btn.innerHTML = '<i class="fa fa-paper-plane me-1"></i>Submit for HR Approval';
+                    document.getElementById('expCancelBtn').disabled = false;
+                    document.getElementById('expDisclaimer').disabled = false;
                 } else {
-                    showMsg('All changes submitted for HR Approval!', 'success');
+                    showMsg('Changes submitted! Reloading to show your pending status...', 'success');
                     pendingChanges = [];
-                    setTimeout(function(){ location.reload(); }, 1200);
+                    isSubmitting = true;
+                    /* Disable Add Skills button immediately */
+                    var addBtn = document.getElementById('openSkillModal');
+                    if (addBtn) { addBtn.disabled = true; addBtn.style.opacity = '0.5'; }
+                    /* Show overlay and auto-reload */
+                    var overlay = document.createElement('div');
+                    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(255,255,255,0.95);display:flex;align-items:center;justify-content:center;';
+                    overlay.innerHTML = '<div style="text-align:center;padding:32px;background:white;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.12);max-width:420px;">' +
+                        '<div style="font-size:52px;margin-bottom:14px;">✅</div>' +
+                        '<h4 style="color:#155724;font-weight:700;margin-bottom:10px;">Skills Submitted!</h4>' +
+                        '<p style="color:#555;margin-bottom:12px;">Your skill/resume changes have been sent to HR for approval.</p>' +
+                        '<p style="color:#888;font-size:13px;"><i class="fa fa-refresh fa-spin me-1"></i>Reloading...</p>' +
+                        '<div style="height:4px;background:#e0e0e0;border-radius:4px;overflow:hidden;width:180px;margin:12px auto 0;">' +
+                        '<div id="exp-prog" style="height:100%;width:0%;background:#0d6efd;border-radius:4px;transition:width 1.3s linear;"></div></div>' +
+                        '</div>';
+                    document.body.appendChild(overlay);
+                    setTimeout(function(){ var p=document.getElementById('exp-prog'); if(p) p.style.width='100%'; }, 50);
+                    setTimeout(function(){ location.reload(); }, 1500);
                 }
                 return;
             }
@@ -908,7 +964,7 @@ document.addEventListener('DOMContentLoaded', function(){
                     .catch(function(){ errors.push('Resume: network error'); next(i+1); });
 
             } else {
-                next(i+1); /* skip unknown */
+                next(i+1);
             }
         }
 
@@ -923,4 +979,8 @@ document.addEventListener('DOMContentLoaded', function(){
             </t>
         </t>
     </template>
+
+
 </odoo>
+
+

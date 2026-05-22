@@ -1936,9 +1936,21 @@ class PortalEmployee(http.Controller):
             # GET - pass all required variables to template
             notification = None
             try:
-                latest_request = request.env['hr.profile.change.request'].sudo().search(
-                    [('employee_id', '=', employee.id)], order='id desc', limit=1
+                all_requests = request.env['hr.profile.change.request'].sudo().search(
+                    [('employee_id', '=', employee.id)], order='id desc'
                 )
+                # Only show lock banner for personal detail PCRs, not skill/cert PCRs
+                latest_request = None
+                for req in all_requests:
+                    try:
+                        import json as _json
+                        data = _json.loads(req.submitted_data or '{}')
+                        if '_skill_change' not in data and '_cert_change' not in data and '_resume_change' not in data:
+                            latest_request = req
+                            break
+                    except Exception:
+                        latest_request = req
+                        break
                 notification = self._get_notification(latest_request)
             except Exception as e:
                 _logger.warning("Could not load notification for employee %s: %s", employee.id, str(e))
