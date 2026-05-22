@@ -13,8 +13,7 @@ class HrSalaryAttachment(models.Model):
     currency_id = fields.Many2one('res.currency', string='Currency', required=True, readonly=False, related=False,
                                   default=lambda self: self.env.company.currency_id)
     date_estimated_end = fields.Date(
-        'Estimated End Date', compute='_compute_estimated_end',
-        help='Approximated end date.',
+        'Estimated End Date', help='Approximated end date.'
     )
 
     # @api.constrains('currency_id')
@@ -23,20 +22,20 @@ class HrSalaryAttachment(models.Model):
     #         raise ValidationError(_("Salary attachment currency not match employee current contract currency."))
 
     # sriman removed and commented 'no_end_date' and its codefrom depends as this is removed in odoo 19
-    @api.depends('state', 'total_amount', 'monthly_amount', 'date_start')
-    def _compute_estimated_end(self):
-        for record in self:
-            if record.state not in ['close', 'cancel'] and record.has_total_amount and record.monthly_amount:
-                date_estimated_end = start_of(record.date_start + relativedelta(months=ceil(record.remaining_amount / record.monthly_amount)),'month')
-                record.date_estimated_end = date_estimated_end  - relativedelta(days=1)
-                date_end = start_of(record.date_start + relativedelta(months=ceil(record.remaining_amount / record.monthly_amount)),'month')
-                record.date_end = date_end - relativedelta(days=1)
-            else:
-                record.date_estimated_end = False
-                record.date_end = False
-            # if record.no_end_date == True:
-            #     record.date_estimated_end = False
-            #     record.date_end = False
+    # @api.depends('state', 'total_amount', 'monthly_amount', 'date_start')
+    # def _compute_estimated_end(self):
+    #     for record in self:
+    #         if record.state not in ['close', 'cancel'] and record.has_total_amount and record.monthly_amount:
+    #             date_estimated_end = start_of(record.date_start + relativedelta(months=ceil(record.remaining_amount / record.monthly_amount)),'month')
+    #             record.date_estimated_end = date_estimated_end  - relativedelta(days=1)
+    #             date_end = start_of(record.date_start + relativedelta(months=ceil(record.remaining_amount / record.monthly_amount)),'month')
+    #             record.date_end = date_end - relativedelta(days=1)
+    #         else:
+    #             record.date_estimated_end = False
+    #             record.date_end = False
+    #         # if record.no_end_date == True:
+    #         #     record.date_estimated_end = False
+    #         #     record.date_end = False
 
 class HrPayslip(models.Model):
     _inherit = 'hr.payslip'
