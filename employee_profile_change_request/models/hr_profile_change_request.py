@@ -722,6 +722,7 @@ class HrProfileChangeRequest(models.Model):
         if write_vals:
             try:
                 self.employee_id.sudo().write(write_vals)
+                self.employee_id.sudo().invalidate_recordset()
                 _logger.info('PCR %s approved — %d fields written: %s',
                              self.name, len(write_vals), list(write_vals.keys()))
             except Exception as e:
@@ -749,6 +750,8 @@ class HrProfileChangeRequest(models.Model):
             'last_portal_submission': False,
             'last_submission_state': 'approved',
         })
+        self.employee_id.sudo().invalidate_recordset()
+        _logger.info('PCR %s finalized — employee cache cleared', self.name)
 
     def _apply_cert_change(self, cert_change):
         action = cert_change.get('cert_action')

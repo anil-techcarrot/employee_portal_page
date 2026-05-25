@@ -210,6 +210,7 @@ class EmployeePortalProfileSubmit(http.Controller):
 
         if request.httprequest.method == 'POST':
             return self._handle_post(employee, post)
+        employee.sudo().invalidate_recordset() 
 
         portal_overlay = {}
         if (employee.last_portal_submission
