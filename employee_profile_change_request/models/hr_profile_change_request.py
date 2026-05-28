@@ -37,9 +37,7 @@ FIELD_LABELS = {
     'second_alternative_number': 'Second Alternative Number',
     'home_land_line_no': 'Home Land Line',
     'relationship_with_emp_id': 'Relationship with Employee',
-    'second_relation_with_employee': 'Relationship with Employee (1)',
     'spouse_passport_no': 'Spouse Passport No',
-    'spouse_passport_issuing_countries_id': 'Spouse Passport Issuing Country',
     'spouse_passport_issue_date': 'Spouse Passport Issue Date',
     'spouse_passport_expiry_date': 'Spouse Passport Expiry Date',
     'spouse_visa_no': 'Spouse Visa No',
@@ -117,7 +115,6 @@ MANY2ONE_FIELDS = {
     'country_residences_id',
     'dependent_child_passport_issuing_countries_1_id',
     'relationship_with_emp_id',
-    'spouse_passport_issuing_countries_id',
 }
 
 MANY2ONE_MODEL_MAP = {
@@ -134,7 +131,6 @@ MANY2ONE_MODEL_MAP = {
     'mother_nationalities_id': 'res.country',
     'dependent_child_passport_issuing_countries_1_id': 'res.country',
     'relationship_with_emp_id': 'employee.relationship',
-    'spouse_passport_issuing_countries_id': 'res.country',
 }
 
 SELECTION_FIELDS = {
@@ -144,7 +140,7 @@ SELECTION_FIELDS = {
 SKIP_ON_APPROVE = {
     'csrf_token', 'submit',
     'emirates_id_file', 'passport_file', 'other_documents', 'has_work_permit',
-    '_cert_change','_skill_change','_resume_change',
+    '_cert_change',
 }
 
 CODED_VALUE_LABELS = {
@@ -346,16 +342,60 @@ class HrProfileChangeRequest(models.Model):
             domain, fields, groupby,
             offset=offset, limit=limit, orderby=orderby, lazy=lazy)
 
+    def write(self, vals):
+        result = super().write(vals)
+        # Whenever PCR state changes, sync employee last_submission_state
+        if 'state' in vals:
+            new_state = vals['state']
+            for rec in self:
+                try:
+                    if new_state == 'pending':
+                        rec.employee_id.sudo().write({
+                            'last_submission_state': 'pending',
+                        })
+                    elif new_state == 'approved':
+                        rec.employee_id.sudo().write({
+                            'last_submission_state': 'approved',
+                            'last_portal_submission': False,
+                        })
+                        rec.employee_id.sudo().invalidate_recordset()
+                    elif new_state == 'rejected':
+                        rec.employee_id.sudo().write({
+                            'last_submission_state': 'rejected',
+                        })
+                except Exception as e:
+                    _logger.warning('PCR write sync error: %s', e)
+        return result
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
             name_val = vals.get('name', '')
             if not name_val or not name_val.startswith('PCR/'):
+                # Try to get sequence
                 seq = self.env['ir.sequence'].sudo().next_by_code('hr.profile.change.request')
+                if not seq:
+                    # Sequence missing — auto-create it (fixes staging/production)
+                    _logger.warning('PCR sequence missing — auto-creating now')
+                    try:
+                        self.env['ir.sequence'].sudo().create({
+                            'name': 'Profile Change Request',
+                            'code': 'hr.profile.change.request',
+                            'prefix': 'PCR/%(year)s/',
+                            'padding': 4,
+                            'company_id': False,
+                        })
+                        self.env.cr.commit()
+                        seq = self.env['ir.sequence'].sudo().next_by_code('hr.profile.change.request')
+                    except Exception as e:
+                        _logger.error('Failed to auto-create PCR sequence: %s', e)
                 if seq:
                     vals['name'] = seq
                 else:
-                    _logger.error('Sequence hr.profile.change.request not found!')
+                    # Last fallback — use timestamp so HR can still see it
+                    import datetime
+                    vals['name'] = 'PCR/%s/TEMP' % datetime.datetime.now().strftime('%Y/%m%d%H%M%S')
+                    _logger.error('PCR sequence still not available — used temp name')
         return super().create(vals_list)
 
     @api.depends('submitted_data', 'employee_id')
@@ -383,112 +423,83 @@ class HrProfileChangeRequest(models.Model):
                 # ── Certification change special view ──
                 cert_change = data.get('_cert_change')
                 if cert_change:
-                    action_labels = {'add': 'Add Certification', 'edit': 'Edit Certification',
-                                     'delete': 'Delete Certification'}
+                    action_labels = {
+                        'add': 'Add Certification',
+                        'edit': 'Edit Certification',
+                        'delete': 'Delete Certification',
+                    }
                     action = cert_change.get('cert_action', '')
                     skill_name = cert_change.get('skill_name', '—')
                     valid_from = cert_change.get('valid_from') or 'Indefinite'
                     valid_to = cert_change.get('valid_to') or 'Indefinite'
-                    has_attachment = bool(cert_change.get('has_attachment')) or bool(cert_change.get('attachment_name'))
+                    has_att = bool(cert_change.get('has_attachment')) or bool(cert_change.get('attachment_name'))
+                    rec.changed_fields_display = (
+                        '<div style="overflow-x:auto;">'
+                        '<table style="width:100%;border-collapse:collapse;font-size:13px;font-family:Arial,sans-serif;">'
+                        '<thead><tr style="background:#4e73df;color:white;">'
+                        '<th style="padding:10px 12px;border:1px solid #3a5ec9;">Field</th>'
+                        '<th style="padding:10px 12px;border:1px solid #3a5ec9;">Value</th>'
+                        '</tr></thead><tbody>'
+                        f'<tr style="background:#fffde7;">'
+                        f'<td style="padding:8px 12px;border:1px solid #ddd;"><strong>Action</strong></td>'
+                        f'<td style="padding:8px 12px;border:1px solid #ddd;color:#2e7d32;font-weight:600;">{action_labels.get(action, action)}</td>'
+                        f'</tr>'
+                        f'<tr><td style="padding:8px 12px;border:1px solid #ddd;"><strong>Certificate</strong></td>'
+                        f'<td style="padding:8px 12px;border:1px solid #ddd;">{skill_name}</td></tr>'
+                        f'<tr><td style="padding:8px 12px;border:1px solid #ddd;"><strong>Valid From</strong></td>'
+                        f'<td style="padding:8px 12px;border:1px solid #ddd;">{valid_from}</td></tr>'
+                        f'<tr><td style="padding:8px 12px;border:1px solid #ddd;"><strong>Valid To</strong></td>'
+                        f'<td style="padding:8px 12px;border:1px solid #ddd;">{valid_to}</td></tr>'
+                        f'<tr><td style="padding:8px 12px;border:1px solid #ddd;"><strong>Attachment</strong></td>'
+                        f'<td style="padding:8px 12px;border:1px solid #ddd;">{"✅ File attached" if has_att else "—"}</td></tr>'
+                        '</tbody></table></div>'
+                        '<p style="font-size:11px;color:#999;margin-top:8px;">⚠ This certification change will only be applied after you click Approve.</p>'
+                    )
+                    continue
 
-                    rec.changed_fields_display = f'''
-                                    <div style="overflow-x:auto;">
-                                      <table style="width:100%;border-collapse:collapse;font-size:13px;font-family:Arial,sans-serif;">
-                                        <thead><tr style="background:#4e73df;color:white;">
-                                          <th style="padding:10px 12px;text-align:left;border:1px solid #3a5ec9;">Field</th>
-                                          <th style="padding:10px 12px;text-align:left;border:1px solid #3a5ec9;">Value</th>
-                                        </tr></thead>
-                                        <tbody>
-                                          <tr style="background:#fffde7;">
-                                            <td style="padding:8px 12px;border:1px solid #ddd;"><strong>Action</strong></td>
-                                            <td style="padding:8px 12px;border:1px solid #ddd;color:#2e7d32;font-weight:600;">{action_labels.get(action, action)}</td>
-                                          </tr>
-                                          <tr>
-                                            <td style="padding:8px 12px;border:1px solid #ddd;"><strong>Certificate</strong></td>
-                                            <td style="padding:8px 12px;border:1px solid #ddd;">{skill_name}</td>
-                                          </tr>
-                                          <tr>
-                                            <td style="padding:8px 12px;border:1px solid #ddd;"><strong>Valid From</strong></td>
-                                            <td style="padding:8px 12px;border:1px solid #ddd;">{valid_from}</td>
-                                          </tr>
-                                          <tr>
-                                            <td style="padding:8px 12px;border:1px solid #ddd;"><strong>Valid To</strong></td>
-                                            <td style="padding:8px 12px;border:1px solid #ddd;">{valid_to}</td>
-                                          </tr>
-                                          <tr>
-                                            <td style="padding:8px 12px;border:1px solid #ddd;"><strong>Attachment</strong></td>
-                                            <td style="padding:8px 12px;border:1px solid #ddd;">{"✅ File attached (will be saved on approval)" if has_attachment else "—"}</td>
-                                          </tr>
-                                        </tbody>
-                                      </table>
-                                    </div>
-                                    <p style="font-size:11px;color:#999;margin-top:8px;">
-                                      ⚠ This certification change will only be applied to Odoo after you click Approve.
-                                    </p>'''
-                    continue  # skip the normal field-diff rendering
-
-                    # ── Skill change — special rendering ──
+                # ── Skill batch change special view ──
                 skill_change = data.get('_skill_change')
-                if skill_change:
-                    action = skill_change.get('cert_action', '')
+                if skill_change and skill_change.get('cert_action') == 'add_batch':
+                    skills = skill_change.get('skills', [])
+                    rows = ''.join(
+                        f'<tr>'
+                        f'<td style="padding:8px 12px;border:1px solid #ddd;">{i.get("type_name", "—")}</td>'
+                        f'<td style="padding:8px 12px;border:1px solid #ddd;font-weight:600;">{i.get("skill_name", "—")}</td>'
+                        f'<td style="padding:8px 12px;border:1px solid #ddd;">'
+                        f'<span class="badge bg-primary">{i.get("level_name", "—")}</span></td>'
+                        f'</tr>'
+                        for i in skills
+                    )
+                    rec.changed_fields_display = (
+                        f'<div style="overflow-x:auto;">'
+                        f'<p style="font-weight:600;color:#2e7d32;margin-bottom:8px;">Add {len(skills)} Skill(s)</p>'
+                        '<table style="width:100%;border-collapse:collapse;font-size:13px;font-family:Arial,sans-serif;">'
+                        '<thead><tr style="background:#4e73df;color:white;">'
+                        '<th style="padding:10px 12px;border:1px solid #3a5ec9;">Skill Type</th>'
+                        '<th style="padding:10px 12px;border:1px solid #3a5ec9;">Skill</th>'
+                        '<th style="padding:10px 12px;border:1px solid #3a5ec9;">Level</th>'
+                        f'</tr></thead><tbody>{rows}</tbody></table></div>'
+                    )
+                    continue
 
-                    if action == 'add_batch':
-                        skills = skill_change.get('skills', [])
-                        rows = ''
-                        for item in skills:
-                            rows += (
-                                f'<tr>'
-                                f'<td style="padding:8px 12px;border:1px solid #ddd;">{item.get("type_name", "—")}</td>'
-                                f'<td style="padding:8px 12px;border:1px solid #ddd;font-weight:600;">{item.get("skill_name", "—")}</td>'
-                                f'<td style="padding:8px 12px;border:1px solid #ddd;">'
-                                f'<span class="badge bg-primary">{item.get("level_name", "—")}</span></td>'
-                                f'</tr>'
-                            )
-                        rec.changed_fields_display = f'''
-                                                    <div style="overflow-x:auto;">
-                                                    <p style="margin-bottom:8px;font-weight:600;color:#2e7d32;">
-                                                        <i class="fa fa-plus-circle me-1"></i>Add {len(skills)} Skill(s)
-                                                        </p>
-                                                        <table style="width:100%;border-collapse:collapse;font-size:13px;font-family:Arial,sans-serif;">
-                                                        <thead><tr style="background:#4e73df;color:white;">
-                                                            <th style="padding:10px 12px;text-align:left;border:1px solid #3a5ec9;">Skill Type</th>
-                                                            <th style="padding:10px 12px;text-align:left;border:1px solid #3a5ec9;">Skill</th>
-                                                            <th style="padding:10px 12px;text-align:left;border:1px solid #3a5ec9;">Level</th>
-                                                        </tr></thead>
-                                                        <tbody>{rows}</tbody>
-                                                        </table>
-                                                    </div>
-                                                    <p style="font-size:11px;color:#999;margin-top:8px;">
-                                                        ⚠ These {len(skills)} skill(s) will only be added to Odoo after you click Approve.
-                                                    </p>'''
-                        continue
-
+                # ── Resume change special view ──
                 resume_change = data.get('_resume_change')
                 if resume_change:
-                    filename = resume_change.get('filename', '—')
-                    rec.changed_fields_display = f'''
-                                                    <div style="overflow-x:auto;">
-                                                      <table style="width:100%;border-collapse:collapse;font-size:13px;font-family:Arial,sans-serif;">
-                                                        <thead><tr style="background:#4e73df;color:white;">
-                                                          <th style="padding:10px 12px;text-align:left;border:1px solid #3a5ec9;">Field</th>
-                                                          <th style="padding:10px 12px;text-align:left;border:1px solid #3a5ec9;">Value</th>
-                                                        </tr></thead>
-                                                        <tbody>
-                                                          <tr style="background:#fffde7;">
-                                                            <td style="padding:8px 12px;border:1px solid #ddd;"><strong>Action</strong></td>
-                                                            <td style="padding:8px 12px;border:1px solid #ddd;color:#2e7d32;font-weight:600;">Upload Resume / CV</td>
-                                                          </tr>
-                                                          <tr>
-                                                            <td style="padding:8px 12px;border:1px solid #ddd;"><strong>File Name</strong></td>
-                                                            <td style="padding:8px 12px;border:1px solid #ddd;"><i class="fa fa-file me-1"></i>{filename}</td>
-                                                          </tr>
-                                                        </tbody>
-                                                      </table>
-                                                    </div>
-                                                    <p style="font-size:11px;color:#999;margin-top:8px;">
-                                                      ⚠ Resume will only be saved to the employee record after HR clicks Approve.
-                                                      Download the file from Supporting Documents above.
-                                                    </p>'''
+                    rec.changed_fields_display = (
+                        '<div style="overflow-x:auto;">'
+                        '<table style="width:100%;border-collapse:collapse;font-size:13px;font-family:Arial,sans-serif;">'
+                        '<thead><tr style="background:#4e73df;color:white;">'
+                        '<th style="padding:10px 12px;border:1px solid #3a5ec9;">Field</th>'
+                        '<th style="padding:10px 12px;border:1px solid #3a5ec9;">Value</th>'
+                        '</tr></thead><tbody>'
+                        '<tr style="background:#fffde7;">'
+                        '<td style="padding:8px 12px;border:1px solid #ddd;"><strong>Action</strong></td>'
+                        '<td style="padding:8px 12px;border:1px solid #ddd;color:#2e7d32;font-weight:600;">Upload Resume / CV</td>'
+                        '</tr>'
+                        f'<tr><td style="padding:8px 12px;border:1px solid #ddd;"><strong>File Name</strong></td>'
+                        f'<td style="padding:8px 12px;border:1px solid #ddd;">{resume_change.get("filename", "—")}</td></tr>'
+                        '</tbody></table></div>'
+                    )
                     continue
 
                 # ── Normal field-by-field diff ──
@@ -616,6 +627,28 @@ class HrProfileChangeRequest(models.Model):
 
     def action_submit(self):
         self.ensure_one()
+        # Always ensure proper sequence name — never leave as "New"
+        if not self.name or self.name == 'New' or self.name.startswith('PCR/') is False:
+            seq = self.env['ir.sequence'].sudo().next_by_code('hr.profile.change.request')
+            if not seq:
+                # Sequence missing — create it
+                try:
+                    self.env['ir.sequence'].sudo().create({
+                        'name': 'Profile Change Request',
+                        'code': 'hr.profile.change.request',
+                        'prefix': 'PCR/%(year)s/',
+                        'padding': 4,
+                        'company_id': False,
+                    })
+                    self.env.cr.commit()
+                    seq = self.env['ir.sequence'].sudo().next_by_code('hr.profile.change.request')
+                except Exception as e:
+                    _logger.error('Sequence auto-create failed: %s', e)
+            if seq:
+                self.sudo().write({'name': seq})
+            else:
+                import datetime
+                self.sudo().write({'name': 'PCR/%s/TEMP' % datetime.datetime.now().strftime('%Y/%m%d%H%M%S')})
         self.write({'state': 'pending'})
         self.employee_id.sudo().write({
             'last_portal_submission': self.submitted_data,
@@ -637,41 +670,19 @@ class HrProfileChangeRequest(models.Model):
         cert_change = data.get('_cert_change')
         if cert_change:
             self._apply_cert_change(cert_change)
-            self.write({
-                'state': 'approved',
-                'reviewed_by': self.env.user.id,
-                'review_date': fields.Datetime.now(),
-            })
-            self._add_trail(action='approved', note=f'Approved by {self.env.user.name}.')
-            self._send_mail_to_employee('approved')
-            self.employee_id.sudo().write({
-                'last_portal_submission': False,
-                'last_submission_state': 'approved',
-            })
+            self._finalize_approval()
             return True
 
         skill_change = data.get('_skill_change')
         if skill_change:
             self._apply_skill_change(skill_change)
-            self.write({
-                'state': 'approved',
-                'reviewed_by': self.env.user.id,
-                'review_date': fields.Datetime.now(),
-            })
-            self._add_trail(action='approved', note=f'Approved by {self.env.user.name}.')
-            self._send_mail_to_employee('approved')
-            self.employee_id.sudo().write({
-                'last_portal_submission': False,
-                'last_submission_state': 'approved',
-            })
+            self._finalize_approval()
             return True
+
         resume_change = data.get('_resume_change')
         if resume_change:
             self._apply_resume_change(resume_change)
-            self.write({'state': 'approved', 'reviewed_by': self.env.user.id, 'review_date': fields.Datetime.now()})
-            self._add_trail(action='approved', note=f'Approved by {self.env.user.name}.')
-            self._send_mail_to_employee('approved')
-            self.employee_id.sudo().write({'last_portal_submission': False, 'last_submission_state': 'approved'})
+            self._finalize_approval()
             return True
 
         write_vals = {}
@@ -698,9 +709,14 @@ class HrProfileChangeRequest(models.Model):
                 continue
 
             if k in SELECTION_FIELDS:
-                str_v = str(v).strip() if v else ''
-                if str_v:
-                    write_vals[k] = str_v
+                field_obj = self.employee_id._fields.get(k)
+                if field_obj and hasattr(field_obj, 'selection'):
+                    sel = field_obj.selection
+                    valid_keys = [s[0] for s in (sel(self.employee_id) if callable(sel) else sel)]
+                    if v not in valid_keys:
+                        _logger.warning('PCR %s: invalid selection %s=%r', self.name, k, v)
+                        continue
+                write_vals[k] = v
                 continue
 
             if k == 'children':
@@ -722,9 +738,11 @@ class HrProfileChangeRequest(models.Model):
         if write_vals:
             try:
                 self.employee_id.sudo().write(write_vals)
+                # Invalidate cache so portal reads fresh values from DB
                 self.employee_id.sudo().invalidate_recordset()
-                _logger.info('PCR %s approved — %d fields written: %s',
-                             self.name, len(write_vals), list(write_vals.keys()))
+                _logger.info('PCR %s approved — %d fields written: %s — values: %s',
+                             self.name, len(write_vals), list(write_vals.keys()),
+                             {k: write_vals[k] for k in list(write_vals.keys())[:5]})
             except Exception as e:
                 _logger.error('PCR %s: write error: %s', self.name, e)
                 raise UserError(_(
@@ -750,6 +768,7 @@ class HrProfileChangeRequest(models.Model):
             'last_portal_submission': False,
             'last_submission_state': 'approved',
         })
+        # Invalidate ORM cache so portal reads fresh DB values immediately
         self.employee_id.sudo().invalidate_recordset()
         _logger.info('PCR %s finalized — employee cache cleared', self.name)
 
@@ -883,8 +902,7 @@ class HrProfileChangeRequest(models.Model):
     def _apply_resume_change(self, resume_change):
         employee = self.employee_id
         pcr_attachment = self.env['ir.attachment'].sudo().search([
-            ('res_model', '=', 'hr.profile.change.request'),
-            ('res_id', '=', self.id),
+            ('res_model', '=', 'hr.profile.change.request'), ('res_id', '=', self.id),
             ('description', '=', 'Resume submitted by employee for approval'),
         ], limit=1)
         if not pcr_attachment:
@@ -894,7 +912,6 @@ class HrProfileChangeRequest(models.Model):
             'resume_file': pcr_attachment.datas,
             'resume_file_filename': resume_change.get('filename', pcr_attachment.name),
         })
-        _logger.info('Resume approved for employee %s: %s', employee.name, resume_change.get('filename'))
 
     def action_reject(self):
         self.ensure_one()
@@ -905,6 +922,42 @@ class HrProfileChangeRequest(models.Model):
             'view_mode': 'form', 'target': 'new',
             'context': {'default_request_id': self.id},
         }
+
+    @api.model
+    def resend_stuck_notifications_to_hr(self):
+        # Find ALL pending PCRs — fix their names and resend HR email
+        # This ensures HR always sees every pending request
+        try:
+            pending_pcrs = self.sudo().search([('state', '=', 'pending')])
+            fixed = 0
+            for pcr in pending_pcrs:
+                # Fix name if still "New"
+                if not pcr.name or pcr.name == 'New':
+                    seq = self.env['ir.sequence'].sudo().next_by_code('hr.profile.change.request')
+                    if not seq:
+                        try:
+                            self.env['ir.sequence'].sudo().create({
+                                'name': 'Profile Change Request',
+                                'code': 'hr.profile.change.request',
+                                'prefix': 'PCR/%(year)s/',
+                                'padding': 4,
+                                'company_id': False,
+                            })
+                            seq = self.env['ir.sequence'].sudo().next_by_code('hr.profile.change.request')
+                        except Exception:
+                            pass
+                    if seq:
+                        pcr.sudo().write({'name': seq})
+                        fixed += 1
+                # Ensure employee state is pending
+                if pcr.employee_id.last_submission_state != 'pending':
+                    pcr.employee_id.sudo().write({'last_submission_state': 'pending'})
+            if fixed:
+                _logger.info('resend_stuck_notifications: fixed %d PCR name(s)', fixed)
+            return fixed
+        except Exception as e:
+            _logger.warning('resend_stuck_notifications error: %s', e)
+            return 0
 
     def action_reset_to_pending(self):
         self.ensure_one()
@@ -941,8 +994,15 @@ class HrProfileChangeRequest(models.Model):
                     hr_names_list.append(u.name)
             if not hr_emails:
                 return
+            # Get base URL for direct link
+            try:
+                base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url', '')
+                direct_link = f'{base_url}/odoo/action-employee_profile_change_request.action_hr_profile_change_request/{self.id}' if self.id else ''
+            except Exception:
+                direct_link = ''
+
             mail = self.env['mail.mail'].sudo().create({
-                'subject': f'New Profile Change Request: {self.name} — {self.employee_id.name}',
+                'subject': f'Profile Change Request: {self.name} — {self.employee_id.name} [Action Required]',
                 'email_to': ', '.join(hr_emails),
                 'email_from': self.employee_id.company_id.email or 'notifications@techcarrot-fz-llc1.odoo.com',
                 'auto_delete': False,
@@ -950,10 +1010,10 @@ class HrProfileChangeRequest(models.Model):
                     f'<div style="font-family:Arial,sans-serif;max-width:620px;margin:auto;'
                     f'border:1px solid #ddd;border-radius:8px;overflow:hidden;">'
                     f'<div style="background:#4e73df;padding:24px 28px;">'
-                    f'<h2 style="color:white;margin:0;font-size:20px;">📋 New Profile Change Request</h2>'
+                    f'<h2 style="color:white;margin:0;font-size:20px;">📋 Profile Change Request — Action Required</h2>'
                     f'</div>'
                     f'<div style="padding:24px;background:#f9f9f9;">'
-                    f'<p>Dear HR Team, <b>{self.employee_id.name}</b> has submitted a profile update.</p>'
+                    f'<p>Dear HR Team,<br><b>{self.employee_id.name}</b> has submitted a profile update request that needs your approval.</p>'
                     f'<table style="width:100%;border-collapse:collapse;background:white;">'
                     f'<tr style="background:#eef2ff;"><td style="padding:10px 14px;border:1px solid #ddd;font-weight:bold;width:38%;">Reference</td>'
                     f'<td style="padding:10px 14px;border:1px solid #ddd;">{self.name}</td></tr>'
@@ -964,7 +1024,8 @@ class HrProfileChangeRequest(models.Model):
                     f'<tr><td style="padding:10px 14px;border:1px solid #ddd;font-weight:bold;">Submitted On</td>'
                     f'<td style="padding:10px 14px;border:1px solid #ddd;">{self.submission_date}</td></tr>'
                     f'</table>'
-                    f'<p>Go to: <b>Profile Change Requests → Pending Review</b></p>'
+                    f'{"<p style=margin-top:16px;><a href=" + chr(39) + direct_link + chr(39) + " style=background:#4e73df;color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:bold;>👉 Click here to Review &amp; Approve/Reject</a></p>" if direct_link else ""}'
+                    f'<p style="margin-top:12px;">Or go to: <b>Odoo → Profile Change Requests → Pending Review</b></p>'
                     f'<p style="color:#999;font-size:11px;">Sent to: {", ".join(hr_names_list)}</p>'
                     f'</div></div>'
                 ),

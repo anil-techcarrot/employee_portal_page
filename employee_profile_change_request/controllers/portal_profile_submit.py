@@ -135,6 +135,73 @@ def _get_employee():
     )
 
 
+def _ensure_sequence_exists(env):
+    try:
+        existing = env['ir.sequence'].sudo().search(
+            [('code', '=', 'hr.profile.change.request')], limit=1
+        )
+        if not existing:
+            env['ir.sequence'].sudo().create({
+                'name': 'Profile Change Request',
+                'code': 'hr.profile.change.request',
+                'prefix': 'PCR/%(year)s/',
+                'padding': 4,
+                'company_id': False,
+            })
+            env.cr.commit()
+            _logger.info('PCR sequence auto-created in DB')
+    except Exception as e:
+        _logger.warning('_ensure_sequence_exists error: %s', e)
+
+
+def _fix_stuck_pcrs(env, employee):
+    try:
+        # Step 1: Fix ALL "New" named PCRs in the entire system
+        # so HR can see every pending request
+        env['hr.profile.change.request'].sudo().resend_stuck_notifications_to_hr()
+
+        all_new_pcrs = env['hr.profile.change.request'].sudo().search([
+            ('name', '=', 'New'),
+            ('state', '=', 'pending'),
+        ])
+        for pcr in all_new_pcrs:
+            seq = env['ir.sequence'].sudo().next_by_code('hr.profile.change.request')
+            if seq:
+                pcr.sudo().write({'name': seq})
+                _logger.info('Auto-fixed PCR name for %s -> %s', pcr.employee_id.name, seq)
+
+        # Step 2: Fix employee stuck on pending with no actual pending PCR
+        if employee.last_submission_state == 'pending':
+            pending = env['hr.profile.change.request'].sudo().search([
+                ('employee_id', '=', employee.id),
+                ('state', '=', 'pending'),
+            ], limit=1)
+            if not pending:
+                employee.sudo().write({
+                    'last_submission_state': False,
+                    'last_portal_submission': False,
+                })
+                _logger.info('Cleared stuck pending state for %s', employee.name)
+
+        # Step 3: Sync employee state from their latest PCR
+        # So if HR approved/rejected via wizard and state didn't sync — fix it now
+        latest_any_pcr = env['hr.profile.change.request'].sudo().search([
+            ('employee_id', '=', employee.id),
+        ], order='create_date desc', limit=1)
+        if latest_any_pcr:
+            pcr_state = latest_any_pcr.state
+            emp_state = employee.last_submission_state
+            if pcr_state == 'approved' and emp_state not in ('approved', False):
+                employee.sudo().write({'last_submission_state': 'approved', 'last_portal_submission': False})
+                employee.sudo().invalidate_recordset()
+            elif pcr_state == 'rejected' and emp_state != 'rejected':
+                employee.sudo().write({'last_submission_state': 'rejected'})
+            elif pcr_state in ('draft',) and emp_state == 'pending':
+                employee.sudo().write({'last_submission_state': False, 'last_portal_submission': False})
+    except Exception as e:
+        _logger.warning('_fix_stuck_pcrs error: %s', e)
+
+
 class EmployeePortalProfileSubmit(http.Controller):
 
     # ─────────────────────────────────────────────────────────────────────────
@@ -165,15 +232,15 @@ class EmployeePortalProfileSubmit(http.Controller):
         type='http', auth='user', website=True, methods=['GET'],
     )
     def portal_employee_document(self, field_name, download=False, **kwargs):
-        # download param comes as string from URL
-        if isinstance(download, str):
-            download = download.lower() in ('true', '1', 'yes')
         if field_name not in ALLOWED_DOCUMENT_FIELDS:
             return request.not_found()
         employee = _get_employee()
         if not employee:
             return request.not_found()
         try:
+            # download param comes as string from URL
+            if isinstance(download, str):
+                download = download.lower() in ('true', '1', 'yes')
             file_data = getattr(employee, field_name, False)
             if not file_data:
                 return request.not_found()
@@ -181,7 +248,24 @@ class EmployeePortalProfileSubmit(http.Controller):
             filename_field = field_name + '_filename'
             filename = getattr(employee, filename_field, None) or field_name
             import mimetypes
-            mimetype = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+
+            # Detect mimetype from file magic bytes first (most reliable)
+            mimetype = None
+            if file_bytes[:4] == b'\x89PNG':
+                mimetype = 'image/png'
+                if not filename.lower().endswith('.png'):
+                    filename = filename + '.png'
+            elif file_bytes[:3] == b'\xff\xd8\xff':
+                mimetype = 'image/jpeg'
+                if not filename.lower().endswith(('.jpg', '.jpeg')):
+                    filename = filename + '.jpg'
+            elif file_bytes[:4] == b'%PDF':
+                mimetype = 'application/pdf'
+                if not filename.lower().endswith('.pdf'):
+                    filename = filename + '.pdf'
+            else:
+                mimetype = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+
             headers = [
                 ('Content-Type', mimetype),
                 ('Content-Length', len(file_bytes)),
@@ -190,10 +274,63 @@ class EmployeePortalProfileSubmit(http.Controller):
                 headers.append(('Content-Disposition', f'attachment; filename="{filename}"'))
             else:
                 headers.append(('Content-Disposition', f'inline; filename="{filename}"'))
+            headers.append(('X-Content-Type-Options', 'nosniff'))
             return request.make_response(file_bytes, headers=headers)
         except Exception as e:
             _logger.error('Error serving document %s: %s', field_name, e)
             return request.not_found()
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # SECURE RESUME DOWNLOAD  ← NEW: no password, no ACL error
+    # ─────────────────────────────────────────────────────────────────────────
+    @http.route(
+        '/my/employee/resume',
+        type='http', auth='user', website=True, methods=['GET'],
+    )
+    def portal_employee_resume(self, download=False, **kwargs):
+        employee = _get_employee()
+        if not employee:
+            return request.not_found()
+        try:
+            if isinstance(download, str):
+                download = download.lower() in ('true', '1', 'yes')
+            file_data = employee.resume_file
+            if not file_data:
+                return request.not_found()
+            file_bytes = base64.b64decode(file_data)
+            filename = employee.resume_file_filename or 'resume'
+            import mimetypes
+
+            mimetype = None
+            if file_bytes[:4] == b'\x89PNG':
+                mimetype = 'image/png'
+                if not filename.lower().endswith('.png'):
+                    filename = filename + '.png'
+            elif file_bytes[:3] == b'\xff\xd8\xff':
+                mimetype = 'image/jpeg'
+                if not filename.lower().endswith(('.jpg', '.jpeg')):
+                    filename = filename + '.jpg'
+            elif file_bytes[:4] == b'%PDF':
+                mimetype = 'application/pdf'
+                if not filename.lower().endswith('.pdf'):
+                    filename = filename + '.pdf'
+            else:
+                mimetype = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+
+            headers = [
+                ('Content-Type', mimetype),
+                ('Content-Length', len(file_bytes)),
+            ]
+            if download:
+                headers.append(('Content-Disposition', f'attachment; filename="{filename}"'))
+            else:
+                headers.append(('Content-Disposition', f'inline; filename="{filename}"'))
+            headers.append(('X-Content-Type-Options', 'nosniff'))
+            return request.make_response(file_bytes, headers=headers)
+        except Exception as e:
+            _logger.error('Error serving resume: %s', e)
+            return request.not_found()
+
 
     # ─────────────────────────────────────────────────────────────────────────
     # PERSONAL DETAILS — GET + POST
@@ -210,7 +347,11 @@ class EmployeePortalProfileSubmit(http.Controller):
 
         if request.httprequest.method == 'POST':
             return self._handle_post(employee, post)
-        employee.sudo().invalidate_recordset() 
+
+        # Invalidate ORM cache so portal always reads latest DB values
+        employee.sudo().invalidate_recordset()
+        _ensure_sequence_exists(request.env)
+        _fix_stuck_pcrs(request.env, employee)
 
         portal_overlay = {}
         if (employee.last_portal_submission
@@ -221,61 +362,50 @@ class EmployeePortalProfileSubmit(http.Controller):
                 portal_overlay = {}
 
         notification = None
-        state = employee.last_submission_state
 
-        # Only lock personal tab for personal detail PCRs (not skill/cert/resume PCRs)
-        all_pending = request.env['hr.profile.change.request'].sudo().search([
+        # Always find the LATEST personal PCR and show its current state
+        latest_personal_pcr = None
+        for _pcr in request.env['hr.profile.change.request'].sudo().search([
             ('employee_id', '=', employee.id),
-            ('state', '=', 'pending'),
-        ], order='create_date desc')
-
-        pending_req = None
-        for _pcr in all_pending:
+        ], order='create_date desc', limit=50):
             try:
                 _data = json.loads(_pcr.submitted_data or '{}')
                 if '_skill_change' not in _data and '_cert_change' not in _data and '_resume_change' not in _data:
-                    pending_req = _pcr
+                    latest_personal_pcr = _pcr
                     break
             except Exception:
-                pending_req = _pcr
+                latest_personal_pcr = _pcr
                 break
 
-        if pending_req:
-            if state != 'pending':
-                employee.sudo().write({'last_submission_state': 'pending'})
+        if latest_personal_pcr and latest_personal_pcr.state == 'pending':
+            employee.sudo().write({'last_submission_state': 'pending'})
             notification = {
                 'type':         'warning',
                 'message':      'Your profile change request is awaiting HR review.',
                 'reason':       False,
-                'request_name': pending_req.name,
+                'request_name': latest_personal_pcr.name,
             }
-        elif state == 'approved':
-            approved_req = request.env['hr.profile.change.request'].sudo().search([
-                ('employee_id', '=', employee.id),
-                ('state', '=', 'approved'),
-            ], order='review_date desc', limit=1)
+        elif latest_personal_pcr and latest_personal_pcr.state == 'approved':
+            employee.sudo().write({'last_submission_state': 'approved'})
             notification = {
                 'type':         'success',
                 'message':      'Your profile has been updated by HR successfully.',
                 'reason':       False,
-                'request_name': approved_req.name if approved_req else '',
+                'request_name': latest_personal_pcr.name,
             }
-        elif state == 'rejected':
-            rejected_req = request.env['hr.profile.change.request'].sudo().search([
-                ('employee_id', '=', employee.id),
-                ('state', '=', 'rejected'),
-            ], order='create_date desc', limit=1)
-            if rejected_req:
-                notification = {
-                    'type':         'danger',
-                    'message':      'Your profile update request was rejected by HR.',
-                    'reason':       rejected_req.rejection_reason or 'No reason provided.',
-                    'request_name': rejected_req.name,
-                }
-            else:
-                employee.sudo().write({'last_submission_state': False})
-        elif state == 'pending' and not pending_req:
+        elif latest_personal_pcr and latest_personal_pcr.state == 'rejected':
+            employee.sudo().write({'last_submission_state': 'rejected'})
+            notification = {
+                'type':         'danger',
+                'message':      'Your profile update request was rejected by HR.',
+                'reason':       latest_personal_pcr.rejection_reason or 'No reason provided.',
+                'request_name': latest_personal_pcr.name,
+            }
+        else:
             employee.sudo().write({'last_submission_state': False})
+
+        # pending_req needed for PENDING_LOCKED in template
+        pending_req = latest_personal_pcr if (latest_personal_pcr and latest_personal_pcr.state == 'pending') else None
 
         countries = request.env['res.country'].sudo().search([], order='name')
         religions = request.env['tec.religion'].sudo().search([], order='name')
@@ -285,7 +415,6 @@ class EmployeePortalProfileSubmit(http.Controller):
         except Exception:
             relationships = []
 
-        # ── Also load experience + certification data so all tabs render on one page ──
         skill_types = request.env['hr.skill.type'].sudo().search([
             ('is_certification', '=', False)
         ], order='name')
@@ -508,7 +637,78 @@ class EmployeePortalProfileSubmit(http.Controller):
         if request.httprequest.method == 'POST':
             action = post.get('action')
             try:
-                if action == 'upload_resume':
+                if action == 'submit_combined':
+                    # ONE PCR for both skill changes AND resume — same sequence number
+                    batch_raw   = post.get('batch_skills', '')
+                    skill_action = post.get('skill_action', '')
+                    resume_file = request.httprequest.files.get('resume_file')
+
+                    combined_payload = {}
+
+                    # Add skill part if present
+                    if batch_raw:
+                        try:
+                            batch_skills = json.loads(batch_raw)
+                            combined_payload['_skill_change'] = {
+                                'cert_action': 'add_batch',
+                                'skills': batch_skills,
+                            }
+                        except Exception:
+                            pass
+                    elif skill_action:
+                        combined_payload['_skill_change'] = {
+                            'cert_action': skill_action,
+                            'skill_record_id': int(post.get('skill_record_id', 0) or 0),
+                            'skill_name': post.get('skill_name', ''),
+                            'type_name': post.get('type_name', ''),
+                            'level_id': int(post.get('level_id', 0) or 0),
+                            'level_name': post.get('level_name', ''),
+                        }
+
+                    # Add resume part if present
+                    resume_data = None
+                    if resume_file and resume_file.filename:
+                        allowed_types = [
+                            'application/pdf',
+                            'application/msword',
+                            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                        ]
+                        if resume_file.content_type not in allowed_types:
+                            return request.make_json_response({'success': False, 'error': 'Only PDF, DOC, DOCX files allowed for resume.'})
+                        file_content = resume_file.read()
+                        if len(file_content) > 10 * 1024 * 1024:
+                            return request.make_json_response({'success': False, 'error': 'Resume file size must not exceed 10 MB.'})
+                        resume_data = base64.b64encode(file_content).decode()
+                        combined_payload['_resume_change'] = {
+                            'filename': resume_file.filename,
+                            'mimetype': resume_file.content_type or 'application/octet-stream',
+                        }
+
+                    if not combined_payload:
+                        return request.make_json_response({'success': False, 'error': 'No changes provided.'})
+
+                    # Create ONE PCR with everything combined
+                    pcr = request.env['hr.profile.change.request'].sudo().create({
+                        'employee_id': employee.id,
+                        'submitted_data': json.dumps(combined_payload),
+                        'state': 'draft',
+                    })
+                    pcr.action_submit()
+
+                    # Attach resume file if present
+                    if resume_data and resume_file:
+                        request.env['ir.attachment'].sudo().create({
+                            'name': resume_file.filename,
+                            'datas': resume_data,
+                            'res_model': 'hr.profile.change.request',
+                            'res_id': pcr.id,
+                            'mimetype': resume_file.content_type or 'application/octet-stream',
+                            'description': 'Resume submitted by employee for approval',
+                        })
+
+                    return request.make_json_response({'success': True, 'reference': pcr.name})
+
+                elif action == 'upload_resume':
                     resume_file = request.httprequest.files.get('resume_file')
                     if not resume_file or not resume_file.filename:
                         return request.make_json_response({'success': False, 'error': 'No file provided.'})
@@ -653,6 +853,9 @@ class EmployeePortalProfileSubmit(http.Controller):
                 return request.make_json_response({'success': False, 'error': str(e)})
 
         # ── GET ──
+        _ensure_sequence_exists(request.env)
+        _fix_stuck_pcrs(request.env, employee)
+
         skill_types = request.env['hr.skill.type'].sudo().search([
             ('is_certification', '=', False)
         ], order='name')
@@ -722,6 +925,40 @@ class EmployeePortalProfileSubmit(http.Controller):
             except Exception:
                 continue
 
+        # Experience tab: only show notification for the LATEST PCR if pending or recently actioned
+        exp_notification = None
+        latest_exp_pcr = None
+        for _pcr in request.env['hr.profile.change.request'].sudo().search([
+            ('employee_id', '=', employee.id),
+        ], order='create_date desc', limit=20):
+            try:
+                _d = json.loads(_pcr.submitted_data or '{}')
+                if '_skill_change' in _d or '_resume_change' in _d:
+                    latest_exp_pcr = _pcr
+                    break
+            except Exception:
+                pass
+
+        if latest_exp_pcr and latest_exp_pcr.state == 'pending':
+            exp_notification = {
+                'type': 'warning',
+                'message': 'Your skills/resume change is awaiting HR review.',
+                'request_name': latest_exp_pcr.name,
+            }
+        elif latest_exp_pcr and latest_exp_pcr.state == 'approved':
+            exp_notification = {
+                'type': 'success',
+                'message': 'Your skills/resume update has been approved by HR.',
+                'request_name': latest_exp_pcr.name,
+            }
+        elif latest_exp_pcr and latest_exp_pcr.state == 'rejected':
+            exp_notification = {
+                'type': 'danger',
+                'message': 'Your skills/resume update was rejected by HR.',
+                'reason': latest_exp_pcr.rejection_reason or 'No reason provided.',
+                'request_name': latest_exp_pcr.name,
+            }
+
         return request.render(
             'employee_self_service_portal.portal_employee_profile_experience',
             {
@@ -732,6 +969,7 @@ class EmployeePortalProfileSubmit(http.Controller):
                 'skill_data_json':       json.dumps(skill_data),
                 'pending_skill_changes': pending_skill_changes,
                 'pending_resume_change': pending_resume_change,
+                'exp_notification':      exp_notification,
             }
         )
 
@@ -843,6 +1081,9 @@ class EmployeePortalProfileSubmit(http.Controller):
                 return request.make_json_response({'success': False, 'error': str(e)})
 
         # ── GET ──
+        _ensure_sequence_exists(request.env)
+        _fix_stuck_pcrs(request.env, employee)
+
         certifications = request.env['hr.employee.skill'].sudo().search([
             ('employee_id', '=', employee.id),
             ('skill_type_id.name', 'ilike', 'certif'),
@@ -880,6 +1121,48 @@ class EmployeePortalProfileSubmit(http.Controller):
             except Exception:
                 continue
 
+        # Cert tab: only show notification for the LATEST cert PCR
+        cert_notification = None
+        latest_cert_pcr = None
+        for _pcr in request.env['hr.profile.change.request'].sudo().search([
+            ('employee_id', '=', employee.id),
+        ], order='create_date desc', limit=20):
+            try:
+                _d = json.loads(_pcr.submitted_data or '{}')
+                if '_cert_change' in _d:
+                    latest_cert_pcr = _pcr
+                    break
+            except Exception:
+                pass
+
+        try:
+            _cert_sname = json.loads(latest_cert_pcr.submitted_data or '{}').get('_cert_change', {}).get('skill_name', '') if latest_cert_pcr else ''
+        except Exception:
+            _cert_sname = ''
+
+        if latest_cert_pcr and latest_cert_pcr.state == 'pending':
+            cert_notification = {
+                'type': 'warning',
+                'message': 'Your certification change is awaiting HR review.',
+                'request_name': latest_cert_pcr.name,
+                'skill_name': _cert_sname,
+            }
+        elif latest_cert_pcr and latest_cert_pcr.state == 'approved':
+            cert_notification = {
+                'type': 'success',
+                'message': 'Your certification update has been approved by HR.',
+                'request_name': latest_cert_pcr.name,
+                'skill_name': _cert_sname,
+            }
+        elif latest_cert_pcr and latest_cert_pcr.state == 'rejected':
+            cert_notification = {
+                'type': 'danger',
+                'message': 'Your certification change request was rejected by HR.',
+                'reason': latest_cert_pcr.rejection_reason or 'No reason provided.',
+                'request_name': latest_cert_pcr.name,
+                'skill_name': _cert_sname,
+            }
+
         return request.render(
             'employee_self_service_portal.portal_employee_profile_certification',
             {
@@ -888,5 +1171,6 @@ class EmployeePortalProfileSubmit(http.Controller):
                 'certifications':       certifications,
                 'certificate_skills':   certificate_skills,
                 'pending_cert_changes': pending_cert_changes,
+                'cert_notification':    cert_notification,
             }
         )
