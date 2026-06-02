@@ -973,16 +973,27 @@ class HrProfileChangeRequest(models.Model):
                     [('skill_type_id', '=', skill.skill_type_id.id)], limit=1)
             if not skill_level:
                 raise UserError(_('No skill level configured for this certificate type.'))
-            new_skill = self.env['hr.employee.skill'].sudo().create({
-                'employee_id': employee.id,
-                'skill_id': skill_id,
-                'skill_type_id': skill.skill_type_id.id,
-                'skill_level_id': skill_level.id,
-                'valid_from': cert_change.get('valid_from') or False,
-                'valid_to': cert_change.get('valid_to') or False,
-            })
-            _logger.info('PCR %s: created cert skill %s (id=%s) for employee %s',
-                self.name, skill.name, new_skill.id, employee.name)
+            # FIX: Check for existing skill first (Odoo 19 prevents duplicate certs)
+            existing_skill = self.env['hr.employee.skill'].sudo().search([
+                ('employee_id', '=', employee.id),
+                ('skill_id', '=', skill_id),
+                ('skill_type_id', '=', skill.skill_type_id.id),
+            ], limit=1)
+            if existing_skill:
+                new_skill = existing_skill
+                _logger.info('PCR %s: cert skill %s already exists (id=%s), reusing',
+                    self.name, skill.name, new_skill.id)
+            else:
+                new_skill = self.env['hr.employee.skill'].sudo().create({
+                    'employee_id': employee.id,
+                    'skill_id': skill_id,
+                    'skill_type_id': skill.skill_type_id.id,
+                    'skill_level_id': skill_level.id,
+                    'valid_from': cert_change.get('valid_from') or False,
+                    'valid_to': cert_change.get('valid_to') or False,
+                })
+                _logger.info('PCR %s: created cert skill %s (id=%s) for employee %s',
+                    self.name, skill.name, new_skill.id, employee.name)
             if attachment and attachment.exists():
                 _copy_attachment_to_skill(self.env, attachment, new_skill.id, self.name)
 
@@ -1035,12 +1046,23 @@ class HrProfileChangeRequest(models.Model):
                     [('skill_type_id', '=', skill.skill_type_id.id)], limit=1)
             if not skill_level:
                 raise UserError(_('No skill level configured for this certificate type.'))
-            new_skill = self.env['hr.employee.skill'].sudo().create({
-                'employee_id': employee.id, 'skill_id': skill_id,
-                'skill_type_id': skill.skill_type_id.id, 'skill_level_id': skill_level.id,
-                'valid_from': cert_change.get('valid_from') or False,
-                'valid_to': cert_change.get('valid_to') or False,
-            })
+            # FIX: Check for existing skill first (Odoo 19 prevents duplicate certs)
+            existing_skill = self.env['hr.employee.skill'].sudo().search([
+                ('employee_id', '=', employee.id),
+                ('skill_id', '=', skill_id),
+                ('skill_type_id', '=', skill.skill_type_id.id),
+            ], limit=1)
+            if existing_skill:
+                new_skill = existing_skill
+                _logger.info('PCR %s: cert skill %s already exists (id=%s), reusing',
+                    self.name, skill.name, new_skill.id)
+            else:
+                new_skill = self.env['hr.employee.skill'].sudo().create({
+                    'employee_id': employee.id, 'skill_id': skill_id,
+                    'skill_type_id': skill.skill_type_id.id, 'skill_level_id': skill_level.id,
+                    'valid_from': cert_change.get('valid_from') or False,
+                    'valid_to': cert_change.get('valid_to') or False,
+                })
             if pcr_attachments:
                 for att in pcr_attachments:
                     _copy_attachment_to_skill(self.env, att, new_skill.id, self.name)
