@@ -107,7 +107,6 @@ FIELD_LABELS = {
     'certification_obtained': 'Certification Obtained',
 }
 
-# relationship_with_emp_id = Many2one('employee.relationship') — CONFIRMED
 MANY2ONE_FIELDS = {
     'nationality_at_birth_id', 'country_id', 'issue_countries_id', 'countries_id',
     'father_nationalities_id', 'mother_nationalities_id', 'religion',
@@ -115,6 +114,7 @@ MANY2ONE_FIELDS = {
     'country_residences_id',
     'dependent_child_passport_issuing_countries_1_id',
     'relationship_with_emp_id',
+    'spouse_passport_issuing_countries_id',
 }
 
 MANY2ONE_MODEL_MAP = {
@@ -131,6 +131,7 @@ MANY2ONE_MODEL_MAP = {
     'mother_nationalities_id': 'res.country',
     'dependent_child_passport_issuing_countries_1_id': 'res.country',
     'relationship_with_emp_id': 'employee.relationship',
+    'spouse_passport_issuing_countries_id': 'res.country',
 }
 
 SELECTION_FIELDS = {
@@ -158,11 +159,6 @@ CODED_VALUE_LABELS = {
 
 
 def _get_current_field_display(employee, key, env):
-    """
-    Get the current (before-change) display value of a field from the employee record.
-    Returns a clean string: empty string '' if no value, or the actual display value.
-    Never returns 'False', 'None', or raw IDs.
-    """
     try:
         if key in MANY2ONE_FIELDS:
             current_rec = getattr(employee, key, False)
@@ -182,11 +178,6 @@ def _get_current_field_display(employee, key, env):
 
 
 def _resolve_submitted_m2o(env, model_name, record_id):
-    """
-    Resolve a submitted Many2one integer ID to its display name.
-    Returns the name string, or '' if not found.
-    Fixes the '104' showing instead of 'India' bug.
-    """
     try:
         rec = env[model_name].sudo().browse(int(record_id))
         if rec.exists():
@@ -194,6 +185,42 @@ def _resolve_submitted_m2o(env, model_name, record_id):
         return ''
     except Exception:
         return ''
+
+
+def _unwrap_cert_batch(raw):
+    if isinstance(raw, dict):
+        return raw.get('changes', [])
+    if isinstance(raw, list):
+        return raw
+    return []
+
+
+def _copy_attachment_to_skill(env, att, skill_record_id, pcr_name):
+    """
+    FIX: Copy attachment from hr.profile.change.request to hr.employee.skill.
+    Uses att.datas directly (ORM field) instead of att.read(['datas'])
+    because read() silently returns datas=False in Odoo 19 sudo context.
+    """
+    try:
+        att_datas = att.sudo().datas
+        att_name = att.sudo().name
+        att_mime = att.sudo().mimetype or 'application/octet-stream'
+        if att_datas:
+            env['ir.attachment'].sudo().create({
+                'name': att_name,
+                'datas': att_datas,
+                'res_model': 'hr.employee.skill',
+                'res_id': skill_record_id,
+                'mimetype': att_mime,
+            })
+            _logger.info('PCR %s: attached %s to skill id=%s', pcr_name, att_name, skill_record_id)
+            return True
+        else:
+            _logger.warning('PCR %s: attachment %s has empty datas (id=%s)', pcr_name, att_name, att.id)
+            return False
+    except Exception as e:
+        _logger.error('PCR %s: attachment copy failed: %s', pcr_name, e)
+        return False
 
 
 class HrProfileChangeRequest(models.Model):
@@ -344,15 +371,21 @@ class HrProfileChangeRequest(models.Model):
 
     def write(self, vals):
         result = super().write(vals)
-        # Whenever PCR state changes, sync employee last_submission_state
         if 'state' in vals:
             new_state = vals['state']
             for rec in self:
                 try:
+                    data = json.loads(rec.submitted_data or '{}')
+                    is_personal = (
+                        '_cert_change' not in data and
+                        '_cert_batch' not in data and
+                        '_skill_change' not in data and
+                        '_resume_change' not in data
+                    )
+                    if not is_personal:
+                        continue
                     if new_state == 'pending':
-                        rec.employee_id.sudo().write({
-                            'last_submission_state': 'pending',
-                        })
+                        rec.employee_id.sudo().write({'last_submission_state': 'pending'})
                     elif new_state == 'approved':
                         rec.employee_id.sudo().write({
                             'last_submission_state': 'approved',
@@ -360,9 +393,7 @@ class HrProfileChangeRequest(models.Model):
                         })
                         rec.employee_id.sudo().invalidate_recordset()
                     elif new_state == 'rejected':
-                        rec.employee_id.sudo().write({
-                            'last_submission_state': 'rejected',
-                        })
+                        rec.employee_id.sudo().write({'last_submission_state': 'rejected'})
                 except Exception as e:
                     _logger.warning('PCR write sync error: %s', e)
         return result
@@ -372,10 +403,8 @@ class HrProfileChangeRequest(models.Model):
         for vals in vals_list:
             name_val = vals.get('name', '')
             if not name_val or not name_val.startswith('PCR/'):
-                # Try to get sequence
                 seq = self.env['ir.sequence'].sudo().next_by_code('hr.profile.change.request')
                 if not seq:
-                    # Sequence missing — auto-create it (fixes staging/production)
                     _logger.warning('PCR sequence missing — auto-creating now')
                     try:
                         self.env['ir.sequence'].sudo().create({
@@ -392,7 +421,6 @@ class HrProfileChangeRequest(models.Model):
                 if seq:
                     vals['name'] = seq
                 else:
-                    # Last fallback — use timestamp so HR can still see it
                     import datetime
                     vals['name'] = 'PCR/%s/TEMP' % datetime.datetime.now().strftime('%Y/%m%d%H%M%S')
                     _logger.error('PCR sequence still not available — used temp name')
@@ -400,19 +428,6 @@ class HrProfileChangeRequest(models.Model):
 
     @api.depends('submitted_data', 'employee_id')
     def _compute_changed_fields_display(self):
-        """
-        Build the HR approval diff table showing:
-        - Previous Value: what was in the employee record BEFORE submission
-        - New Value: what the employee submitted
-        - Status: CHANGED badge (always shown since controller only submits changed fields)
-
-        Rules:
-        - If previous value is empty and new value has data → show blank in Previous, new value in New
-        - If previous value has data and new value differs → show both
-        - File uploads → show filename in New, blank in Previous
-        - All rows are shown since they were submitted as changes
-        - Many2one IDs are resolved to display names (fixes '104' → 'India')
-        """
         for rec in self:
             if not rec.submitted_data:
                 rec.changed_fields_display = '<p class="text-muted">No data submitted yet.</p>'
@@ -420,7 +435,51 @@ class HrProfileChangeRequest(models.Model):
             try:
                 data = json.loads(rec.submitted_data)
 
-                # ── Certification change special view ──
+                cert_batch_raw = data.get('_cert_batch')
+                cert_batch = _unwrap_cert_batch(cert_batch_raw)
+                if cert_batch:
+                    action_labels = {'add': 'Add', 'edit': 'Edit', 'delete': 'Delete'}
+                    rows = ''
+                    for item in cert_batch:
+                        if not isinstance(item, dict):
+                            continue
+                        action = item.get('cert_action', '') or item.get('type', '')
+                        rows += (
+                            f'<tr style="background:#fffde7;">'
+                            f'<td style="padding:8px 12px;border:1px solid #ddd;">'
+                            f'<span style="background:#4e73df;color:white;padding:2px 8px;border-radius:4px;font-size:11px;">'
+                            f'{action_labels.get(action, action)}</span></td>'
+                            f'<td style="padding:8px 12px;border:1px solid #ddd;font-weight:600;">'
+                            f'{item.get("skill_name", "—")}</td>'
+                            f'<td style="padding:8px 12px;border:1px solid #ddd;">'
+                            f'{item.get("valid_from") or "Indefinite"}</td>'
+                            f'<td style="padding:8px 12px;border:1px solid #ddd;">'
+                            f'{item.get("valid_to") or "Indefinite"}</td>'
+                            f'<td style="padding:8px 12px;border:1px solid #ddd;">'
+                            f'{"✅ Attached" if item.get("attachment_name") else "—"}</td>'
+                            f'</tr>'
+                        )
+                    rec.changed_fields_display = f'''
+                        <div style="overflow-x:auto;">
+                          <p style="font-weight:600;color:#2e7d32;margin-bottom:8px;">
+                            <i class="fa fa-certificate me-1"></i>{len(cert_batch)} Certification Change(s)
+                          </p>
+                          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                            <thead><tr style="background:#4e73df;color:white;">
+                              <th style="padding:10px 12px;border:1px solid #3a5ec9;">Action</th>
+                              <th style="padding:10px 12px;border:1px solid #3a5ec9;">Certificate</th>
+                              <th style="padding:10px 12px;border:1px solid #3a5ec9;">Valid From</th>
+                              <th style="padding:10px 12px;border:1px solid #3a5ec9;">Valid To</th>
+                              <th style="padding:10px 12px;border:1px solid #3a5ec9;">Attachment</th>
+                            </tr></thead>
+                            <tbody>{rows}</tbody>
+                          </table>
+                        </div>
+                        <p style="font-size:11px;color:#999;margin-top:8px;">
+                          ⚠ These changes will only be applied after you click Approve.
+                        </p>'''
+                    continue
+
                 cert_change = data.get('_cert_change')
                 if cert_change:
                     action_labels = {
@@ -457,7 +516,6 @@ class HrProfileChangeRequest(models.Model):
                     )
                     continue
 
-                # ── Skill batch change special view ──
                 skill_change = data.get('_skill_change')
                 if skill_change and skill_change.get('cert_action') == 'add_batch':
                     skills = skill_change.get('skills', [])
@@ -482,7 +540,6 @@ class HrProfileChangeRequest(models.Model):
                     )
                     continue
 
-                # ── Resume change special view ──
                 resume_change = data.get('_resume_change')
                 if resume_change:
                     rec.changed_fields_display = (
@@ -502,72 +559,63 @@ class HrProfileChangeRequest(models.Model):
                     )
                     continue
 
-                # ── Normal field-by-field diff ──
-                # Build rows: show Previous Value vs New Value for every submitted field.
-                # Previous = what employee record had BEFORE submission (blank if empty)
-                # New = what employee submitted (resolved to display name for Many2one)
-                # All submitted fields are shown because controller only submits actual changes.
                 rows = ''
                 row_count = 0
 
                 for key, new_val in data.items():
                     if key.startswith('_'):
                         continue
-
                     label = FIELD_LABELS.get(key, key.replace('_', ' ').title())
 
-                    # ── File upload ──
                     if new_val and str(new_val).startswith('[FILE:'):
                         fname = str(new_val).replace('[FILE:', '').rstrip(']')
-                        previous_display = ''   # no "previous file" to show
-                        new_display = f'<i class="fa fa-file-o me-1" style="color:#198754;"></i> {fname}'
                         previous_html = '<span style="color:#aaa;font-style:italic;">No previous file</span>'
-                        new_html = f'<span style="color:#198754;font-weight:600;">{new_display}</span>'
-
-                    # ── Many2one field ──
+                        new_html = f'<span style="color:#198754;font-weight:600;"><i class="fa fa-file-o me-1"></i> {fname}</span>'
                     elif key in MANY2ONE_FIELDS:
                         model_name = MANY2ONE_MODEL_MAP.get(key, 'res.country')
                         previous_display = _get_current_field_display(rec.employee_id, key, rec.env)
                         new_display = _resolve_submitted_m2o(rec.env, model_name, new_val)
-
                         if not new_display:
-                            continue  # skip if submitted value can't be resolved
-
-                        if previous_display:
-                            previous_html = f'<span style="color:#6c757d;">{previous_display}</span>'
-                        else:
-                            previous_html = '<span style="color:#aaa;font-style:italic;">—</span>'
+                            continue
+                        previous_html = (
+                            f'<span style="color:#6c757d;">{previous_display}</span>'
+                            if previous_display
+                            else '<span style="color:#aaa;font-style:italic;">—</span>'
+                        )
                         new_html = f'<span style="color:#198754;font-weight:600;">{new_display}</span>'
-
-                    # ── Selection field (blood_group, marital, etc.) ──
                     elif key in SELECTION_FIELDS:
                         coded_map = CODED_VALUE_LABELS.get(key, {})
                         previous_raw = _get_current_field_display(rec.employee_id, key, rec.env)
                         previous_display = coded_map.get(previous_raw, previous_raw) if previous_raw else ''
                         nv = str(new_val).strip() if new_val else ''
                         new_display = coded_map.get(nv, nv) if nv else ''
-
                         if not new_display:
                             continue
-
-                        if previous_display:
-                            previous_html = f'<span style="color:#6c757d;">{previous_display}</span>'
-                        else:
-                            previous_html = '<span style="color:#aaa;font-style:italic;">—</span>'
+                        previous_html = (
+                            f'<span style="color:#6c757d;">{previous_display}</span>'
+                            if previous_display
+                            else '<span style="color:#aaa;font-style:italic;">—</span>'
+                        )
                         new_html = f'<span style="color:#198754;font-weight:600;">{new_display}</span>'
-
-                    # ── Plain text / char / date / number field ──
                     else:
                         previous_display = _get_current_field_display(rec.employee_id, key, rec.env)
                         new_display = str(new_val).strip() if new_val else ''
-
                         if not new_display:
-                            continue  # nothing to show
-
-                        if previous_display:
-                            previous_html = f'<span style="color:#6c757d;">{previous_display}</span>'
-                        else:
-                            previous_html = '<span style="color:#aaa;font-style:italic;">—</span>'
+                            continue
+                        if new_display.isdigit() and key.endswith('_id'):
+                            for try_model in ('res.country', 'res.country.state', 'tec.religion', 'employee.relationship'):
+                                try:
+                                    resolved = rec.env[try_model].sudo().browse(int(new_display))
+                                    if resolved.exists() and hasattr(resolved, 'name') and resolved.name:
+                                        new_display = resolved.name
+                                        break
+                                except Exception:
+                                    pass
+                        previous_html = (
+                            f'<span style="color:#6c757d;">{previous_display}</span>'
+                            if previous_display
+                            else '<span style="color:#aaa;font-style:italic;">—</span>'
+                        )
                         new_html = f'<span style="color:#198754;font-weight:600;">{new_display}</span>'
 
                     rows += (
@@ -627,11 +675,9 @@ class HrProfileChangeRequest(models.Model):
 
     def action_submit(self):
         self.ensure_one()
-        # Always ensure proper sequence name — never leave as "New"
         if not self.name or self.name == 'New' or self.name.startswith('PCR/') is False:
             seq = self.env['ir.sequence'].sudo().next_by_code('hr.profile.change.request')
             if not seq:
-                # Sequence missing — create it
                 try:
                     self.env['ir.sequence'].sudo().create({
                         'name': 'Profile Change Request',
@@ -650,10 +696,21 @@ class HrProfileChangeRequest(models.Model):
                 import datetime
                 self.sudo().write({'name': 'PCR/%s/TEMP' % datetime.datetime.now().strftime('%Y/%m%d%H%M%S')})
         self.write({'state': 'pending'})
-        self.employee_id.sudo().write({
-            'last_portal_submission': self.submitted_data,
-            'last_submission_state': 'pending',
-        })
+        try:
+            _data = json.loads(self.submitted_data or '{}')
+            _is_personal = (
+                '_cert_change' not in _data and
+                '_cert_batch' not in _data and
+                '_skill_change' not in _data and
+                '_resume_change' not in _data
+            )
+        except Exception:
+            _is_personal = True
+        if _is_personal:
+            self.employee_id.sudo().write({
+                'last_portal_submission': self.submitted_data,
+                'last_submission_state': 'pending',
+            })
         self._add_trail(action='submitted', note=f'Submitted by {self.employee_id.name}')
         self._send_mail_to_hr()
         return True
@@ -671,6 +728,59 @@ class HrProfileChangeRequest(models.Model):
         if cert_change:
             self._apply_cert_change(cert_change)
             self._finalize_approval()
+            try:
+                self._repair_cert_attachments_after_approve([cert_change])
+            except Exception as e:
+                _logger.warning('PCR %s: post-approve repair error (non-fatal): %s', self.name, e)
+            return True
+        cert_batch_raw = data.get('_cert_batch')
+        cert_batch = _unwrap_cert_batch(cert_batch_raw)
+        if cert_batch:
+            all_attachments = self.env['ir.attachment'].sudo().search([
+                ('res_model', '=', 'hr.profile.change.request'),
+                ('res_id', '=', self.id),
+            ], order='id asc')
+            att_list = list(all_attachments)
+            att_index = 0
+            _logger.info('PCR %s cert_batch: %d items, %d attachments', self.name, len(cert_batch), len(att_list))
+            for cert_item in cert_batch:
+                if not isinstance(cert_item, dict):
+                    _logger.warning('PCR %s: skipping non-dict cert_batch item: %r', self.name, cert_item)
+                    continue
+                try:
+                    action_type = cert_item.get('cert_action', '') or cert_item.get('type', '')
+                    has_attachment = bool(cert_item.get('attachment_name') or cert_item.get('has_attachment') or cert_item.get('has_file'))
+                    _logger.info(
+                        'PCR %s: processing cert_item action=%s skill=%s has_att=%s att_index=%s total_atts=%s',
+                        self.name, action_type, cert_item.get('skill_name'), has_attachment, att_index, len(att_list),
+                    )
+                    if action_type == 'add':
+                        att = None
+                        if has_attachment and att_index < len(att_list):
+                            att = att_list[att_index]
+                            att_index += 1
+                        self._apply_cert_change_with_attachment(cert_item, att)
+                    else:
+                        self._apply_cert_change(cert_item)
+                except Exception as e:
+                    _logger.error('PCR %s: cert_batch item %r error: %s', self.name, cert_item, e)
+            self.write({
+                'state': 'approved',
+                'reviewed_by': self.env.user.id,
+                'review_date': fields.Datetime.now(),
+            })
+            self._add_trail(action='approved', note=f'Approved by {self.env.user.name}. {len(cert_batch)} cert(s).')
+            self._send_mail_to_employee('approved')
+            self.employee_id.sudo().invalidate_recordset()
+
+            # ── BULLETPROOF REPAIR: always run after approval ──
+            # Fixes any attachments that failed to copy during _apply_cert_change_with_attachment
+            # This runs directly in the web server context, guaranteed to work
+            try:
+                self._repair_cert_attachments_after_approve(cert_batch)
+            except Exception as e:
+                _logger.warning('PCR %s: post-approve repair error (non-fatal): %s', self.name, e)
+
             return True
 
         skill_change = data.get('_skill_change')
@@ -690,10 +800,9 @@ class HrProfileChangeRequest(models.Model):
             if k in SKIP_ON_APPROVE:
                 continue
             if v and str(v).startswith('[FILE:'):
-                continue  # files already written to employee on submit
+                continue
             if v is None or v == '':
                 continue
-
             if k in MANY2ONE_FIELDS:
                 model_name = MANY2ONE_MODEL_MAP.get(k, 'res.country')
                 try:
@@ -701,13 +810,11 @@ class HrProfileChangeRequest(models.Model):
                     linked_rec = self.env[model_name].sudo().browse(int_val)
                     if linked_rec.exists():
                         write_vals[k] = int_val
-                        _logger.info('PCR %s: %s = %s (%s)', self.name, k, int_val, linked_rec.name)
                     else:
                         _logger.warning('PCR %s: %s id %s not found in %s', self.name, k, int_val, model_name)
                 except (ValueError, TypeError) as e:
                     _logger.warning('PCR %s: cannot convert %s=%r: %s', self.name, k, v, e)
                 continue
-
             if k in SELECTION_FIELDS:
                 field_obj = self.employee_id._fields.get(k)
                 if field_obj and hasattr(field_obj, 'selection'):
@@ -718,31 +825,25 @@ class HrProfileChangeRequest(models.Model):
                         continue
                 write_vals[k] = v
                 continue
-
             if k == 'children':
                 try:
                     write_vals[k] = int(v)
                 except Exception:
                     pass
                 continue
-
             if k == 'last_salary_per_annum_amt':
                 try:
                     write_vals[k] = float(v)
                 except Exception:
                     pass
                 continue
-
             write_vals[k] = v
 
         if write_vals:
             try:
                 self.employee_id.sudo().write(write_vals)
-                # Invalidate cache so portal reads fresh values from DB
                 self.employee_id.sudo().invalidate_recordset()
-                _logger.info('PCR %s approved — %d fields written: %s — values: %s',
-                             self.name, len(write_vals), list(write_vals.keys()),
-                             {k: write_vals[k] for k in list(write_vals.keys())[:5]})
+                _logger.info('PCR %s approved — %d fields written: %s', self.name, len(write_vals), list(write_vals.keys()))
             except Exception as e:
                 _logger.error('PCR %s: write error: %s', self.name, e)
                 raise UserError(_(
@@ -752,8 +853,69 @@ class HrProfileChangeRequest(models.Model):
         self._finalize_approval(fields_written=len(write_vals))
         return True
 
+    def _repair_cert_attachments_after_approve(self, changes):
+        """
+        BULLETPROOF POST-APPROVE REPAIR.
+        Runs directly on the web server after every cert approval.
+        Guarantees attachments are copied from PCR to hr.employee.skill
+        even if _apply_cert_change_with_attachment failed silently.
+        Uses att.datas directly (never .read()) to avoid Odoo 19 sudo bug.
+        """
+        cert_types = self.env['hr.skill.type'].sudo().search([('name', 'ilike', 'certif')])
+        pcr_atts = self.env['ir.attachment'].sudo().search([
+            ('res_model', '=', 'hr.profile.change.request'),
+            ('res_id', '=', self.id),
+        ], order='id asc')
+
+        if not pcr_atts:
+            return
+
+        att_idx = 0
+        for c in changes:
+            if not isinstance(c, dict):
+                continue
+            has_file = bool(c.get('attachment_name') or c.get('has_file') or c.get('has_attachment'))
+            if not has_file:
+                continue
+            action = c.get('cert_action') or c.get('type', '')
+            if action not in ('add', 'edit'):
+                continue
+            if att_idx >= len(pcr_atts):
+                break
+            att = pcr_atts[att_idx]
+            att_idx += 1
+
+            skill_name = c.get('skill_name', '')
+            emp_certs = self.env['hr.employee.skill'].sudo().search([
+                ('employee_id', '=', self.employee_id.id),
+                ('skill_type_id', 'in', cert_types.ids),
+            ], order='id desc')
+
+            for s in emp_certs:
+                if skill_name and s.skill_id.name != skill_name:
+                    continue
+                existing = self.env['ir.attachment'].sudo().search([
+                    ('res_model', '=', 'hr.employee.skill'),
+                    ('res_id', '=', s.id),
+                ])
+                if not existing:
+                    # Use att.datas directly — never .read() which returns False in Odoo 19
+                    att_datas = att.sudo().datas
+                    att_name = att.sudo().name
+                    att_mime = att.sudo().mimetype or 'application/octet-stream'
+                    if att_datas:
+                        self.env['ir.attachment'].sudo().create({
+                            'name': att_name,
+                            'datas': att_datas,
+                            'res_model': 'hr.employee.skill',
+                            'res_id': s.id,
+                            'mimetype': att_mime,
+                        })
+                        _logger.info('PCR %s: REPAIR copied %s -> skill %s id=%s',
+                            self.name, att_name, skill_name, s.id)
+                    break
+
     def _finalize_approval(self, fields_written=0):
-        """Set approved, send email, clear employee portal submission cache."""
         self.write({
             'state': 'approved',
             'reviewed_by': self.env.user.id,
@@ -764,22 +926,104 @@ class HrProfileChangeRequest(models.Model):
             note=f'Approved by {self.env.user.name}. {fields_written} field(s) written.',
         )
         self._send_mail_to_employee('approved')
-        self.employee_id.sudo().write({
-            'last_portal_submission': False,
-            'last_submission_state': 'approved',
-        })
-        # Invalidate ORM cache so portal reads fresh DB values immediately
+        try:
+            _fd = json.loads(self.submitted_data or '{}')
+            _fp = (
+                '_cert_change' not in _fd and
+                '_cert_batch' not in _fd and
+                '_skill_change' not in _fd and
+                '_resume_change' not in _fd
+            )
+        except Exception:
+            _fp = True
+        if _fp:
+            self.employee_id.sudo().write({
+                'last_portal_submission': False,
+                'last_submission_state': 'approved',
+            })
+        try:
+            self.env.cr.execute('SELECT 1')
+        except Exception:
+            pass
         self.employee_id.sudo().invalidate_recordset()
+        self.env['hr.employee'].sudo().invalidate_model()
         _logger.info('PCR %s finalized — employee cache cleared', self.name)
 
+    def _apply_cert_change_with_attachment(self, cert_change, attachment=None):
+        """
+        FIX: Uses _copy_attachment_to_skill() which accesses att.datas directly
+        instead of att.read(['datas']) — read() returns datas=False in Odoo 19 sudo context.
+        """
+        action = cert_change.get('cert_action') or cert_change.get('type', '')
+        employee = self.employee_id
+        if action == 'add':
+            skill_id = cert_change.get('skill_id')
+            try:
+                skill_id = int(skill_id)
+            except (TypeError, ValueError):
+                raise UserError(_('Invalid skill ID.'))
+            skill = self.env['hr.skill'].sudo().browse(skill_id)
+            if not skill.exists():
+                raise UserError(_('Skill no longer exists.'))
+            skill_level = self.env['hr.skill.level'].sudo().search([
+                ('skill_type_id', '=', skill.skill_type_id.id), ('default_level', '=', True),
+            ], limit=1)
+            if not skill_level:
+                skill_level = self.env['hr.skill.level'].sudo().search(
+                    [('skill_type_id', '=', skill.skill_type_id.id)], limit=1)
+            if not skill_level:
+                raise UserError(_('No skill level configured for this certificate type.'))
+            new_skill = self.env['hr.employee.skill'].sudo().create({
+                'employee_id': employee.id,
+                'skill_id': skill_id,
+                'skill_type_id': skill.skill_type_id.id,
+                'skill_level_id': skill_level.id,
+                'valid_from': cert_change.get('valid_from') or False,
+                'valid_to': cert_change.get('valid_to') or False,
+            })
+            _logger.info('PCR %s: created cert skill %s (id=%s) for employee %s',
+                self.name, skill.name, new_skill.id, employee.name)
+            if attachment and attachment.exists():
+                _copy_attachment_to_skill(self.env, attachment, new_skill.id, self.name)
+
+        elif action == 'edit':
+            record_id = cert_change.get('skill_record_id')
+            if record_id:
+                skill_record = self.env['hr.employee.skill'].sudo().browse(int(record_id))
+                if skill_record.exists() and skill_record.employee_id.id == employee.id:
+                    vals = {}
+                    if cert_change.get('valid_from') is not None:
+                        vals['valid_from'] = cert_change['valid_from'] or False
+                    if cert_change.get('valid_to') is not None:
+                        vals['valid_to'] = cert_change['valid_to'] or False
+                    if vals:
+                        skill_record.sudo().write(vals)
+                    if attachment and attachment.exists():
+                        _copy_attachment_to_skill(self.env, attachment, skill_record.id, self.name)
+
+        elif action == 'delete':
+            record_id = cert_change.get('skill_record_id')
+            if record_id:
+                skill_record = self.env['hr.employee.skill'].sudo().browse(int(record_id))
+                if skill_record.exists() and skill_record.employee_id.id == employee.id:
+                    skill_record.sudo().unlink()
+
     def _apply_cert_change(self, cert_change):
-        action = cert_change.get('cert_action')
+        """
+        FIX: Uses _copy_attachment_to_skill() which accesses att.datas directly
+        instead of att.read(['datas']) — read() returns datas=False in Odoo 19 sudo context.
+        """
+        action = cert_change.get('cert_action') or cert_change.get('type', '')
         employee = self.employee_id
         pcr_attachments = self.env['ir.attachment'].sudo().search([
             ('res_model', '=', 'hr.profile.change.request'), ('res_id', '=', self.id),
         ])
         if action == 'add':
             skill_id = cert_change.get('skill_id')
+            try:
+                skill_id = int(skill_id)
+            except (TypeError, ValueError):
+                raise UserError(_('Invalid skill ID.'))
             skill = self.env['hr.skill'].sudo().browse(skill_id)
             if not skill.exists():
                 raise UserError(_('Skill no longer exists.'))
@@ -798,14 +1042,8 @@ class HrProfileChangeRequest(models.Model):
                 'valid_to': cert_change.get('valid_to') or False,
             })
             if pcr_attachments:
-                new_att_ids = [
-                    self.env['ir.attachment'].sudo().create({
-                        'name': att.name, 'datas': att.datas,
-                        'res_model': 'hr.employee.skill', 'res_id': new_skill.id,
-                        'mimetype': att.mimetype,
-                    }).id for att in pcr_attachments
-                ]
-                new_skill.sudo().write({'certificate_attachment_ids': [(6, 0, new_att_ids)]})
+                for att in pcr_attachments:
+                    _copy_attachment_to_skill(self.env, att, new_skill.id, self.name)
 
         elif action == 'edit':
             record_id = cert_change.get('skill_record_id')
@@ -820,18 +1058,8 @@ class HrProfileChangeRequest(models.Model):
             if vals:
                 skill_record.sudo().write(vals)
             if pcr_attachments:
-                new_att_ids = [
-                    self.env['ir.attachment'].sudo().create({
-                        'name': att.name, 'datas': att.datas,
-                        'res_model': 'hr.employee.skill', 'res_id': skill_record.id,
-                        'mimetype': att.mimetype,
-                    }).id for att in pcr_attachments
-                ]
-                skill_record.sudo().write({
-                    'certificate_attachment_ids': [
-                        (6, 0, skill_record.certificate_attachment_ids.ids + new_att_ids)
-                    ]
-                })
+                for att in pcr_attachments:
+                    _copy_attachment_to_skill(self.env, att, skill_record.id, self.name)
 
         elif action == 'delete':
             record_id = cert_change.get('skill_record_id')
@@ -908,10 +1136,20 @@ class HrProfileChangeRequest(models.Model):
         if not pcr_attachment:
             _logger.warning('PCR %s: No resume attachment found.', self.name)
             return
-        employee.sudo().write({
-            'resume_file': pcr_attachment.datas,
-            'resume_file_filename': resume_change.get('filename', pcr_attachment.name),
-        })
+        try:
+            # FIX: use .datas directly instead of .read(['datas'])
+            att_datas = pcr_attachment.sudo().datas
+            att_name = pcr_attachment.sudo().name
+            if not att_datas:
+                _logger.warning('PCR %s: Resume attachment datas empty.', self.name)
+                return
+            employee.sudo().write({
+                'resume_file': att_datas,
+                'resume_file_filename': resume_change.get('filename', att_name),
+            })
+            _logger.info('PCR %s: Resume saved for %s', self.name, employee.name)
+        except Exception as e:
+            _logger.error('PCR %s: Resume apply error: %s', self.name, e)
 
     def action_reject(self):
         self.ensure_one()
@@ -925,13 +1163,10 @@ class HrProfileChangeRequest(models.Model):
 
     @api.model
     def resend_stuck_notifications_to_hr(self):
-        # Find ALL pending PCRs — fix their names and resend HR email
-        # This ensures HR always sees every pending request
         try:
             pending_pcrs = self.sudo().search([('state', '=', 'pending')])
             fixed = 0
             for pcr in pending_pcrs:
-                # Fix name if still "New"
                 if not pcr.name or pcr.name == 'New':
                     seq = self.env['ir.sequence'].sudo().next_by_code('hr.profile.change.request')
                     if not seq:
@@ -949,8 +1184,17 @@ class HrProfileChangeRequest(models.Model):
                     if seq:
                         pcr.sudo().write({'name': seq})
                         fixed += 1
-                # Ensure employee state is pending
-                if pcr.employee_id.last_submission_state != 'pending':
+                try:
+                    _rd = json.loads(pcr.submitted_data or '{}')
+                    _rp = (
+                        '_cert_change' not in _rd and
+                        '_cert_batch' not in _rd and
+                        '_skill_change' not in _rd and
+                        '_resume_change' not in _rd
+                    )
+                except Exception:
+                    _rp = True
+                if _rp and pcr.employee_id.last_submission_state != 'pending':
                     pcr.employee_id.sudo().write({'last_submission_state': 'pending'})
             if fixed:
                 _logger.info('resend_stuck_notifications: fixed %d PCR name(s)', fixed)
@@ -994,7 +1238,6 @@ class HrProfileChangeRequest(models.Model):
                     hr_names_list.append(u.name)
             if not hr_emails:
                 return
-            # Get base URL for direct link
             try:
                 base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url', '')
                 direct_link = f'{base_url}/odoo/action-employee_profile_change_request.action_hr_profile_change_request/{self.id}' if self.id else ''

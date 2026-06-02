@@ -1822,8 +1822,6 @@ has_work_permit and any other restricted binary fields).
                 </form>
 
 
-
-
                 <!-- ===== JAVASCRIPT (unchanged from doc7) ===== -->
                 <script type="text/javascript">
                     <![CDATA[
@@ -2193,25 +2191,90 @@ document.getElementById('personalDetailsForm').addEventListener('submit', functi
     fetch('/my/employee/personal', { method: 'POST', body: formData, headers: { 'X-CSRFToken': csrfToken } })
     .then(r => r.json())
     .then(data => {
-        if (data.success) {
+    if (data.success) {
+        localStorage.removeItem('profileDraft');
+        localStorage.removeItem('profileEditActive');
+        if (data.no_change) {
             disableEditMode();
-            localStorage.removeItem('profileDraft'); localStorage.removeItem('profileEditActive');
-            if (data.no_change) {
-                showTabMessage(activeProfileTab, 'No changes were detected. Your profile data is already up to date.', 'info');
-            } else {
-                const ref = data.reference || '';
-                showTabMessage(activeProfileTab,
-                    'Your changes have been submitted to HR for review and approval.' +
-                    (ref ? ' Reference: <strong>' + ref + '</strong>' : '') +
-                    ' You will receive an email once HR approves or rejects your request.', 'success');
-                document.querySelectorAll('.alert-danger[role="alert"]').forEach(function(el) {
-                    if (el.querySelector('.alert-heading') && el.querySelector('.alert-heading').textContent.includes('Rejected')) { el.remove(); }
-                });
-            }
+            showTabMessage(activeProfileTab, 'No changes detected. Your profile is already up to date.', 'info');
         } else {
-            showTabMessage(activeProfileTab, 'Error: ' + (data.error || 'Unknown error'), 'error');
+            const ref = data.reference || '';
+            // Disable edit mode first
+            disableEditMode();
+            // Remove any existing notification banners
+            document.querySelectorAll('.alert.alert-warning.alert-dismissible, .alert.alert-success.alert-dismissible, .alert.alert-danger.alert-dismissible').forEach(function(el) {
+                if (el.querySelector('.alert-heading')) el.remove();
+            });
+            document.getElementById('pendingLockBanner') && document.getElementById('pendingLockBanner').remove();
+            // Remove old info note banner
+            document.querySelectorAll('.alert.alert-info.alert-dismissible').forEach(function(el) { el.remove(); });
+            // Build and inject the pending banner (same as server renders)
+            const formEl = document.getElementById('personalDetailsForm');
+            const container = formEl.parentNode;
+            // 1. Warning notification banner (top)
+            const notifBanner = document.createElement('div');
+            notifBanner.className = 'alert alert-warning alert-dismissible fade show shadow-sm mb-4';
+            notifBanner.setAttribute('role', 'alert');
+            notifBanner.style.cssText = 'border-left: 5px solid; border-radius: 8px;';
+            notifBanner.innerHTML = `
+                <div class="d-flex align-items-start">
+                    <div class="me-3" style="font-size:28px;">⏳</div>
+                    <div class="flex-grow-1">
+                        <h5 class="alert-heading mb-1">Profile Update Pending Review</h5>
+                        <p class="mb-1">Your profile change request is awaiting HR review.</p>
+                        <hr class="my-2"/>
+                        <small class="text-muted">
+                            <i class="fa fa-info-circle me-1"></i>Reference:
+                            <strong>${ref}</strong>
+                            — HR will notify you once reviewed.
+                        </small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"/>
+            `;
+            container.insertBefore(notifBanner, formEl);
+            // 2. Info note banner
+            const infoBanner = document.createElement('div');
+            infoBanner.className = 'alert alert-info alert-dismissible fade show mb-3';
+            infoBanner.style.cssText = 'border-left:4px solid #2B2B6B;border-radius:6px;';
+            infoBanner.innerHTML = `
+                <i class="fa fa-info-circle me-2"></i>
+                <strong>Note:</strong>
+                The values shown below are from your
+                <span style="color:#2B2B6B;font-weight:bold;">pending submission</span>
+                currently awaiting HR review.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"/>
+            `;
+            container.insertBefore(infoBanner, formEl);
+            // 3. Editing Locked banner
+            const lockBanner = document.createElement('div');
+            lockBanner.id = 'pendingLockBanner';
+            lockBanner.className = 'alert alert-warning mb-3';
+            lockBanner.style.cssText = 'border-left:4px solid #ffc107;border-radius:6px;';
+            lockBanner.innerHTML = `
+                <i class="fa fa-lock me-2"></i>
+                <strong>Editing Locked:</strong>
+                You have a profile update currently pending HR review.
+                Editing is disabled until HR approves or rejects your request.
+            `;
+            container.insertBefore(lockBanner, formEl);
+            // 4. Set PENDING_LOCKED so JS locks editing
+            window.PENDING_LOCKED = true;
+            // Hide edit button
+            const editBtn = document.getElementById('editProfileBtn');
+            if (editBtn) { editBtn.disabled = true; editBtn.title = 'Editing locked — pending HR review'; }
+            // Hide all edit-mode toggles
+            document.querySelectorAll('.edit-mode-toggle').forEach(t => {
+                const sw = t.closest('.form-check.form-switch');
+                if (sw) sw.style.display = 'none';
+            });
+            // Scroll to top of page to show banners
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-    })
+    } else {
+        showTabMessage(activeProfileTab, 'Error: ' + (data.error || 'Unknown error'), 'error');
+    }
+})
     .catch(err => { console.error('Error:', err); showTabMessage(activeProfileTab, 'Network error. Please try again.', 'error'); });
 });
 

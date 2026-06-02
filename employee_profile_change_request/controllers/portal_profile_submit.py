@@ -156,8 +156,6 @@ def _ensure_sequence_exists(env):
 
 def _fix_stuck_pcrs(env, employee):
     try:
-        # Step 1: Fix ALL "New" named PCRs in the entire system
-        # so HR can see every pending request
         env['hr.profile.change.request'].sudo().resend_stuck_notifications_to_hr()
 
         all_new_pcrs = env['hr.profile.change.request'].sudo().search([
@@ -170,7 +168,6 @@ def _fix_stuck_pcrs(env, employee):
                 pcr.sudo().write({'name': seq})
                 _logger.info('Auto-fixed PCR name for %s -> %s', pcr.employee_id.name, seq)
 
-        # Step 2: Fix employee stuck on pending with no actual pending PCR
         if employee.last_submission_state == 'pending':
             pending = env['hr.profile.change.request'].sudo().search([
                 ('employee_id', '=', employee.id),
@@ -183,8 +180,6 @@ def _fix_stuck_pcrs(env, employee):
                 })
                 _logger.info('Cleared stuck pending state for %s', employee.name)
 
-        # Step 3: Sync employee state from their latest PCR
-        # So if HR approved/rejected via wizard and state didn't sync — fix it now
         latest_any_pcr = env['hr.profile.change.request'].sudo().search([
             ('employee_id', '=', employee.id),
         ], order='create_date desc', limit=1)
@@ -200,6 +195,133 @@ def _fix_stuck_pcrs(env, employee):
                 employee.sudo().write({'last_submission_state': False, 'last_portal_submission': False})
     except Exception as e:
         _logger.warning('_fix_stuck_pcrs error: %s', e)
+
+
+def _unwrap_cert_batch(raw):
+    """
+    Safely unwrap _cert_batch value into a list of cert-change dicts.
+    Portal controller stores: {'_cert_batch': {'changes': [...]}}
+    Older records may store:  {'_cert_batch': [...]}
+    Always returns a plain list.
+    """
+    if isinstance(raw, dict):
+        return raw.get('changes', [])
+    if isinstance(raw, list):
+        return raw
+    return []
+
+
+def _build_pending_cert_changes(pcr_list, env):
+    """
+    Build the pending_cert_changes list for portal display.
+    Handles both old _cert_change (single) and new _cert_batch (multi) formats.
+    Attachment matching: first tries by row_id in description, then falls back positionally.
+    """
+    pending_cert_changes = []
+    for pcr in pcr_list:
+        if not pcr.submitted_data:
+            continue
+        try:
+            data = json.loads(pcr.submitted_data)
+
+            # ── Old single-change format ──
+            cert_change = data.get('_cert_change')
+            if cert_change and isinstance(cert_change, dict):
+                pcr_attachment = env['ir.attachment'].sudo().search([
+                    ('res_model', '=', 'hr.profile.change.request'),
+                    ('res_id', '=', pcr.id),
+                ], limit=1)
+                pending_cert_changes.append({
+                    'pcr_name':        pcr.name,
+                    'pcr_id':          pcr.id,
+                    'cert_action':     cert_change.get('cert_action', ''),
+                    'skill_name':      cert_change.get('skill_name', '—'),
+                    'valid_from':      cert_change.get('valid_from') or '',
+                    'valid_to':        cert_change.get('valid_to') or '',
+                    'attachment_name': cert_change.get('attachment_name') or '',
+                    'pcr_attachment':  pcr_attachment or False,
+                    'skill_record_id': cert_change.get('skill_record_id'),
+                })
+
+            # ── New batch format ──
+            cert_batch_raw = data.get('_cert_batch')
+            cert_batch = _unwrap_cert_batch(cert_batch_raw)
+            if cert_batch:
+                # Load ALL attachments for this PCR ordered by id ascending
+                all_attachments = env['ir.attachment'].sudo().search([
+                    ('res_model', '=', 'hr.profile.change.request'),
+                    ('res_id', '=', pcr.id),
+                ], order='id asc')
+                att_list = list(all_attachments)
+
+                # Build a map: row_id string -> attachment (for description-based match)
+                row_id_to_att = {}
+                for att in att_list:
+                    desc = att.description or ''
+                    if 'row' in desc:
+                        parts = desc.split('row ')
+                        if len(parts) > 1:
+                            rid = parts[-1].strip()
+                            row_id_to_att[rid] = att
+
+                positional_index = 0
+
+                for ci in cert_batch:
+                    if not isinstance(ci, dict):
+                        continue
+                    row_id = str(ci.get('row_id', ''))
+                    attachment_name = ci.get('attachment_name') or ''
+                    has_file = bool(attachment_name) or bool(ci.get('has_file')) or bool(ci.get('has_attachment'))
+
+                    matched_att = False
+                    if has_file:
+                        if row_id and row_id in row_id_to_att:
+                            matched_att = row_id_to_att[row_id]
+                        else:
+                            if positional_index < len(att_list):
+                                matched_att = att_list[positional_index]
+                                positional_index += 1
+
+                    pending_cert_changes.append({
+                        'pcr_name':        pcr.name,
+                        'pcr_id':          pcr.id,
+                        'cert_action':     ci.get('type', '') or ci.get('cert_action', ''),
+                        'skill_name':      ci.get('skill_name', '—'),
+                        'valid_from':      ci.get('valid_from') or '',
+                        'valid_to':        ci.get('valid_to') or '',
+                        'attachment_name': attachment_name,
+                        'pcr_attachment':  matched_att,
+                        'skill_record_id': ci.get('skill_record_id'),
+                    })
+
+        except Exception as e:
+            _logger.warning('_build_pending_cert_changes error for PCR %s: %s', pcr.name, e)
+            continue
+    return pending_cert_changes
+
+
+def _build_cert_attachments_map(certifications, env):
+    """
+    Build a dict {skill_record_id: [attachment_records]} for approved certifications.
+    Searches ir.attachment where res_model='hr.employee.skill'.
+    This is the FIX: always use this helper so the portal template can display attachments.
+    """
+    cert_attachments_map = {}
+    if not certifications:
+        return cert_attachments_map
+    try:
+        cert_ids = certifications.ids if hasattr(certifications, 'ids') else [c.id for c in certifications]
+        if not cert_ids:
+            return cert_attachments_map
+        all_cert_atts = env['ir.attachment'].sudo().search([
+            ('res_model', '=', 'hr.employee.skill'),
+            ('res_id', 'in', cert_ids),
+        ])
+        for att in all_cert_atts:
+            cert_attachments_map.setdefault(att.res_id, []).append(att)
+    except Exception as e:
+        _logger.warning('_build_cert_attachments_map error: %s', e)
+    return cert_attachments_map
 
 
 class EmployeePortalProfileSubmit(http.Controller):
@@ -238,7 +360,6 @@ class EmployeePortalProfileSubmit(http.Controller):
         if not employee:
             return request.not_found()
         try:
-            # download param comes as string from URL
             if isinstance(download, str):
                 download = download.lower() in ('true', '1', 'yes')
             file_data = getattr(employee, field_name, False)
@@ -249,7 +370,6 @@ class EmployeePortalProfileSubmit(http.Controller):
             filename = getattr(employee, filename_field, None) or field_name
             import mimetypes
 
-            # Detect mimetype from file magic bytes first (most reliable)
             mimetype = None
             if file_bytes[:4] == b'\x89PNG':
                 mimetype = 'image/png'
@@ -281,7 +401,7 @@ class EmployeePortalProfileSubmit(http.Controller):
             return request.not_found()
 
     # ─────────────────────────────────────────────────────────────────────────
-    # SECURE RESUME DOWNLOAD  ← NEW: no password, no ACL error
+    # SECURE RESUME DOWNLOAD
     # ─────────────────────────────────────────────────────────────────────────
     @http.route(
         '/my/employee/resume',
@@ -331,7 +451,6 @@ class EmployeePortalProfileSubmit(http.Controller):
             _logger.error('Error serving resume: %s', e)
             return request.not_found()
 
-
     # ─────────────────────────────────────────────────────────────────────────
     # PERSONAL DETAILS — GET + POST
     # ─────────────────────────────────────────────────────────────────────────
@@ -348,7 +467,6 @@ class EmployeePortalProfileSubmit(http.Controller):
         if request.httprequest.method == 'POST':
             return self._handle_post(employee, post)
 
-        # Invalidate ORM cache so portal always reads latest DB values
         employee.sudo().invalidate_recordset()
         _ensure_sequence_exists(request.env)
         _fix_stuck_pcrs(request.env, employee)
@@ -363,14 +481,13 @@ class EmployeePortalProfileSubmit(http.Controller):
 
         notification = None
 
-        # Always find the LATEST personal PCR and show its current state
         latest_personal_pcr = None
         for _pcr in request.env['hr.profile.change.request'].sudo().search([
             ('employee_id', '=', employee.id),
         ], order='create_date desc', limit=50):
             try:
                 _data = json.loads(_pcr.submitted_data or '{}')
-                if '_skill_change' not in _data and '_cert_change' not in _data and '_resume_change' not in _data:
+                if '_skill_change' not in _data and '_cert_change' not in _data and '_resume_change' not in _data and '_cert_batch' not in _data:
                     latest_personal_pcr = _pcr
                     break
             except Exception:
@@ -404,7 +521,6 @@ class EmployeePortalProfileSubmit(http.Controller):
         else:
             employee.sudo().write({'last_submission_state': False})
 
-        # pending_req needed for PENDING_LOCKED in template
         pending_req = latest_personal_pcr if (latest_personal_pcr and latest_personal_pcr.state == 'pending') else None
 
         countries = request.env['res.country'].sudo().search([], order='name')
@@ -445,13 +561,19 @@ class EmployeePortalProfileSubmit(http.Controller):
             ('employee_id', '=', employee.id),
             ('skill_type_id.name', 'ilike', 'certif'),
         ], order='id desc')
+
+        # ── FIX: Use shared helper for cert_attachments_map ──
+        cert_attachments_map = _build_cert_attachments_map(certifications, request.env)
+
+        # All pending PCRs for this employee
         all_pending_pcrs = request.env['hr.profile.change.request'].sudo().search([
             ('employee_id', '=', employee.id),
             ('state', '=', 'pending'),
         ], order='id desc')
+
         pending_skill_changes = []
         pending_resume_change = None
-        pending_cert_changes  = []
+
         for pcr in all_pending_pcrs:
             try:
                 data = json.loads(pcr.submitted_data or '{}')
@@ -459,27 +581,26 @@ class EmployeePortalProfileSubmit(http.Controller):
                 if sc:
                     if sc.get('cert_action') == 'add_batch':
                         for item in sc.get('skills', []):
-                            pending_skill_changes.append({'pcr_name': pcr.name, 'cert_action': 'add',
-                                'type_name': item.get('type_name','—'), 'skill_name': item.get('skill_name','—'),
-                                'level_name': item.get('level_name','—')})
+                            pending_skill_changes.append({
+                                'pcr_name': pcr.name, 'cert_action': 'add',
+                                'type_name': item.get('type_name', '—'),
+                                'skill_name': item.get('skill_name', '—'),
+                                'level_name': item.get('level_name', '—'),
+                            })
                     else:
-                        pending_skill_changes.append({'pcr_name': pcr.name, 'cert_action': sc.get('cert_action',''),
-                            'type_name': sc.get('type_name','—'), 'skill_name': sc.get('skill_name','—'),
-                            'level_name': sc.get('level_name','—')})
+                        pending_skill_changes.append({
+                            'pcr_name': pcr.name, 'cert_action': sc.get('cert_action', ''),
+                            'type_name': sc.get('type_name', '—'),
+                            'skill_name': sc.get('skill_name', '—'),
+                            'level_name': sc.get('level_name', '—'),
+                        })
                 rc = data.get('_resume_change')
                 if rc and not pending_resume_change:
-                    pending_resume_change = {'pcr_name': pcr.name, 'filename': rc.get('filename','—')}
-                cc = data.get('_cert_change')
-                if cc:
-                    att = request.env['ir.attachment'].sudo().search([
-                        ('res_model','=','hr.profile.change.request'),('res_id','=',pcr.id)], limit=1)
-                    pending_cert_changes.append({'pcr_name': pcr.name, 'pcr_id': pcr.id,
-                        'cert_action': cc.get('cert_action',''), 'skill_name': cc.get('skill_name','—'),
-                        'valid_from': cc.get('valid_from') or '', 'valid_to': cc.get('valid_to') or '',
-                        'attachment_name': cc.get('attachment_name') or '', 'pcr_attachment': att or False,
-                        'skill_record_id': cc.get('skill_record_id')})
+                    pending_resume_change = {'pcr_name': pcr.name, 'filename': rc.get('filename', '—')}
             except Exception:
                 continue
+
+        pending_cert_changes = _build_pending_cert_changes(all_pending_pcrs, request.env)
 
         return request.render(
             'employee_self_service_portal.portal_employee_profile_personal',
@@ -500,6 +621,7 @@ class EmployeePortalProfileSubmit(http.Controller):
                 'pending_skill_changes': pending_skill_changes,
                 'pending_resume_change': pending_resume_change,
                 'pending_cert_changes':  pending_cert_changes,
+                'cert_attachments_map':  cert_attachments_map,
             },
         )
 
@@ -638,14 +760,12 @@ class EmployeePortalProfileSubmit(http.Controller):
             action = post.get('action')
             try:
                 if action == 'submit_combined':
-                    # ONE PCR for both skill changes AND resume — same sequence number
-                    batch_raw   = post.get('batch_skills', '')
+                    batch_raw    = post.get('batch_skills', '')
                     skill_action = post.get('skill_action', '')
-                    resume_file = request.httprequest.files.get('resume_file')
+                    resume_file  = request.httprequest.files.get('resume_file')
 
                     combined_payload = {}
 
-                    # Add skill part if present
                     if batch_raw:
                         try:
                             batch_skills = json.loads(batch_raw)
@@ -665,7 +785,6 @@ class EmployeePortalProfileSubmit(http.Controller):
                             'level_name': post.get('level_name', ''),
                         }
 
-                    # Add resume part if present
                     resume_data = None
                     if resume_file and resume_file.filename:
                         allowed_types = [
@@ -687,7 +806,6 @@ class EmployeePortalProfileSubmit(http.Controller):
                     if not combined_payload:
                         return request.make_json_response({'success': False, 'error': 'No changes provided.'})
 
-                    # Create ONE PCR with everything combined
                     pcr = request.env['hr.profile.change.request'].sudo().create({
                         'employee_id': employee.id,
                         'submitted_data': json.dumps(combined_payload),
@@ -695,7 +813,6 @@ class EmployeePortalProfileSubmit(http.Controller):
                     })
                     pcr.action_submit()
 
-                    # Attach resume file if present
                     if resume_data and resume_file:
                         request.env['ir.attachment'].sudo().create({
                             'name': resume_file.filename,
@@ -901,19 +1018,19 @@ class EmployeePortalProfileSubmit(http.Controller):
                     if action_type == 'add_batch':
                         for item in skill_change.get('skills', []):
                             pending_skill_changes.append({
-                                'pcr_name':   pcr.name,
+                                'pcr_name':    pcr.name,
                                 'cert_action': 'add',
-                                'type_name':  item.get('type_name', '—'),
-                                'skill_name': item.get('skill_name', '—'),
-                                'level_name': item.get('level_name', '—'),
+                                'type_name':   item.get('type_name', '—'),
+                                'skill_name':  item.get('skill_name', '—'),
+                                'level_name':  item.get('level_name', '—'),
                             })
                     else:
                         pending_skill_changes.append({
-                            'pcr_name':   pcr.name,
+                            'pcr_name':    pcr.name,
                             'cert_action': action_type,
-                            'type_name':  skill_change.get('type_name', '—'),
-                            'skill_name': skill_change.get('skill_name', '—'),
-                            'level_name': skill_change.get('level_name', '—'),
+                            'type_name':   skill_change.get('type_name', '—'),
+                            'skill_name':  skill_change.get('skill_name', '—'),
+                            'level_name':  skill_change.get('level_name', '—'),
                         })
 
                 resume_change = data.get('_resume_change')
@@ -925,7 +1042,6 @@ class EmployeePortalProfileSubmit(http.Controller):
             except Exception:
                 continue
 
-        # Experience tab: only show notification for the LATEST PCR if pending or recently actioned
         exp_notification = None
         latest_exp_pcr = None
         for _pcr in request.env['hr.profile.change.request'].sudo().search([
@@ -990,6 +1106,120 @@ class EmployeePortalProfileSubmit(http.Controller):
         if request.httprequest.method == 'POST':
             action = post.get('action')
             try:
+
+                if action == 'batch_certifications':
+                    batch_meta_raw = post.get('batch_changes', '')
+                    if not batch_meta_raw:
+                        return request.make_json_response({'success': False, 'error': 'No changes provided.'})
+                    try:
+                        batch_changes = json.loads(batch_meta_raw)
+                    except Exception:
+                        return request.make_json_response({'success': False, 'error': 'Invalid batch data.'})
+
+                    if not batch_changes:
+                        return request.make_json_response({'success': False, 'error': 'Empty batch.'})
+
+                    validated_changes = []
+                    file_map = {}  # row_id -> (name, data, mime)
+
+                    for item in batch_changes:
+                        change_type = item.get('type', '')
+                        row_id = str(item.get('rowId', ''))
+
+                        file_key = f'file_{row_id}'
+                        file_obj = request.httprequest.files.get(file_key)
+                        attachment_name = None
+                        attachment_data = None
+                        attachment_mime = None
+                        if file_obj and file_obj.filename:
+                            raw_bytes = file_obj.read()
+                            attachment_data = base64.b64encode(raw_bytes).decode()
+                            attachment_name = file_obj.filename
+                            attachment_mime = file_obj.content_type or 'application/octet-stream'
+                            file_map[row_id] = (attachment_name, attachment_data, attachment_mime)
+
+                        if change_type == 'add':
+                            skill_id = int(item.get('skillId', 0) or 0)
+                            if not skill_id:
+                                return request.make_json_response({'success': False, 'error': 'Certificate Name is required for an add change.'})
+                            skill = request.env['hr.skill'].sudo().browse(skill_id)
+                            if not skill.exists():
+                                return request.make_json_response({'success': False, 'error': f'Skill not found: {skill_id}'})
+                            validated_changes.append({
+                                'type': 'add',
+                                'row_id': row_id,
+                                'skill_id': skill_id,
+                                'skill_name': skill.name,
+                                'skill_type_id': skill.skill_type_id.id,
+                                'valid_from': item.get('validFrom') or '',
+                                'valid_to': item.get('validTo') or '',
+                                'has_file': bool(attachment_data),
+                                'attachment_name': attachment_name or '',
+                            })
+
+                        elif change_type == 'edit':
+                            record_id = int(item.get('rowId', 0) or 0)
+                            skill_record = request.env['hr.employee.skill'].sudo().browse(record_id)
+                            if not skill_record.exists() or skill_record.employee_id.id != employee.id:
+                                return request.make_json_response({'success': False, 'error': f'Certification record not found: {record_id}'})
+                            validated_changes.append({
+                                'type': 'edit',
+                                'row_id': row_id,
+                                'skill_record_id': record_id,
+                                'skill_name': skill_record.skill_id.name,
+                                'valid_from': item.get('validFrom') or '',
+                                'valid_to': item.get('validTo') or '',
+                                'has_file': bool(attachment_data),
+                                'attachment_name': attachment_name or '',
+                            })
+
+                        elif change_type == 'delete':
+                            record_id = int(item.get('rowId', 0) or 0)
+                            skill_record = request.env['hr.employee.skill'].sudo().browse(record_id)
+                            if not skill_record.exists() or skill_record.employee_id.id != employee.id:
+                                return request.make_json_response({'success': False, 'error': f'Certification record not found: {record_id}'})
+                            validated_changes.append({
+                                'type': 'delete',
+                                'row_id': row_id,
+                                'skill_record_id': record_id,
+                                'skill_name': skill_record.skill_id.name,
+                            })
+
+                        else:
+                            return request.make_json_response({'success': False, 'error': f'Unknown change type: {change_type}'})
+
+                    if not validated_changes:
+                        return request.make_json_response({'success': False, 'error': 'No valid changes to submit.'})
+
+                    pcr = request.env['hr.profile.change.request'].sudo().create({
+                        'employee_id': employee.id,
+                        'submitted_data': json.dumps({'_cert_batch': {'changes': validated_changes}}),
+                        'state': 'draft',
+                    })
+                    pcr.action_submit()
+
+                    for row_id, (fname, fdata, fmime) in file_map.items():
+                        request.env['ir.attachment'].sudo().create({
+                            'name': fname,
+                            'datas': fdata,
+                            'res_model': 'hr.profile.change.request',
+                            'res_id': pcr.id,
+                            'mimetype': fmime,
+                            'description': f'Certification attachment for row {row_id}',
+                        })
+
+                    _logger.info(
+                        'Cert batch PCR %s created for %s — %d change(s), %d file(s)',
+                        pcr.name, employee.name, len(validated_changes), len(file_map),
+                    )
+
+                    return request.make_json_response({
+                        'success': True,
+                        'message': 'Your certification changes have been submitted for HR approval.',
+                        'reference': pcr.name,
+                    })
+
+                # ── legacy single-action handlers ──
                 attachment_data = None
                 attachment_name = None
                 attachment_mime = None
@@ -1089,39 +1319,17 @@ class EmployeePortalProfileSubmit(http.Controller):
             ('skill_type_id.name', 'ilike', 'certif'),
         ], order='id desc')
 
+        # ── FIX: Use shared helper — fetches from hr.employee.skill so attachments show ──
+        cert_attachments_map = _build_cert_attachments_map(certifications, request.env)
+
         pending_pcrs = request.env['hr.profile.change.request'].sudo().search([
             ('employee_id', '=', employee.id),
             ('state', '=', 'pending'),
         ], order='id desc')
 
-        pending_cert_changes = []
-        for pcr in pending_pcrs:
-            if not pcr.submitted_data:
-                continue
-            try:
-                data = json.loads(pcr.submitted_data)
-                cert_change = data.get('_cert_change')
-                if not cert_change:
-                    continue
-                pcr_attachment = request.env['ir.attachment'].sudo().search([
-                    ('res_model', '=', 'hr.profile.change.request'),
-                    ('res_id', '=', pcr.id),
-                ], limit=1)
-                pending_cert_changes.append({
-                    'pcr_name':        pcr.name,
-                    'pcr_id':          pcr.id,
-                    'cert_action':     cert_change.get('cert_action', ''),
-                    'skill_name':      cert_change.get('skill_name', '—'),
-                    'valid_from':      cert_change.get('valid_from') or '',
-                    'valid_to':        cert_change.get('valid_to') or '',
-                    'attachment_name': cert_change.get('attachment_name') or '',
-                    'pcr_attachment':  pcr_attachment or False,
-                    'skill_record_id': cert_change.get('skill_record_id', None),
-                })
-            except Exception:
-                continue
+        pending_cert_changes = _build_pending_cert_changes(pending_pcrs, request.env)
 
-        # Cert tab: only show notification for the LATEST cert PCR
+        # Cert tab notification
         cert_notification = None
         latest_cert_pcr = None
         for _pcr in request.env['hr.profile.change.request'].sudo().search([
@@ -1129,14 +1337,26 @@ class EmployeePortalProfileSubmit(http.Controller):
         ], order='create_date desc', limit=20):
             try:
                 _d = json.loads(_pcr.submitted_data or '{}')
-                if '_cert_change' in _d:
+                if '_cert_change' in _d or '_cert_batch' in _d:
                     latest_cert_pcr = _pcr
                     break
             except Exception:
                 pass
 
         try:
-            _cert_sname = json.loads(latest_cert_pcr.submitted_data or '{}').get('_cert_change', {}).get('skill_name', '') if latest_cert_pcr else ''
+            _latest_data = json.loads(latest_cert_pcr.submitted_data or '{}') if latest_cert_pcr else {}
+            _cc = _latest_data.get('_cert_change')
+            _cb_raw = _latest_data.get('_cert_batch')
+            _cb = _unwrap_cert_batch(_cb_raw)
+            if _cc and isinstance(_cc, dict):
+                _cert_sname = _cc.get('skill_name', '')
+            elif _cb:
+                _changes = [c for c in _cb if isinstance(c, dict)]
+                _cert_sname = ', '.join(c.get('skill_name', '') for c in _changes[:3])
+                if len(_changes) > 3:
+                    _cert_sname += f' (+{len(_changes) - 3} more)'
+            else:
+                _cert_sname = ''
         except Exception:
             _cert_sname = ''
 
@@ -1166,11 +1386,12 @@ class EmployeePortalProfileSubmit(http.Controller):
         return request.render(
             'employee_self_service_portal.portal_employee_profile_certification',
             {
-                'employee':             employee,
-                'section':              'certification',
-                'certifications':       certifications,
-                'certificate_skills':   certificate_skills,
-                'pending_cert_changes': pending_cert_changes,
-                'cert_notification':    cert_notification,
+                'employee':              employee,
+                'section':               'certification',
+                'certifications':        certifications,
+                'certificate_skills':    certificate_skills,
+                'pending_cert_changes':  pending_cert_changes,
+                'cert_notification':     cert_notification,
+                'cert_attachments_map':  cert_attachments_map,
             }
         )
