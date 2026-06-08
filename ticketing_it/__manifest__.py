@@ -22,7 +22,7 @@
         'data/ticket_type.xml',
         'data/ticket_categories_and_types.xml',
         'views/it_ticket_views.xml',
-        'views/it_ticket_category_views.xml',
+        # 'views/it_ticket_category_views.xml',
         'views/reporting_by_average_time.xml',
         'views/reporting_by_category.xml',
         'views/reporting_open_tickets.xml',
