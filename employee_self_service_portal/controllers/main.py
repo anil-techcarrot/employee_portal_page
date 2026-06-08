@@ -1048,23 +1048,32 @@ class PortalEmployee(http.Controller):
         if not employee:
             return request.redirect('/my/ess')
 
-        # Resolve line manager so the template can display it and
-        # disable the submit button when no manager is set.
-        # employee.parent_id  → manager's hr.employee record
-        # .user_id            → that manager's res.users record (has .name)
         line_manager = None
         if employee.parent_id and employee.parent_id.user_id:
             line_manager = employee.parent_id.user_id
-        ticket_types = request.env['it.ticket.type'].sudo().search([])
+
+        # ── NEW: pass categories (for grouped dropdown) ──
+        ticket_categories = request.env['it.ticket.category'].sudo().search(
+            [('active', '=', True)], order='sequence, name'
+        )
+        # All ticket types (sub-categories) — JS will filter by selected category
+        ticket_types = request.env['it.ticket.type'].sudo().search(
+            [], order='category_id, sequence, name'
+        )
+
         values = {
             'employee': employee,
             'line_manager': line_manager,
             'page_name': 'ess_dashboard',
+            'ticket_categories': ticket_categories,  # ← NEW
             'ticket_types': ticket_types,
             'error': kw.get('error'),
             'error_msg': kw.get('error_msg', ''),
         }
         return request.render('employee_self_service_portal.portal_ess_ticket_form', values)
+
+
+
 
     @http.route(['/my/tickets', '/my/tickets/page/<int:page>'], type='http', auth='user', website=True)
     def portal_my_tickets(self, page=1, sortby=None, filterby=None, **kw):
