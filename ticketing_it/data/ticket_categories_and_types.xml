@@ -1,0 +1,659 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================
+         NO noupdate here — delete must run on every upgrade
+         ============================================================ -->
+
+    <!-- ============================================================
+         STEP 1: TOP-LEVEL CATEGORIES
+         ============================================================ -->
+    <record id="cat_hardware" model="it.ticket.category">
+        <field name="name">Hardware</field>
+        <field name="code">hardware</field>
+        <field name="sequence">10</field>
+    </record>
+
+    <record id="cat_software" model="it.ticket.category">
+        <field name="name">Software</field>
+        <field name="code">software</field>
+        <field name="sequence">20</field>
+    </record>
+
+    <record id="cat_onboarding" model="it.ticket.category">
+        <field name="name">Onboarding/Offboarding</field>
+        <field name="code">onboarding</field>
+        <field name="sequence">30</field>
+    </record>
+
+    <record id="cat_email" model="it.ticket.category">
+        <field name="name">Email</field>
+        <field name="code">email</field>
+        <field name="sequence">40</field>
+    </record>
+
+    <record id="cat_license" model="it.ticket.category">
+        <field name="name">License/Subscription</field>
+        <field name="code">license</field>
+        <field name="sequence">50</field>
+    </record>
+
+    <record id="cat_access" model="it.ticket.category">
+        <field name="name">Access/Permission</field>
+        <field name="code">access</field>
+        <field name="sequence">60</field>
+    </record>
+
+    <record id="cat_application" model="it.ticket.category">
+        <field name="name">Application</field>
+        <field name="code">application</field>
+        <field name="sequence">70</field>
+    </record>
+
+    <record id="cat_network" model="it.ticket.category">
+        <field name="name">Network</field>
+        <field name="code">network</field>
+        <field name="sequence">80</field>
+    </record>
+
+    <record id="cat_social_media" model="it.ticket.category">
+        <field name="name">Social Media</field>
+        <field name="code">social_media</field>
+        <field name="sequence">90</field>
+    </record>
+
+    <record id="cat_security" model="it.ticket.category">
+        <field name="name">Security</field>
+        <field name="code">security</field>
+        <field name="sequence">100</field>
+    </record>
+
+    <record id="cat_generic" model="it.ticket.category">
+        <field name="name">Generic Request</field>
+        <field name="code">generic</field>
+        <field name="sequence">110</field>
+    </record>
+
+
+    <!-- ============================================================
+         STEP 2: SUB-CATEGORIES — update existing 5 + create new ones
+         ============================================================ -->
+
+    <!-- HARDWARE -->
+    <record id="type_hardware" model="it.ticket.type">
+        <field name="name">Hardware Issue</field>
+        <field name="code">hardware_issue</field>
+        <field name="category_id" ref="cat_hardware"/>
+        <field name="sequence">10</field>
+    </record>
+
+    <record id="type_hardware_ram" model="it.ticket.type">
+        <field name="name">RAM Upgrade</field>
+        <field name="code">hardware_ram</field>
+        <field name="category_id" ref="cat_hardware"/>
+        <field name="sequence">20</field>
+    </record>
+
+    <record id="type_hardware_laptop" model="it.ticket.type">
+        <field name="name">Laptop Upgrade/Replacement Request</field>
+        <field name="code">hardware_laptop</field>
+        <field name="category_id" ref="cat_hardware"/>
+        <field name="sequence">30</field>
+    </record>
+
+    <!-- SOFTWARE -->
+    <record id="type_software" model="it.ticket.type">
+        <field name="name">Software Issue</field>
+        <field name="code">software_issue</field>
+        <field name="category_id" ref="cat_software"/>
+        <field name="sequence">10</field>
+    </record>
+
+    <record id="type_software_request" model="it.ticket.type">
+        <field name="name">Software Request</field>
+        <field name="code">software_request</field>
+        <field name="category_id" ref="cat_software"/>
+        <field name="sequence">20</field>
+    </record>
+
+    <record id="type_software_upgrade" model="it.ticket.type">
+        <field name="name">Software Upgrade</field>
+        <field name="code">software_upgrade</field>
+        <field name="category_id" ref="cat_software"/>
+        <field name="sequence">30</field>
+    </record>
+
+    <!-- ONBOARDING/OFFBOARDING -->
+    <record id="type_onboard_device" model="it.ticket.type">
+        <field name="name">Device Onboarding (Windows/Mac)</field>
+        <field name="code">onboard_device</field>
+        <field name="category_id" ref="cat_onboarding"/>
+        <field name="sequence">10</field>
+    </record>
+
+    <record id="type_onboard_hotdesk" model="it.ticket.type">
+        <field name="name">Hotdesk Onboarding</field>
+        <field name="code">onboard_hotdesk</field>
+        <field name="category_id" ref="cat_onboarding"/>
+        <field name="sequence">20</field>
+    </record>
+
+    <record id="type_offboard_device" model="it.ticket.type">
+        <field name="name">Device Offboarding (Windows/Mac)</field>
+        <field name="code">offboard_device</field>
+        <field name="category_id" ref="cat_onboarding"/>
+        <field name="sequence">30</field>
+    </record>
+
+    <!-- EMAIL -->
+    <record id="type_email_revoke" model="it.ticket.type">
+        <field name="name">Revoke/Deactivation</field>
+        <field name="code">email_revoke</field>
+        <field name="category_id" ref="cat_email"/>
+        <field name="sequence">10</field>
+    </record>
+
+    <record id="type_email_creation" model="it.ticket.type">
+        <field name="name">Email Account Creation</field>
+        <field name="code">email_creation</field>
+        <field name="category_id" ref="cat_email"/>
+        <field name="sequence">20</field>
+    </record>
+
+    <record id="type_email_service_account" model="it.ticket.type">
+        <field name="name">Service Account Creation</field>
+        <field name="code">email_service_account</field>
+        <field name="category_id" ref="cat_email"/>
+        <field name="sequence">30</field>
+    </record>
+
+    <record id="type_email_mailbox_access" model="it.ticket.type">
+        <field name="name">Mailbox Access</field>
+        <field name="code">email_mailbox_access</field>
+        <field name="category_id" ref="cat_email"/>
+        <field name="sequence">40</field>
+    </record>
+
+    <record id="type_email_quarantine" model="it.ticket.type">
+        <field name="name">Quarantined Email Release Request</field>
+        <field name="code">email_quarantine</field>
+        <field name="category_id" ref="cat_email"/>
+        <field name="sequence">50</field>
+    </record>
+
+    <record id="type_email_calendar" model="it.ticket.type">
+        <field name="name">Calendar/Meeting Issue</field>
+        <field name="code">email_calendar</field>
+        <field name="category_id" ref="cat_email"/>
+        <field name="sequence">60</field>
+    </record>
+
+    <!-- LICENSE/SUBSCRIPTION -->
+    <record id="type_license_procurement" model="it.ticket.type">
+        <field name="name">License/Subscription Procurement Request</field>
+        <field name="code">license_procurement</field>
+        <field name="category_id" ref="cat_license"/>
+        <field name="sequence">10</field>
+    </record>
+
+    <record id="type_license_issue" model="it.ticket.type">
+        <field name="name">License Issue</field>
+        <field name="code">license_issue</field>
+        <field name="category_id" ref="cat_license"/>
+        <field name="sequence">20</field>
+    </record>
+
+    <!-- ACCESS/PERMISSION -->
+    <record id="type_access_dl" model="it.ticket.type">
+        <field name="name">User Addition in DL</field>
+        <field name="code">access_dl</field>
+        <field name="category_id" ref="cat_access"/>
+        <field name="sequence">10</field>
+    </record>
+
+    <record id="type_access_shared_mailbox" model="it.ticket.type">
+        <field name="name">Shared Mailbox Access</field>
+        <field name="code">access_shared_mailbox</field>
+        <field name="category_id" ref="cat_access"/>
+        <field name="sequence">20</field>
+    </record>
+
+    <record id="type_access_dl_creation" model="it.ticket.type">
+        <field name="name">DL/Group Creation</field>
+        <field name="code">access_dl_creation</field>
+        <field name="category_id" ref="cat_access"/>
+        <field name="sequence">30</field>
+    </record>
+
+    <record id="type_access_entra_permission" model="it.ticket.type">
+        <field name="name">Permission Role on Entra ID App</field>
+        <field name="code">access_entra_permission</field>
+        <field name="category_id" ref="cat_access"/>
+        <field name="sequence">40</field>
+    </record>
+
+    <record id="type_access_remote" model="it.ticket.type">
+        <field name="name">Remote Access (AnyDesk or TeamViewer) or Issue</field>
+        <field name="code">access_remote</field>
+        <field name="category_id" ref="cat_access"/>
+        <field name="sequence">50</field>
+    </record>
+
+    <record id="type_access_laptop_left" model="it.ticket.type">
+        <field name="name">Access to Laptop (Employee Left)</field>
+        <field name="code">access_laptop_left</field>
+        <field name="category_id" ref="cat_access"/>
+        <field name="sequence">60</field>
+    </record>
+
+    <record id="type_access_dms" model="it.ticket.type">
+        <field name="name">DMS Access/Permission Issue</field>
+        <field name="code">access_dms</field>
+        <field name="category_id" ref="cat_access"/>
+        <field name="sequence">70</field>
+    </record>
+
+    <record id="type_access_server_website" model="it.ticket.type">
+        <field name="name">Server Hosting / Internal Website Access</field>
+        <field name="code">access_server_website</field>
+        <field name="category_id" ref="cat_access"/>
+        <field name="sequence">80</field>
+    </record>
+
+    <record id="type_access_privilege" model="it.ticket.type">
+        <field name="name">Privilege Access Request</field>
+        <field name="code">access_privilege</field>
+        <field name="category_id" ref="cat_access"/>
+        <field name="sequence">90</field>
+    </record>
+
+    <!-- APPLICATION -->
+    <record id="type_app_entra_registration" model="it.ticket.type">
+        <field name="name">App Registration in Entra ID</field>
+        <field name="code">app_entra_registration</field>
+        <field name="category_id" ref="cat_application"/>
+        <field name="sequence">10</field>
+    </record>
+
+    <record id="type_app_powerapps" model="it.ticket.type">
+        <field name="name">Power Apps/Timesheet Access</field>
+        <field name="code">app_powerapps</field>
+        <field name="category_id" ref="cat_application"/>
+        <field name="sequence">20</field>
+    </record>
+
+    <record id="type_app_sharepoint" model="it.ticket.type">
+        <field name="name">SharePoint Support/Issue</field>
+        <field name="code">app_sharepoint</field>
+        <field name="category_id" ref="cat_application"/>
+        <field name="sequence">30</field>
+    </record>
+
+    <record id="type_app_internal" model="it.ticket.type">
+        <field name="name">Internal Applications (Website, Odoo, Intranet, SharePoint)</field>
+        <field name="code">app_internal</field>
+        <field name="category_id" ref="cat_application"/>
+        <field name="sequence">40</field>
+    </record>
+
+    <record id="type_app_m365" model="it.ticket.type">
+        <field name="name">M365 App Issue (Outlook, Teams, OneDrive etc.)</field>
+        <field name="code">app_m365</field>
+        <field name="category_id" ref="cat_application"/>
+        <field name="sequence">50</field>
+    </record>
+
+    <!-- NETWORK -->
+    <record id="type_network" model="it.ticket.type">
+        <field name="name">Internet Access</field>
+        <field name="code">network_internet</field>
+        <field name="category_id" ref="cat_network"/>
+        <field name="sequence">10</field>
+    </record>
+
+    <record id="type_network_wifi" model="it.ticket.type">
+        <field name="name">WiFi Issue</field>
+        <field name="code">network_wifi</field>
+        <field name="category_id" ref="cat_network"/>
+        <field name="sequence">20</field>
+    </record>
+
+    <record id="type_network_lan" model="it.ticket.type">
+        <field name="name">LAN Issue</field>
+        <field name="code">network_lan</field>
+        <field name="category_id" ref="cat_network"/>
+        <field name="sequence">30</field>
+    </record>
+
+    <!-- SOCIAL MEDIA -->
+    <record id="type_social" model="it.ticket.type">
+        <field name="name">YouTube/Instagram/Facebook/X/WhatsApp</field>
+        <field name="code">social_media</field>
+        <field name="category_id" ref="cat_social_media"/>
+        <field name="sequence">10</field>
+    </record>
+
+    <record id="type_social_email_exception" model="it.ticket.type">
+        <field name="name">Exception to Send Email to Personal Domain</field>
+        <field name="code">social_email_exception</field>
+        <field name="category_id" ref="cat_social_media"/>
+        <field name="sequence">20</field>
+    </record>
+
+    <!-- SECURITY -->
+    <record id="type_security_phishing" model="it.ticket.type">
+        <field name="name">Suspicious/Phishing</field>
+        <field name="code">security_phishing</field>
+        <field name="category_id" ref="cat_security"/>
+        <field name="sequence">10</field>
+    </record>
+
+    <record id="type_security_malware" model="it.ticket.type">
+        <field name="name">Malware/Virus Alert</field>
+        <field name="code">security_malware</field>
+        <field name="category_id" ref="cat_security"/>
+        <field name="sequence">20</field>
+    </record>
+
+    <record id="type_security_unauthorized" model="it.ticket.type">
+        <field name="name">Unauthorized Access Attempt</field>
+        <field name="code">security_unauthorized</field>
+        <field name="category_id" ref="cat_security"/>
+        <field name="sequence">30</field>
+    </record>
+
+    <record id="type_security_dataloss" model="it.ticket.type">
+        <field name="name">Data Loss/Leak</field>
+        <field name="code">security_dataloss</field>
+        <field name="category_id" ref="cat_security"/>
+        <field name="sequence">40</field>
+    </record>
+
+    <record id="type_security_password" model="it.ticket.type">
+        <field name="name">Password Reset or Support</field>
+        <field name="code">security_password</field>
+        <field name="category_id" ref="cat_security"/>
+        <field name="sequence">50</field>
+    </record>
+
+    <record id="type_security_mfa" model="it.ticket.type">
+        <field name="name">MFA Issue</field>
+        <field name="code">security_mfa</field>
+        <field name="category_id" ref="cat_security"/>
+        <field name="sequence">60</field>
+    </record>
+
+    <record id="type_security_certificate" model="it.ticket.type">
+        <field name="name">Certificate Issue</field>
+        <field name="code">security_certificate</field>
+        <field name="category_id" ref="cat_security"/>
+        <field name="sequence">70</field>
+    </record>
+
+    <record id="type_security_lockout" model="it.ticket.type">
+        <field name="name">Account Lockout/BitLocker Issue</field>
+        <field name="code">security_lockout</field>
+        <field name="category_id" ref="cat_security"/>
+        <field name="sequence">80</field>
+    </record>
+
+    <!-- GENERIC REQUEST -->
+    <record id="type_generic_server_poc" model="it.ticket.type">
+        <field name="name">Server Request for POC</field>
+        <field name="code">generic_server_poc</field>
+        <field name="category_id" ref="cat_generic"/>
+        <field name="sequence">10</field>
+    </record>
+
+    <record id="type_generic_backup" model="it.ticket.type">
+        <field name="name">Backup Request</field>
+        <field name="code">generic_backup</field>
+        <field name="category_id" ref="cat_generic"/>
+        <field name="sequence">20</field>
+    </record>
+
+    <record id="type_generic_cloud" model="it.ticket.type">
+        <field name="name">Cloud Storage Request</field>
+        <field name="code">generic_cloud</field>
+        <field name="category_id" ref="cat_generic"/>
+        <field name="sequence">30</field>
+    </record>
+
+    <record id="type_generic_signature" model="it.ticket.type">
+        <field name="name">Signature Configuration Issue</field>
+        <field name="code">generic_signature</field>
+        <field name="category_id" ref="cat_generic"/>
+        <field name="sequence">40</field>
+    </record>
+
+    <record id="type_other" model="it.ticket.type">
+        <field name="name">Other / General Request</field>
+        <field name="code">other_general</field>
+        <field name="category_id" ref="cat_generic"/>
+        <field name="sequence">99</field>
+    </record>
+
+
+    <!-- ============================================================
+         STEP 3: WORKFLOW CONFIGS
+         The delete in ticket_type.xml already cleared old ones.
+         ============================================================ -->
+
+    <!-- HARDWARE -->
+    <record id="wf_hardware_issue" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_hardware"/>
+        <field name="workflow_level">0</field>
+    </record>
+    <record id="wf_hardware_ram" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_hardware_ram"/>
+        <field name="workflow_level">1</field>
+    </record>
+    <record id="wf_hardware_laptop" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_hardware_laptop"/>
+        <field name="workflow_level">1</field>
+    </record>
+
+    <!-- SOFTWARE -->
+    <record id="wf_software_issue" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_software"/>
+        <field name="workflow_level">0</field>
+    </record>
+    <record id="wf_software_request" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_software_request"/>
+        <field name="workflow_level">1</field>
+    </record>
+    <record id="wf_software_upgrade" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_software_upgrade"/>
+        <field name="workflow_level">1</field>
+    </record>
+
+    <!-- ONBOARDING/OFFBOARDING -->
+    <record id="wf_onboard_device" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_onboard_device"/>
+        <field name="workflow_level">0</field>
+    </record>
+    <record id="wf_onboard_hotdesk" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_onboard_hotdesk"/>
+        <field name="workflow_level">0</field>
+    </record>
+    <record id="wf_offboard_device" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_offboard_device"/>
+        <field name="workflow_level">0</field>
+    </record>
+
+    <!-- EMAIL -->
+    <record id="wf_email_revoke" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_email_revoke"/>
+        <field name="workflow_level">0</field>
+    </record>
+    <record id="wf_email_creation" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_email_creation"/>
+        <field name="workflow_level">1</field>
+    </record>
+    <record id="wf_email_service_account" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_email_service_account"/>
+        <field name="workflow_level">1</field>
+    </record>
+    <record id="wf_email_mailbox_access" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_email_mailbox_access"/>
+        <field name="workflow_level">1</field>
+    </record>
+    <record id="wf_email_quarantine" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_email_quarantine"/>
+        <field name="workflow_level">0</field>
+    </record>
+    <record id="wf_email_calendar" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_email_calendar"/>
+        <field name="workflow_level">0</field>
+    </record>
+
+    <!-- LICENSE/SUBSCRIPTION -->
+    <record id="wf_license_procurement" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_license_procurement"/>
+        <field name="workflow_level">1</field>
+    </record>
+    <record id="wf_license_issue" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_license_issue"/>
+        <field name="workflow_level">1</field>
+    </record>
+
+    <!-- ACCESS/PERMISSION -->
+    <record id="wf_access_dl" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_access_dl"/>
+        <field name="workflow_level">1</field>
+    </record>
+    <record id="wf_access_shared_mailbox" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_access_shared_mailbox"/>
+        <field name="workflow_level">1</field>
+    </record>
+    <record id="wf_access_dl_creation" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_access_dl_creation"/>
+        <field name="workflow_level">1</field>
+    </record>
+    <record id="wf_access_entra_permission" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_access_entra_permission"/>
+        <field name="workflow_level">2</field>
+    </record>
+    <record id="wf_access_remote" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_access_remote"/>
+        <field name="workflow_level">2</field>
+    </record>
+    <record id="wf_access_laptop_left" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_access_laptop_left"/>
+        <field name="workflow_level">2</field>
+    </record>
+    <record id="wf_access_dms" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_access_dms"/>
+        <field name="workflow_level">1</field>
+    </record>
+    <record id="wf_access_server_website" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_access_server_website"/>
+        <field name="workflow_level">1</field>
+    </record>
+    <record id="wf_access_privilege" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_access_privilege"/>
+        <field name="workflow_level">2</field>
+    </record>
+
+    <!-- APPLICATION -->
+    <record id="wf_app_entra_registration" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_app_entra_registration"/>
+        <field name="workflow_level">2</field>
+    </record>
+    <record id="wf_app_powerapps" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_app_powerapps"/>
+        <field name="workflow_level">1</field>
+    </record>
+    <record id="wf_app_sharepoint" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_app_sharepoint"/>
+        <field name="workflow_level">0</field>
+    </record>
+    <record id="wf_app_internal" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_app_internal"/>
+        <field name="workflow_level">0</field>
+    </record>
+    <record id="wf_app_m365" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_app_m365"/>
+        <field name="workflow_level">0</field>
+    </record>
+
+    <!-- NETWORK -->
+    <record id="wf_network_internet" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_network"/>
+        <field name="workflow_level">0</field>
+    </record>
+    <record id="wf_network_wifi" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_network_wifi"/>
+        <field name="workflow_level">0</field>
+    </record>
+    <record id="wf_network_lan" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_network_lan"/>
+        <field name="workflow_level">0</field>
+    </record>
+
+    <!-- SOCIAL MEDIA -->
+    <record id="wf_social_media" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_social"/>
+        <field name="workflow_level">2</field>
+    </record>
+    <record id="wf_social_email_exception" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_social_email_exception"/>
+        <field name="workflow_level">2</field>
+    </record>
+
+    <!-- SECURITY -->
+    <record id="wf_security_phishing" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_security_phishing"/>
+        <field name="workflow_level">0</field>
+    </record>
+    <record id="wf_security_malware" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_security_malware"/>
+        <field name="workflow_level">0</field>
+    </record>
+    <record id="wf_security_unauthorized" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_security_unauthorized"/>
+        <field name="workflow_level">0</field>
+    </record>
+    <record id="wf_security_dataloss" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_security_dataloss"/>
+        <field name="workflow_level">0</field>
+    </record>
+    <record id="wf_security_password" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_security_password"/>
+        <field name="workflow_level">0</field>
+    </record>
+    <record id="wf_security_mfa" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_security_mfa"/>
+        <field name="workflow_level">0</field>
+    </record>
+    <record id="wf_security_certificate" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_security_certificate"/>
+        <field name="workflow_level">0</field>
+    </record>
+    <record id="wf_security_lockout" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_security_lockout"/>
+        <field name="workflow_level">0</field>
+    </record>
+
+    <!-- GENERIC REQUEST -->
+    <record id="wf_generic_server_poc" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_generic_server_poc"/>
+        <field name="workflow_level">2</field>
+    </record>
+    <record id="wf_generic_backup" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_generic_backup"/>
+        <field name="workflow_level">2</field>
+    </record>
+    <record id="wf_generic_cloud" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_generic_cloud"/>
+        <field name="workflow_level">2</field>
+    </record>
+    <record id="wf_generic_signature" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_generic_signature"/>
+        <field name="workflow_level">0</field>
+    </record>
+    <record id="wf_other_general" model="it.ticket.workflow.config">
+        <field name="ticket_type_id" ref="type_other"/>
+        <field name="workflow_level">1</field>
+    </record>
+
+</odoo>

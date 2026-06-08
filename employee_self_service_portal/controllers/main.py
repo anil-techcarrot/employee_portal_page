@@ -103,7 +103,7 @@ def _process_partner_field(field_value, field_name='partner_id'):
         existing_partner = request.env['res.partner'].sudo().search([
             ('name', '=ilike', partner_name),
             ('is_company', '=', True),
-            ('company_id', '=', company_id)
+            ('company_id', '=', request.env.company.id)
         ], limit=1)
 
         if existing_partner:

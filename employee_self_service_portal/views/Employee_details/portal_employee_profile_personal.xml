@@ -316,11 +316,13 @@
                                     </select>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label fw-bold"><i class="fa fa-calendar text-muted me-1"></i>Date
-                                        of Birth
+                                    <label class="form-label fw-bold">
+                                        <i class="fa fa-calendar text-muted me-1"></i>Date of Birth
                                     </label>
+                                    <t t-set="dob_val"
+                                       t-value="portal_overlay.get('birthday') or (str(employee.birthday) if employee.birthday else '')"/>
                                     <input type="date" name="birthday" class="form-control"
-                                           t-att-value="employee.birthday"
+                                           t-att-value="dob_val"
                                            readonly="readonly" data-validation="past-date"/>
                                     <div class="invalid-feedback"></div>
                                 </div>
@@ -355,47 +357,42 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Blood Group</label>
+                                    <t t-set="bg_val"
+                                       t-value="portal_overlay.get('blood_group') or employee.blood_group or ''"/>
                                     <select name="blood_group" class="form-select" disabled="disabled">
                                         <option value="">-- Select Blood Group --</option>
-                                        <option value="a+"
-                                                t-att-selected="'selected' if employee.blood_group == 'a+' else None">A+
+                                        <option value="a+" t-att-selected="'selected' if bg_val == 'a+' else None">A+
                                         </option>
-                                        <option value="a-"
-                                                t-att-selected="'selected' if employee.blood_group == 'a-' else None">A-
+                                        <option value="a-" t-att-selected="'selected' if bg_val == 'a-' else None">A-
                                         </option>
-                                        <option value="b+"
-                                                t-att-selected="'selected' if employee.blood_group == 'b+' else None">B+
+                                        <option value="b+" t-att-selected="'selected' if bg_val == 'b+' else None">B+
                                         </option>
-                                        <option value="b-"
-                                                t-att-selected="'selected' if employee.blood_group == 'b-' else None">B-
+                                        <option value="b-" t-att-selected="'selected' if bg_val == 'b-' else None">B-
                                         </option>
-                                        <option value="ab+"
-                                                t-att-selected="'selected' if employee.blood_group == 'ab+' else None">
+                                        <option value="ab+" t-att-selected="'selected' if bg_val == 'ab+' else None">
                                             AB+
                                         </option>
-                                        <option value="ab-"
-                                                t-att-selected="'selected' if employee.blood_group == 'ab-' else None">
+                                        <option value="ab-" t-att-selected="'selected' if bg_val == 'ab-' else None">
                                             AB-
                                         </option>
-                                        <option value="o+"
-                                                t-att-selected="'selected' if employee.blood_group == 'o+' else None">O+
+                                        <option value="o+" t-att-selected="'selected' if bg_val == 'o+' else None">O+
                                         </option>
-                                        <option value="o-"
-                                                t-att-selected="'selected' if employee.blood_group == 'o-' else None">O-
+                                        <option value="o-" t-att-selected="'selected' if bg_val == 'o-' else None">O-
                                         </option>
                                         <option value="unknown"
-                                                t-att-selected="'selected' if employee.blood_group == 'unknown' else None">
-                                            Unknown
+                                                t-att-selected="'selected' if bg_val == 'unknown' else None">Unknown
                                         </option>
                                     </select>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Religion</label>
+                                    <t t-set="rel_id"
+                                       t-value="int(portal_overlay.get('religion', 0) or 0) or employee.religion.id or 0"/>
                                     <select name="religion" class="form-select" disabled="disabled">
                                         <option value="">-- Select Religion --</option>
                                         <t t-foreach="religions" t-as="rel">
                                             <option t-att-value="rel.id"
-                                                    t-att-selected="'selected' if rel.id == employee.religion.id else None">
+                                                    t-att-selected="'selected' if rel.id == rel_id else None">
                                                 <t t-esc="rel.name"/>
                                             </option>
                                         </t>
@@ -429,11 +426,13 @@
                                         <i class="fa fa-globe text-muted me-1"></i>
                                         Passport Issuing Country
                                     </label>
+                                    <t t-set="pic_id"
+                                       t-value="int(portal_overlay.get('issue_countries_id', 0) or 0) or employee.issue_countries_id.id or 0"/>
                                     <select name="issue_countries_id" class="form-select" disabled="disabled">
                                         <option value="">-- Select Country --</option>
                                         <t t-foreach="countries" t-as="country">
                                             <option t-att-value="country.id"
-                                                    t-att-selected="'selected' if country.id == employee.issue_countries_id.id else None">
+                                                    t-att-selected="'selected' if country.id == pic_id else None">
                                                 <t t-esc="country.name"/>
                                             </option>
                                         </t>

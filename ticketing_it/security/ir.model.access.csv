@@ -18,3 +18,8 @@ access_it_ticket_report_open,it.ticket.report.open,model_it_ticket_report_open,,
 access_it_ticket_report_solved,it.ticket.report.solved,model_it_ticket_report_solved,,1,0,0,0
 access_ticket_workflow_config_it_manager,access_ticket_workflow_config_it_manager,model_it_ticket_workflow_config,ticketing_it.group_it_manager,1,1,1,1
 access_ticket_it_ticket_type_it_manager,access_it_ticket_type_it_manager,model_it_ticket_type,,1,0,0,0
+
+
+access_it_ticket_category_user,it.ticket.category.user,model_it_ticket_category,base.group_user,1,0,0,0
+access_it_ticket_category_portal,it.ticket.category.portal,model_it_ticket_category,base.group_portal,1,0,0,0
+access_it_ticket_category_manager,it.ticket.category.manager,model_it_ticket_category,ticketing_it.group_it_manager,1,1,1,1
