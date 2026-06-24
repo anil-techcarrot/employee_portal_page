@@ -9,10 +9,9 @@
     <template id="portal_my_home_it_approvals" name="Portal My Home: IT Ticket Approvals"
               inherit_id="portal.portal_my_home" priority="20">
         <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
-            <t t-if="'it.ticket' in request.env.registry and (
-             request.env.user.has_group('ticketing_it.group_it_manager') or
-             request.env['it.ticket'].sudo().search_count(
-                 [('line_manager_id', '=', request.env.user.id)]) > 0)">
+            <t t-if="request.env.user.has_group('ticketing_it.group_it_manager') or
+                     request.env['it.ticket'].sudo().search_count(
+                         [('line_manager_id', '=', request.env.user.id)]) > 0">
                 <div class="col-12 col-md-6 col-lg-4 mb-4">
                     <a href="/my/it-approvals"
                        class="o_portal_my_doc_card card h-100 text-decoration-none">
