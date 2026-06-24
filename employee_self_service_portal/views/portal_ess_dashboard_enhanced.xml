@@ -541,6 +541,36 @@
                                 </div>
                             </div>
 
+                            <!-- IT Ticket Approvals Card - shown only to Line Managers / IT Managers
+                                 who need to approve or reject pending tickets from the portal -->
+                            <t t-if="request.env.user.has_group('ticketing_it.group_it_manager') or
+                                     request.env.user.has_group('ticketing_it.group_line_manager') or
+                                     request.env['it.ticket'].sudo().search_count(
+                                         [('line_manager_id', '=', request.env.user.id)]) > 0">
+                                <div class="col-md-6">
+                                    <div class="module-card card border-0 shadow-sm h-100">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center mb-3">
+                                                <div class="icon-circle bg-warning bg-opacity-10 me-3">
+                                                    <i class="fa fa-gavel fa-lg text-warning"></i>
+                                                </div>
+                                                <div>
+                                                    <h5 class="mb-1">IT Ticket Approvals</h5>
+                                                    <p class="text-muted mb-0 small">Review pending tickets awaiting your decision</p>
+                                                </div>
+                                            </div>
+
+                                            <div class="d-grid gap-2">
+                                                <a href="/my/it-approvals" class="btn btn-warning btn-sm">
+                                                    <i class="fa fa-gavel me-1"></i>
+                                                    Go to Approvals
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
+
                             <!-- CRM Card -->
                             <t t-if="has_crm_access">
                                 <div class="col-md-4">
@@ -1081,7 +1111,7 @@
 
             function initializeDashboard() {
                 console.log('Enhanced ESS Dashboard initialized');
-                
+
                 // Add hover effects to cards
                 const cards = document.querySelectorAll('.card');
                 cards.forEach(card => {
@@ -1090,7 +1120,7 @@
                         this.style.transform = 'translateY(-5px)';
                         this.style.transition = 'transform 0.3s ease, box-shadow 0.3s ease';
                     });
-                    
+
                     card.addEventListener('mouseleave', function() {
                         if (!this.classList.contains('module-card')) return;
                         this.style.transform = 'translateY(0)';
@@ -1121,7 +1151,7 @@
             // Helper: Reverse geocode using Nominatim
             function reverseGeocode(lat, lon, callback) {
                 console.log(`Attempting to reverse geocode: ${lat}, ${lon}`);
-                
+
                 // Add cache to prevent excessive API calls
                 const cacheKey = `${lat.toFixed(6)},${lon.toFixed(6)}`;
                 const cachedResult = sessionStorage.getItem(`geo_${cacheKey}`);
@@ -1130,7 +1160,7 @@
                     callback(cachedResult);
                     return;
                 }
-                
+
                 // Add a user agent header to comply with Nominatim usage policy
                 fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18`, {
                     headers: {
@@ -1167,12 +1197,12 @@
                 // Store the button's original text (either "Check In Now" or "Check In Again")
                 // This is important for proper button restoration in error scenarios
                 const isReCheckIn = btn.innerHTML.includes('Check In Again');
-                const defaultButtonText = isReCheckIn 
+                const defaultButtonText = isReCheckIn
                     ? '<i class="fa fa-sign-in"></i> Check In Again'
                     : '<i class="fa fa-sign-in"></i> Check In Now';
-                
+
                 setButtonLoading(btn, '<i class="fa fa-spinner fa-spin"></i> Checking In...');
-                
+
                 if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(
                         function(position) {
@@ -1180,7 +1210,7 @@
                             const latitude = position.coords.latitude;
                             const longitude = position.coords.longitude;
                             console.log(`Got location: ${latitude}, ${longitude}`);
-                            
+
                             // Get address from coordinates
                             reverseGeocode(latitude, longitude, function(location) {
                                 // Now send check-in request with location data
@@ -1190,22 +1220,22 @@
                                         'Content-Type': 'application/x-www-form-urlencoded',
                                         'X-CSRFToken': getCSRFToken()
                                     },
-                                    body: 'csrf_token=' + encodeURIComponent(getCSRFToken()) + 
-                                          '&in_latitude=' + encodeURIComponent(latitude) + 
-                                          '&in_longitude=' + encodeURIComponent(longitude) + 
+                                    body: 'csrf_token=' + encodeURIComponent(getCSRFToken()) +
+                                          '&in_latitude=' + encodeURIComponent(latitude) +
+                                          '&in_longitude=' + encodeURIComponent(longitude) +
                                           '&check_in_location=' + encodeURIComponent(location)
                                 })
                                 .then(response => {
                                     console.log('Response status:', response.status);
-                                    
+
                                     // Critical fix: Check HTTP status first
                                     if (response.status >= 200 && response.status < 300) {
                                         console.log('HTTP success status detected:', response.status);
-                                        
+
                                         // Try getting raw text first to examine what we're getting back
                                         return response.text().then(text => {
                                             console.log('Raw response text:', text.substring(0, 200) + (text.length > 200 ? '...' : ''));
-                                            
+
                                             try {
                                                 // Attempt to parse as JSON
                                                 const data = JSON.parse(text);
@@ -1213,12 +1243,12 @@
                                                 return data;
                                             } catch (e) {
                                                 console.warn('Response is not JSON but HTTP status is success:', e.message);
-                                                
+
                                                 // Critical fix: If we got HTTP 200-299 but not JSON,
                                                 // the operation likely succeeded, so we construct a success object
                                                 console.log('Creating synthetic success response');
-                                                return { 
-                                                    status: 'success', 
+                                                return {
+                                                    status: 'success',
                                                     message: 'Operation successful',
                                                     synthetic: true // Flag to indicate this is a constructed response
                                                 };
@@ -1234,7 +1264,7 @@
                                     console.log('Response data:', data);
                                     // The backend may return HTTP 200 OK with JSON status field to indicate success/failure
                                     // OR it may return HTTP 200 OK with simple string response for legacy endpoints
-                                    
+
                                     // For JSON responses with status field
                                     if (data && typeof data === 'object') {
                                         // Check for success status field in JSON response
@@ -1255,14 +1285,14 @@
                                         setTimeout(() => window.location.reload(), 1500);
                                         return; // Exit early on success
                                     }
-                                    
+
                                     // If we get here, there was an error - restore button
                                     const originalText = btn.getAttribute('data-original-text') || defaultButtonText;
                                     resetButton(btn, originalText);
                                 })
                                 .catch(error => {
                                     console.error('Fetch error:', error);
-                                    
+
                                     // Check if the request actually succeeded despite the error
                                     // This happens when the server returns a non-JSON response that the frontend can't parse
                                     if (error.message === 'Invalid response format') {
@@ -1283,7 +1313,7 @@
                         function(error) {
                             console.error("Geolocation error:", error);
                             showNotification('Could not get your location. Check-in without location.', 'warning');
-                            
+
                             // Continue with check-in without location
                             fetch('/my/employee/attendance/quick-checkin', {
                                 method: 'POST',
@@ -1296,15 +1326,15 @@
                             })
                             .then(response => {
                                 console.log('Response status (no location):', response.status);
-                                
+
                                 // Critical fix: Check HTTP status first
                                 if (response.status >= 200 && response.status < 300) {
                                     console.log('HTTP success status detected (no location):', response.status);
-                                    
+
                                     // Try getting raw text first to examine what we're getting back
                                     return response.text().then(text => {
                                         console.log('Raw response text (no location):', text.substring(0, 200) + (text.length > 200 ? '...' : ''));
-                                        
+
                                         try {
                                             // Attempt to parse as JSON
                                             const data = JSON.parse(text);
@@ -1312,12 +1342,12 @@
                                             return data;
                                         } catch (e) {
                                             console.warn('Response is not JSON but HTTP status is success (no location):', e.message);
-                                            
+
                                             // Critical fix: If we got HTTP 200-299 but not JSON,
                                             // the operation likely succeeded, so we construct a success object
                                             console.log('Creating synthetic success response (no location)');
-                                            return { 
-                                                status: 'success', 
+                                            return {
+                                                status: 'success',
                                                 message: 'Checked in successfully',
                                                 synthetic: true // Flag to indicate this is a constructed response
                                             };
@@ -1331,7 +1361,7 @@
                             })
                             .then(data => {
                                 console.log('Response data (no location):', data);
-                                
+
                                 // For JSON responses with status field
                                 if (data && typeof data === 'object') {
                                     // Check for success status field in JSON response
@@ -1352,14 +1382,14 @@
                                     setTimeout(() => window.location.reload(), 1500);
                                     return; // Exit early on success
                                 }
-                                
+
                                 // If we get here, there was an error - restore button
                                 const originalText = btn.getAttribute('data-original-text') || defaultButtonText;
                                 resetButton(btn, originalText);
                             })
                             .catch(error => {
                                 console.error('Fetch error (no location):', error);
-                                
+
                                 // Check if the request actually succeeded despite the error
                                 if (error.message === 'Invalid response format') {
                                     // Assume success for unparseable responses - the backend updated the record
@@ -1380,7 +1410,7 @@
                 } else {
                     console.error("Geolocation not supported");
                     showNotification('Your device does not support location. Check-in without location.', 'warning');
-                    
+
                     // Fallback to check-in without location
                     fetch('/my/employee/attendance/quick-checkin', {
                         method: 'POST',
@@ -1398,7 +1428,7 @@
                         responseClone.text().then(text => {
                             console.log('Raw response text (no geo):', text.substring(0, 200) + (text.length > 200 ? '...' : ''));
                         }).catch(e => console.error('Error getting response text (no geo):', e));
-                        
+
                         return response.json().catch(e => {
                             // Handle JSON parse errors
                             console.error('JSON parse error (no geo):', e);
@@ -1407,7 +1437,7 @@
                     })
                     .then(data => {
                         console.log('Response data (no geo):', data);
-                        
+
                         // For JSON responses with status field
                         if (data && typeof data === 'object') {
                             // Check for success status field in JSON response
@@ -1428,14 +1458,14 @@
                             setTimeout(() => window.location.reload(), 1500);
                             return; // Exit early on success
                         }
-                        
+
                         // If we get here, there was an error - restore button
                         const originalText = btn.getAttribute('data-original-text') || defaultButtonText;
                         resetButton(btn, originalText);
                     })
                     .catch(error => {
                         console.error('Fetch error (no geo):', error);
-                        
+
                         // Check if the request actually succeeded despite the error
                         if (error.message === 'Invalid response format') {
                             // Assume success for unparseable responses - the backend updated the record
@@ -1452,15 +1482,15 @@
                     });
                 }
             }
-            
+
             // Enhanced Check-Out Function with Geolocation
             function quickCheckOut() {
                 const btn = event.target;
                 // Always use the consistent button text for checkout
                 const defaultButtonText = '<i class="fa fa-sign-out"></i> Check Out Now';
-                
+
                 setButtonLoading(btn, '<i class="fa fa-spinner fa-spin"></i> Checking Out...');
-                
+
                 if (navigator.geolocation) {
                     navigator.geolocation.getCurrentPosition(
                         function(position) {
@@ -1468,7 +1498,7 @@
                             const latitude = position.coords.latitude;
                             const longitude = position.coords.longitude;
                             console.log(`Got location: ${latitude}, ${longitude}`);
-                            
+
                             // Get address from coordinates
                             reverseGeocode(latitude, longitude, function(location) {
                                 // Now send check-out request with location data
@@ -1478,22 +1508,22 @@
                                         'Content-Type': 'application/x-www-form-urlencoded',
                                         'X-CSRFToken': getCSRFToken()
                                     },
-                                    body: 'csrf_token=' + encodeURIComponent(getCSRFToken()) + 
-                                          '&out_latitude=' + encodeURIComponent(latitude) + 
-                                          '&out_longitude=' + encodeURIComponent(longitude) + 
+                                    body: 'csrf_token=' + encodeURIComponent(getCSRFToken()) +
+                                          '&out_latitude=' + encodeURIComponent(latitude) +
+                                          '&out_longitude=' + encodeURIComponent(longitude) +
                                           '&check_out_location=' + encodeURIComponent(location)
                                 })
                                 .then(response => {
                                     console.log('Checkout response status:', response.status);
-                                    
+
                                     // Critical fix: Check HTTP status first
                                     if (response.status >= 200 && response.status < 300) {
                                         console.log('HTTP success status detected for checkout:', response.status);
-                                        
+
                                         // Try getting raw text first to examine what we're getting back
                                         return response.text().then(text => {
                                             console.log('Raw checkout response text:', text.substring(0, 200) + (text.length > 200 ? '...' : ''));
-                                            
+
                                             try {
                                                 // Attempt to parse as JSON
                                                 const data = JSON.parse(text);
@@ -1501,12 +1531,12 @@
                                                 return data;
                                             } catch (e) {
                                                 console.warn('Checkout response is not JSON but HTTP status is success:', e.message);
-                                                
+
                                                 // Critical fix: If we got HTTP 200-299 but not JSON,
                                                 // the operation likely succeeded, so we construct a success object
                                                 console.log('Creating synthetic success response for checkout');
-                                                return { 
-                                                    status: 'success', 
+                                                return {
+                                                    status: 'success',
                                                     message: 'Checked out successfully',
                                                     synthetic: true // Flag to indicate this is a constructed response
                                                 };
@@ -1520,10 +1550,10 @@
                                 })
                                 .then(data => {
                                     console.log('Checkout response data:', data);
-                                    
+
                                     // The backend may return HTTP 200 OK with JSON status field to indicate success/failure
                                     // OR it may return HTTP 200 OK with simple string response for legacy endpoints
-                                    
+
                                     // For JSON responses with status field
                                     if (data && typeof data === 'object') {
                                         // Check for success status field in JSON response
@@ -1544,14 +1574,14 @@
                                         setTimeout(() => window.location.reload(), 1500);
                                         return; // Exit early on success
                                     }
-                                    
+
                                     // If we get here, there was an error - restore button
                                     const originalText = btn.getAttribute('data-original-text') || defaultButtonText;
                                     resetButton(btn, originalText);
                                 })
                                 .catch(error => {
                                     console.error('Checkout fetch error:', error);
-                                    
+
                                     // Check if the request actually succeeded despite the error
                                     // This happens when the server returns a non-JSON response that the frontend can't parse
                                     if (error.message === 'Invalid response format') {
@@ -1572,7 +1602,7 @@
                         function(error) {
                             console.error("Geolocation error:", error);
                             showNotification('Could not get your location. Check-out without location.', 'warning');
-                            
+
                             // Continue with check-out without location
                             fetch('/my/employee/attendance/quick-checkout', {
                                 method: 'POST',
@@ -1588,10 +1618,10 @@
                                 // Clone response to inspect text content before JSON parsing
                                 const responseClone = response.clone();
                                 responseClone.text().then(text => {
-                                    console.log('Raw checkout response text (no location):', 
+                                    console.log('Raw checkout response text (no location):',
                                         text.substring(0, 200) + (text.length > 200 ? '...' : ''));
                                 }).catch(e => console.error('Error getting checkout response text (no location):', e));
-                                
+
                                 return response.json().catch(e => {
                                     // Handle JSON parse errors
                                     console.error('JSON parse error (checkout, no location):', e);
@@ -1600,7 +1630,7 @@
                             })
                             .then(data => {
                                 console.log('Checkout response data (no location):', data);
-                                
+
                                 // For JSON responses with status field
                                 if (data && typeof data === 'object') {
                                     if (data.status === 'success') {
@@ -1617,14 +1647,14 @@
                                     setTimeout(() => window.location.reload(), 1500);
                                     return;
                                 }
-                                
+
                                 // If we get here, there was an error - restore button
                                 const originalText = btn.getAttribute('data-original-text') || defaultButtonText;
                                 resetButton(btn, originalText);
                             })
                             .catch(error => {
                                 console.error('Checkout error (no location):', error);
-                                
+
                                 // Check if the request actually succeeded despite the error
                                 if (error.message === 'Invalid response format') {
                                     // Assume success for unparseable responses - the backend updated the record
@@ -1645,7 +1675,7 @@
                 } else {
                     console.error("Geolocation not supported");
                     showNotification('Your device does not support location. Check-out without location.', 'warning');
-                    
+
                     // Fallback to check-out without location
                     fetch('/my/employee/attendance/quick-checkout', {
                         method: 'POST',
@@ -1658,15 +1688,15 @@
                     })
                     .then(response => {
                         console.log('Response status (checkout no geo):', response.status);
-                        
+
                         // Critical fix: Check HTTP status first
                         if (response.status >= 200 && response.status < 300) {
                             console.log('HTTP success status detected (checkout no geo):', response.status);
-                            
+
                             // Try getting raw text first to examine what we're getting back
                             return response.text().then(text => {
                                 console.log('Raw checkout response text (no geo):', text.substring(0, 200) + (text.length > 200 ? '...' : ''));
-                                
+
                                 try {
                                     // Attempt to parse as JSON
                                     const data = JSON.parse(text);
@@ -1674,12 +1704,12 @@
                                     return data;
                                 } catch (e) {
                                     console.warn('Checkout response is not JSON but HTTP status is success (no geo):', e.message);
-                                    
+
                                     // Critical fix: If we got HTTP 200-299 but not JSON,
                                     // the operation likely succeeded, so we construct a success object
                                     console.log('Creating synthetic success response for checkout (no geo)');
-                                    return { 
-                                        status: 'success', 
+                                    return {
+                                        status: 'success',
                                         message: 'Checked out successfully',
                                         synthetic: true // Flag to indicate this is a constructed response
                                     };
@@ -1693,7 +1723,7 @@
                     })
                     .then(data => {
                         console.log('Checkout response data (no geo):', data);
-                        
+
                         // Critical fix: For synthetic responses, always show success
                         if (data.synthetic) {
                             console.log('Using synthetic success response for UI update (checkout no geo)');
@@ -1701,7 +1731,7 @@
                             setTimeout(() => window.location.reload(), 1500);
                             return;
                         }
-                        
+
                         // For JSON responses with status field
                         if (data && typeof data === 'object') {
                             if (data.status === 'success') {
@@ -1718,14 +1748,14 @@
                             setTimeout(() => window.location.reload(), 1500);
                             return;
                         }
-                        
+
                         // If we get here, there was an error - restore button
                         const originalText = btn.getAttribute('data-original-text') || defaultButtonText;
                         resetButton(btn, originalText);
                     })
                     .catch(error => {
                         console.error('Checkout error (no geo):', error);
-                        
+
                         // Check if the request actually succeeded despite the error
                         if (error.message === 'Invalid response format') {
                             // Assume success for unparseable responses - the backend updated the record
@@ -1746,14 +1776,14 @@
             // Dashboard refresh
             function refreshDashboard() {
                 if (dashboardState.isLoading) return;
-                
+
                 dashboardState.isLoading = true;
                 const refreshBtn = document.querySelector('[onclick="refreshDashboard()"]');
                 setButtonLoading(refreshBtn, '<i class="fa fa-spinner fa-spin"></i> Refreshing...');
-                
+
                 // Add loading class to dashboard
                 document.querySelector('.o_portal').classList.add('loading');
-                
+
                 setTimeout(() => {
                     window.location.reload();
                 }, 1000);
@@ -1775,7 +1805,7 @@
             // Export dashboard data
             function exportDashboard() {
                 showNotification('Preparing dashboard export...', 'info');
-                
+
                 const dashboardData = {
                     timestamp: new Date().toISOString(),
                     attendance: gatherAttendanceData(),
@@ -1783,16 +1813,16 @@
                     expenses: gatherExpenseData(),
                     payslips: gatherPayslipData()
                 };
-                
+
                 const dataStr = JSON.stringify(dashboardData, null, 2);
                 const dataBlob = new Blob([dataStr], {type: 'application/json'});
                 const url = URL.createObjectURL(dataBlob);
-                
+
                 const link = document.createElement('a');
                 link.href = url;
                 link.download = `ess-dashboard-${new Date().toISOString().split('T')[0]}.json`;
                 link.click();
-                
+
                 URL.revokeObjectURL(url);
                 showNotification('Dashboard data exported successfully', 'success');
             }
@@ -1804,12 +1834,12 @@
                     crm: 'Guide to managing leads and opportunities...',
                     expenses: 'How to submit and track your expenses...'
                 };
-                
+
                 showModal('Help: ' + module.toUpperCase(), helpContent[module] || 'Help content coming soon...');
             }
 
             function contactSupport() {
-                showModal('Contact Support', 
+                showModal('Contact Support',
                     'For technical support, please contact:<br/>' +
                     '<strong>Email:</strong> support@techcarrot.com<br/>' +
                     '<strong>Phone:</strong> +1 (555) 123-4567<br/>' +
@@ -1821,7 +1851,7 @@
             function refreshActivity() {
                 const activityTimeline = document.querySelector('.activity-timeline');
                 activityTimeline.style.opacity = '0.5';
-                
+
                 setTimeout(() => {
                     activityTimeline.style.opacity = '1';
                     showNotification('Activity updated', 'success');
@@ -1894,27 +1924,27 @@
                 // Remove existing notifications
                 const existingNotifications = document.querySelectorAll('.dashboard-notification');
                 existingNotifications.forEach(n => n.remove());
-                
+
                 // Create new notification
                 const notification = document.createElement('div');
                 notification.className = `alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'} alert-dismissible fade show dashboard-notification`;
                 notification.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);';
-                
+
                 const iconMap = {
                     success: 'check-circle',
                     error: 'exclamation-triangle',
                     info: 'info-circle',
                     warning: 'exclamation-circle'
                 };
-                
+
                 notification.innerHTML = `
                     <i class="fa fa-${iconMap[type] || 'info-circle'} mr-2"></i>
                     ${message}
                     <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
                 `;
-                
+
                 document.body.appendChild(notification);
-                
+
                 // Auto-remove after 5 seconds
                 setTimeout(() => {
                     if (notification.parentNode) {
@@ -1943,11 +1973,11 @@
                         </div>
                     </div>
                 `;
-                
+
                 document.body.appendChild(modal);
                 const bsModal = new bootstrap.Modal(modal);
                 bsModal.show();
-                
+
                 modal.addEventListener('hidden.bs.modal', function() {
                     modal.remove();
                 });

@@ -29,1283 +29,559 @@ class ITTicket(models.Model):
     _order = 'create_date desc'
     _rec_name = 'name'
 
-    # ======================
-    # BASIC FIELDS
-    # ======================
+    # Basic Fields
+    name = fields.Char(string='Ticket Number', required=True, copy=False,
+                       readonly=True, index=True, default=lambda self: _('New'))
+    employee_id = fields.Many2one('hr.employee', string='Employee', required=True,
+                                  default=lambda self: self._get_current_employee(), tracking=True)
+    partner_id = fields.Many2one('res.partner', related='employee_id.user_id.partner_id',
+                                 store=True, readonly=True)
+    department_id = fields.Many2one('hr.department', related='employee_id.department_id',
+                                    store=True, readonly=True)
 
-    name = fields.Char(
-        string='Ticket Number',
-        required=True,
-        copy=False,
-        readonly=True,
-        index=True,
-        default=lambda self: _('New')
-    )
-
-    employee_id = fields.Many2one(
-        'hr.employee',
-        string='Employee',
-        required=True,
-        default=lambda self: self._get_current_employee(),
-        tracking=True
-    )
-
-    partner_id = fields.Many2one(
-        'res.partner',
-        related='employee_id.user_id.partner_id',
-        store=True,
-        readonly=True
-    )
-
-    department_id = fields.Many2one(
-        'hr.department',
-        related='employee_id.department_id',
-        store=True,
-        readonly=True
-    )
-
-    # ======================
-    # DETAILS
-    # ======================
-
-    # ticket_type = fields.Selection([
-    #     ('hardware', 'Hardware Issue'),
-    #     ('software', 'Software Issue'),
-    #     ('social_media', 'Social Media Access'),
-    #     ('network', 'Network Issue'),
-    #     ('other', 'Other'),
-    # ], required=True, tracking=True, string='Ticket Type')
-    ticket_type_id = fields.Many2one(
-        'it.ticket.type',
-        string='Ticket Type Id',
-        required=True,
-        tracking=True
-    )
+    # Details
+    ticket_type_id = fields.Many2one('it.ticket.type', string='Ticket Type',
+                                     required=True, tracking=True)
     priority = fields.Selection([
-        ('0', 'Low'),
-        ('1', 'Normal'),
-        ('2', 'High'),
-        ('3', 'Urgent'),
+        ('0', 'Low'), ('1', 'Normal'), ('2', 'High'), ('3', 'Urgent'),
     ], default='1', required=True, tracking=True, string='Priority')
-
     subject = fields.Char(required=True, tracking=True, string='Subject')
     description = fields.Html(required=True, string='Description')
     required_date = fields.Date(string='Required By Date')
     user_id = fields.Many2one('res.users', string="Assigned To")
-    # ======================
-    # STATE
-    # ======================
 
+    # State
+    # Workflow levels from Excel:
+    #   0 = direct IT Support
+    #   1 = Line Manager → IT Support
+    #   2 = Line Manager → IT Manager → IT Support
+    #   3 = Line Manager → HR → IT Support
     state = fields.Selection([
         ('draft', 'Draft'),
         ('manager_approval', 'Pending Line Manager'),
-        # ('category_manager_approval', 'Pending Category Manager'),
+        ('hr_approval', 'Pending HR'),
         ('it_approval', 'Pending IT Manager'),
-        ('assigned', 'Assigned'),
+        ('assigned', 'Assigned to IT'),
         ('in_progress', 'In Progress'),
         ('done', 'Done'),
         ('rejected', 'Rejected'),
     ], default='manager_approval', tracking=True, string='Status')
 
-    # ======================
-    # APPROVERS
-    # ======================
+    # Approvers
+    line_manager_id = fields.Many2one('res.users', compute='_compute_line_manager',
+                                      store=True, string='Line Manager')
+    it_manager_id = fields.Many2one('res.users', compute='_compute_it_manager',
+                                    store=True, string='IT Manager')
+    hr_approver_id = fields.Many2one('res.users', compute='_compute_hr_approver',
+                                     store=True, string='HR Approver')
+    assigned_to_id = fields.Many2one('res.users', string='Assigned To (IT Support)', tracking=True)
 
-    line_manager_id = fields.Many2one(
-        'res.users',
-        compute='_compute_line_manager',
-        store=True,
-        string='Line Manager'
-    )
+    # Workflow level (stored)
+    workflow_level = fields.Selection([
+        ('0', '0'), ('1', '1'), ('2', '2'), ('3', '3'),
+    ], compute='_compute_workflow_level', store=True)
 
-    it_manager_id = fields.Many2one(
-        'res.users',
-        compute='_compute_it_manager',
-        store=True,
-        string='IT Manager'
-    )
-
-    # ===== UPDATED =====
-    assigned_to_id = fields.Many2one(
-        'res.users',
-        string="Assigned To",
-        tracking=True
-    )
-    suggested_assigned_to_id = fields.Many2one(
-        'res.users',
-        string="Suggested IT Support",
-        compute="_compute_suggested_assignee"
-    )
-    # ======================
-    # DATES
-    # ======================
-
+    # Dates
     submitted_date = fields.Date(readonly=True, string='Submitted Date')
     manager_approval_date = fields.Date(readonly=True, string='Manager Approval Date')
-    # category_manager_approval_date = fields.Date(readonly=True, string='Category Manager Approval Date')
+    hr_approval_date = fields.Date(readonly=True, string='HR Approval Date')
     it_approval_date = fields.Date(readonly=True, string='IT Approval Date')
     done_date = fields.Date(readonly=True, string='Completion Date')
-    month_solved = fields.Char(string="Month", compute='_compute_month_solved', store=True)
-    last_reminder_sent = fields.Date(
-        readonly=True,
-        string='Last Reminder Sent'
-    )
+    last_reminder_sent = fields.Date(readonly=True, string='Last Reminder Sent')
+    month_solved = fields.Char(compute='_compute_month_solved', store=True, string='Month')
+
+    # Social media duration
     duration = fields.Selection([
-        ('3m', '3 Months'),
-        ('6m', '6 Months'),
-        ('12m', '1 Year'),
-        ('custom', 'Custom Date')
-    ], default='3m', string="Access Duration")
-
-    custom_expiry_date = fields.Date(string="Custom Date")
-
+        ('3m', '3 Months'), ('6m', '6 Months'), ('12m', '1 Year'), ('custom', 'Custom Date')
+    ], default='3m', string='Access Duration')
+    custom_expiry_date = fields.Date(string='Custom Date')
     access_start_date = fields.Date()
     access_end_date = fields.Date()
     access_finish_date = fields.Date()
-    # ======================
-    # REJECTION
-    # ======================
 
+    # Rejection
     rejection_reason = fields.Text(readonly=True, string='Rejection Reason')
     rejected_by_id = fields.Many2one('res.users', readonly=True, string='Rejected By')
     rejected_date = fields.Datetime(readonly=True, string='Rejection Date')
 
-    # =========================================================
-    # HELPER: GET FROM EMAIL DYNAMICALLY FROM ODOO SETTINGS
-    # =========================================================
-    allowed_it_users = fields.Many2many(
-        "res.users", compute="_compute_allowed_it_users"
-    )
+    # Approval remarks — kept on dedicated fields (separate from chatter) so the
+    # next approver in the chain can see exactly what the previous approver said.
+    manager_remarks = fields.Text(readonly=True, string='Line Manager Remarks')
+    it_manager_remarks = fields.Text(readonly=True, string='IT Manager Remarks')
 
-    show_it_manager = fields.Boolean(
-        string="Visible to IT Manager",
-        compute="_compute_show_to_it_manager",
-        store=True,  # <-- important!
-    )
-    show_it_teams = fields.Boolean(
-        string="Visible to IT team",
-        compute="_compute_show_to_it_team",
-        store=True,  # <-- important!
-    )
-    is_line_manager = fields.Boolean(compute="_compute_user_roles")
-    is_it_manager = fields.Boolean(compute="_compute_user_roles")
-    show_to_line_manager = fields.Boolean(
-        compute="_compute_show_line_manager"
-    )
+    # Helper fields
+    allowed_it_users = fields.Many2many('res.users', compute='_compute_allowed_it_users')
+    show_it_manager = fields.Boolean(compute='_compute_show_to_it_manager', store=True)
+    show_it_teams = fields.Boolean(compute='_compute_show_to_it_team', store=True)
+    is_line_manager = fields.Boolean(compute='_compute_user_roles')
+    is_it_manager = fields.Boolean(compute='_compute_user_roles')
+    can_edit = fields.Boolean(compute='_compute_can_edit', store=False)
+    is_social_media = fields.Boolean(compute='_compute_is_social_media')
 
-    line_manager_user_id = fields.Many2one('res.users', string='Line Manager User')  # New field
+    # Reporting
+    manager_processing_days = fields.Float(compute='_compute_processing_days', store=True, aggregator='avg')
+    it_processing_days = fields.Float(compute='_compute_processing_days', store=True, aggregator='avg')
+    it_team_processing_days = fields.Float(compute='_compute_processing_days', store=True, aggregator='avg')
+    status_category = fields.Selection([('open', 'Open'), ('closed', 'Closed')],
+                                       compute='_compute_status_category', store=True)
+    open_count = fields.Integer(compute='_compute_counts', store=True)
+    closed_count = fields.Integer(compute='_compute_counts', store=True)
 
-    # ======================
-    # REPORTING FIELDS (DAYS)
-    # ======================
+    # ─── Computed Fields ────────────────────────────────────────────────────
 
-    manager_processing_days = fields.Float(
-        string="Manager Processing (Days)",
-        compute="_compute_processing_days",
-        store=True,
-        aggregator="avg"
-    )
-
-    it_processing_days = fields.Float(
-        string="IT Manager Processing (Days)",
-        compute="_compute_processing_days",
-        store=True,
-        aggregator="avg"
-    )
-
-    it_team_processing_days = fields.Float(
-        string="IT Team Processing (Days)",
-        compute="_compute_processing_days",
-        store=True,
-        aggregator="avg"
-    )
-    status_category = fields.Selection(
-        [('open', 'Open'), ('closed', 'Closed')],
-        string='Status Category',
-        compute='_compute_status_category',
-        store=True
-    )
-    open_count = fields.Integer(string="Open Count", compute="_compute_counts", store=True)
-    closed_count = fields.Integer(string="Closed Count", compute="_compute_counts", store=True)
-    is_social_media = fields.Boolean(compute="_compute_is_social_media")
-    # statusbar_states = fields.Char(
-    #     compute='_compute_statusbar_states'
-    # )
-    workflow_level = fields.Selection(
-        [
-            ('0', '0'),
-            ('1', '1'),
-            ('2', '2'),
-            # ('3', '3'),  # ✅ ADD
-            # ('4', '4'),  # ✅ ADD
-        ],
-        compute='_compute_workflow_level',
-        store=True
-    )
-    # category_manager_id = fields.Many2one(
-    #     'res.users',
-    #     string="Category Manager",
-    #     tracking=True
-    # )
-
-    # Compute workflow level dynamically based on ticket type configuration
     @api.depends('ticket_type_id')
     def _compute_workflow_level(self):
+        type_ids = [rec.ticket_type_id.id for rec in self if rec.ticket_type_id]
+        level_map = {}
+        if type_ids:
+            self.env.cr.execute(
+                "SELECT ticket_type_id, workflow_level FROM it_ticket_workflow_config WHERE ticket_type_id = ANY(%s)",
+                (type_ids,)
+            )
+            level_map = {r[0]: r[1] for r in self.env.cr.fetchall()}
         for rec in self:
-            config = self.env['it.ticket.workflow.config'].search([
-                ('ticket_type_id', '=', rec.ticket_type_id.id)
-            ], limit=1)
+            rec.workflow_level = level_map.get(rec.ticket_type_id.id, '0') if rec.ticket_type_id else '0'
 
-            rec.workflow_level = config.workflow_level if config else '0'
+    @api.depends('employee_id', 'employee_id.line_manager_id',
+                 'employee_id.line_manager_id.user_id',
+                 'employee_id.parent_id', 'employee_id.parent_id.user_id')
+    def _compute_line_manager(self):
+        for rec in self:
+            emp = rec.employee_id
+            if not emp:
+                rec.line_manager_id = False
+            else:
+                approver = emp.get_it_approval_manager()
+                rec.line_manager_id = approver if approver else False
 
+    @api.depends('department_id')
+    def _compute_it_manager(self):
+        it_manager = self._find_it_manager()
+        for rec in self:
+            rec.it_manager_id = it_manager if it_manager else False
 
-    can_edit = fields.Boolean(compute="_compute_can_edit", store=False)
+    @api.depends('ticket_type_id')
+    def _compute_hr_approver(self):
+        hr_manager = self._find_hr_manager()
+        for rec in self:
+            rec.hr_approver_id = hr_manager if hr_manager else False
 
-    # Determine if current user can edit ticket based on role and state
+    @api.depends('state')
+    def _compute_show_to_it_manager(self):
+        for t in self:
+            t.show_it_manager = t.state not in ['draft', 'manager_approval', 'hr_approval']
+
+    @api.depends('state')
+    def _compute_show_to_it_team(self):
+        for t in self:
+            t.show_it_teams = t.state in ['assigned', 'in_progress', 'done']
+
+    @api.depends()
+    def _compute_allowed_it_users(self):
+        grp = self.env.ref('ticketing_it.group_it_team', raise_if_not_found=False)
+        users = grp.user_ids if grp else self.env['res.users']
+        for t in self:
+            t.allowed_it_users = users
+
+    @api.depends('line_manager_id')
+    def _compute_user_roles(self):
+        for rec in self:
+            rec.is_line_manager = (rec.line_manager_id == self.env.user) if rec.line_manager_id else False
+            rec.is_it_manager = self.env.user.has_group('ticketing_it.group_it_manager')
+
     @api.depends('state', 'assigned_to_id', 'line_manager_id')
     def _compute_can_edit(self):
         for rec in self:
             user = self.env.user
+            rec.can_edit = (
+                (rec.state == 'it_approval' and user.has_group('ticketing_it.group_it_manager')) or
+                rec.state in ['done', 'rejected']
+            )
 
-            rec.can_edit = False  # default
-
-            # 1. Pending IT Manager
-            if rec.state == 'it_approval' and user.has_group('ticketing_it.group_it_manager'):
-                _logger.info("IT Manager can edit")
-                rec.can_edit = True
-
-            # 2. Pending Category Manager
-            # elif rec.state == 'category_manager_approval' and user.has_group('ticketing_it.group_category_manager'):
-            #     rec.can_edit = True
-
-            # 3. Pending Line Manager
-            elif rec.state == 'manager_approval' and rec.line_manager_id.user_id == user:
-                _logger.info("Line Manager can edit")
-                rec.can_edit = False
-
-            # 4. Assigned / In Progress → only assignee
-            elif rec.state in ['assigned', 'in_progress'] and rec.assigned_to_id == user:
-                _logger.info("Assignee can edit")
-                rec.can_edit = False
-
-            # 5. Done / Rejected → no one
-            elif rec.state in ['done', 'rejected']:
-                _logger.info("Noone can edit")
-                rec.can_edit = True
-                _logger.info("rec.can_edit %s", rec.can_edit)
-
-    # Identify if ticket belongs to social media category
     def _compute_is_social_media(self):
-        social_media = self.env.ref('ticketing_it.type_social', raise_if_not_found=False)
+        ref = self.env.ref('ticketing_it.type_social', raise_if_not_found=False)
         for rec in self:
-            rec.is_social_media = rec.ticket_type_id == social_media
+            rec.is_social_media = (rec.ticket_type_id == ref) if ref else False
 
-    # Auto-suggest first IT team member if ticket is unassigned
-    @api.depends()
-    def _compute_suggested_assignee(self):
-
-        it_team = self.env.ref('ticketing_it.group_it_team', raise_if_not_found=False)
-
-        first_user = False
-        if it_team and it_team.user_ids:
-            first_user = it_team.user_ids[0]
-
+    @api.depends('state')
+    def _compute_status_category(self):
         for rec in self:
-            if not rec.assigned_to_id and first_user:
-                rec.assigned_to_id = first_user
+            rec.status_category = 'closed' if rec.state in ['done', 'rejected'] else 'open'
 
-    # Compute open and closed ticket counts for reporting
     @api.depends('state')
     def _compute_counts(self):
         for rec in self:
             rec.open_count = 1 if rec.status_category == 'open' else 0
             rec.closed_count = 1 if rec.status_category == 'closed' else 0
 
-    # Categorize tickets as open or closed based on state
-    @api.depends('state')
-    def _compute_status_category(self):
-        open_count = defaultdict(int)
-        closed_count = defaultdict(int)
-
-        for rec in self:
-            # Compute status
-            if rec.state in ['done', 'rejected']:
-                rec.status_category = 'closed'
-                closed_count[rec.ticket_type_id.code] += 1
-                _logger.info("rec.ticket_type_id.code: %s | closed_count[rec.ticket_type_id]: %s",
-                             rec.ticket_type_id.code, closed_count[rec.ticket_type_id.code])
-            else:
-                rec.status_category = 'open'
-                open_count[rec.ticket_type_id.code] += 1
-                _logger.info("rec.ticket_type_id.code: %s | open_count[rec.ticket_type_id]: %s",
-                             rec.ticket_type_id.code,
-                             open_count[rec.ticket_type_id.code])
-
-        # Log counts
-        _logger.info("===== Ticket Counts by Type =====")
-        _logger.info("Open Tickets:")
-        for ttype, count in open_count.items():
-            _logger.info("Type: %s | Count: %s", ttype, count)
-
-        _logger.info("Closed Tickets:")
-        for ttype, count in closed_count.items():
-            _logger.info("Type: %s | Count: %s", ttype, count)
-
-    # Calculate processing durations for manager, IT manager, and IT team
-    @api.depends(
-        'submitted_date',
-        'manager_approval_date',
-        'it_approval_date',
-        'done_date'
-    )
+    @api.depends('submitted_date', 'manager_approval_date', 'it_approval_date', 'done_date')
     def _compute_processing_days(self):
         for rec in self:
             rec.manager_processing_days = (
-                (rec.manager_approval_date - rec.submitted_date).total_seconds() / 86400
-                if rec.submitted_date and rec.manager_approval_date else 0.0
-            )
-
+                (rec.manager_approval_date - rec.submitted_date).days
+                if rec.submitted_date and rec.manager_approval_date else 0.0)
             rec.it_processing_days = (
-                (rec.it_approval_date - rec.manager_approval_date).total_seconds() / 86400
-                if rec.manager_approval_date and rec.it_approval_date else 0.0
-            )
-
+                (rec.it_approval_date - rec.manager_approval_date).days
+                if rec.manager_approval_date and rec.it_approval_date else 0.0)
             rec.it_team_processing_days = (
-                (rec.done_date - rec.it_approval_date).total_seconds() / 86400
-                if rec.it_approval_date and rec.done_date else 0.0
-            )
+                (rec.done_date - rec.it_approval_date).days
+                if rec.it_approval_date and rec.done_date else 0.0)
 
-    # Resolve and assign line manager user from employee hierarchy
-    @api.depends('employee_id')
-    def _compute_show_line_manager(self):
-        for ticket in self:
-            _logger.info("Ticket: %s | Employee: %s", ticket.id,
-                         ticket.employee_id.name if ticket.employee_id else None)
-            if ticket.employee_id and ticket.employee_id.parent_id:
-                manager_email = ticket.employee_id.parent_id.work_email
-                _logger.info("Line Manager Email: %s", manager_email)
-                if manager_email:
-                    user = self.env['res.users'].search([('email', '=', manager_email)], limit=1)
-                    if user:
-                        _logger.info("Found user: %s | ID: %s", user.name, user.id)
-                        ticket.line_manager_user_id = user.id
-                    else:
-                        _logger.warning("No user found with email: %s", manager_email)
-                        ticket.line_manager_user_id = False
-                else:
-                    _logger.warning("Line manager has no email")
-                    ticket.line_manager_user_id = False
-            else:
-                _logger.info("No employee or parent (line manager) for ticket")
-                ticket.line_manager_user_id = False
-
-    # Identify if current user is line manager or IT manager
-    @api.depends('line_manager_id')
-    def _compute_user_roles(self):
+    @api.depends('done_date')
+    def _compute_month_solved(self):
         for rec in self:
-            # 🔍 DEBUG LOG
-            _logger.info(
-                "line_manager_id.user_id: %s | self.env.user: %s | rec.line_manager_id: %s",
-                rec.line_manager_id.user_id,
-                self.env.user,
-                rec.line_manager_id,
-            )
-            rec.is_line_manager = (
-                rec.line_manager_id == self.env.user
-                if rec.line_manager_id
-                else False
-            )
+            rec.month_solved = rec.done_date.strftime('%B %Y') if rec.done_date else 'N/A'
 
-            rec.is_it_manager = self.env.user.has_group(
-                'ticketing_it.group_it_manager'
-            )
+    # ─── Helpers ────────────────────────────────────────────────────────────
 
-            # 🔍 DEBUG LOG
-            _logger.info(
-                "Ticket: %s | User: %s | is_line_manager: %s | is_it_manager: %s",
-                rec.name,
-                self.env.user.name,
-                rec.is_line_manager,
-                rec.is_it_manager
-            )
-
-    # Control visibility of ticket for IT manager based on state
-    @api.depends('state')
-    def _compute_show_to_it_manager(self):
-        for ticket in self:
-            ticket.show_it_manager = ticket.state not in ['draft', 'manager_approval']
-            # DEBUG LOGGING
-            _logger.info("Ticket ID: %s | State: %s | Visible to IT Manager: %s",
-                         ticket.id, ticket.state, ticket.show_it_manager)
-
-    # Control visibility of ticket for IT team based on state
-    @api.depends('state')
-    def _compute_show_to_it_team(self):
-        for ticket in self:
-            ticket.show_it_teams = ticket.state in ['assigned', 'done']
-            _logger.info("Ticket ID: %s | State: %s | Visible to IT team: %s",
-                         ticket.id, ticket.state, ticket.show_it_teams)
-
-    # Compute list of users allowed for IT assignment
-    @api.depends()
-    def _compute_allowed_it_users(self):
-        it_team_group = self.env.ref("ticketing_it.group_it_team")
-        for ticket in self:
-            ticket.allowed_it_users = it_team_group.user_ids
-
-    # Fetch default sender email dynamically from system configuration
-    def _get_from_email(self):
-        """
-        Get central FROM email from Odoo settings.
-        Admin sets once in Settings → General Settings → Default From Email.
-        Never hardcoded in code.
-        """
-        ICP = self.env['ir.config_parameter'].sudo()
-        default_from = ICP.get_param('mail.default.from')
-        catchall_domain = ICP.get_param('mail.catchall.domain')
-
-        if default_from:
-            if catchall_domain and '@' not in default_from:
-                return '{}@{}'.format(default_from, catchall_domain)
-            return default_from
-
-        company_email = self.env.company.email
-        if company_email:
-            return company_email
-
-        return False
-
-    # =========================================================
-    # HELPER: FIND IT MANAGER VIA SQL
-    # Uses raw SQL on res_groups_users_rel table.
-    # This is the ONLY reliable method in all Odoo 17 versions.
-    # groups_id domain search is broken in this Odoo build.
-    # Admin assigns IT Manager in Settings → Users → Groups button.
-    # No names or emails hardcoded anywhere.
-    # =========================================================
-    # Retrieve IT manager using direct SQL query on group-user relation
-    def _find_it_manager(self):
-        """
-        Find IT Manager user via direct SQL on the groups-users relation table.
-        Works in all Odoo 17 versions — avoids the broken groups_id domain search.
-        """
-        it_manager_group = self.env.ref(
-            'ticketing_it.group_it_manager',
-            raise_if_not_found=False
-        )
-        if not it_manager_group:
-            _logger.error(
-                "IT Manager group 'ticketing_it.group_it_manager' not found. "
-                "Check security/security.xml in your module."
-            )
-            return False
-
-        # Direct SQL — bypasses the broken domain search entirely
-        self.env.cr.execute("""
-            SELECT ru.id
-            FROM res_users ru
-            JOIN res_groups_users_rel rel ON rel.uid = ru.id
-            WHERE rel.gid = %s
-              AND ru.active = true
-              AND ru.share = false
-            ORDER BY ru.id
-            LIMIT 1
-        """, (it_manager_group.id,))
-
-        row = self.env.cr.fetchone()
-        if row:
-            user = self.env['res.users'].sudo().browse(row[0])
-            _logger.info(
-                "IT Manager found via SQL: %s | Email: %s",
-                user.name, user.email
-            )
-            return user
-
-        _logger.warning(
-            "No IT Manager found in group. "
-            "Go to Settings → Users → [your IT manager user] → "
-            "Groups button → Add 'IT Manager' group."
-        )
-        return False
-
-    # =========================================================
-    # DISPLAY NAME
-    # =========================================================
-    # Customize display name combining ticket number and subject
-    def _compute_display_name(self):
-        """Odoo 17+ uses _compute_display_name instead of name_get"""
-        for record in self:
-            name = record.name or 'New'
-            if record.subject:
-                record.display_name = f"{name} - {record.subject}"
-            else:
-                record.display_name = name
-
-    # =========================================================
-    # DEFAULT EMPLOYEE
-    # =========================================================
-    # Get employee record linked to current logged-in user
     def _get_current_employee(self):
-        """Get current user's employee record"""
-        return self.env['hr.employee'].search(
-            [('user_id', '=', self.env.user.id)],
-            limit=1
+        return self.env['hr.employee'].search([('user_id', '=', self.env.user.id)], limit=1)
+
+    def _get_workflow_level(self, ticket_type_id):
+        if not ticket_type_id:
+            return '0'
+        self.env.cr.execute(
+            "SELECT workflow_level FROM it_ticket_workflow_config WHERE ticket_type_id = %s LIMIT 1",
+            (ticket_type_id,)
         )
+        row = self.env.cr.fetchone()
+        return row[0] if row else '0'
 
+    def _find_it_manager(self):
+        grp = self.env.ref('ticketing_it.group_it_manager', raise_if_not_found=False)
+        if not grp:
+            return False
+        self.env.cr.execute("""
+            SELECT ru.id FROM res_users ru
+            JOIN res_groups_users_rel rel ON rel.uid = ru.id
+            WHERE rel.gid = %s AND ru.active = true AND ru.share = false
+            ORDER BY ru.id LIMIT 1
+        """, (grp.id,))
+        row = self.env.cr.fetchone()
+        return self.env['res.users'].sudo().browse(row[0]) if row else False
 
-    # Compute line manager from employee's parent hierarchy
-    @api.depends('employee_id', 'employee_id.parent_id', 'employee_id.parent_id.user_id')
-    def _compute_line_manager(self):
-        """Compute line manager from employee's parent"""
-        for rec in self:
-            if rec.employee_id and rec.employee_id.parent_id and rec.employee_id.parent_id.user_id:
-                rec.line_manager_id = rec.employee_id.parent_id.user_id
-            else:
-                rec.line_manager_id = False
+    def _find_hr_manager(self):
+        grp = self.env.ref('hr.group_hr_manager', raise_if_not_found=False)
+        if not grp:
+            return False
+        self.env.cr.execute("""
+            SELECT ru.id FROM res_users ru
+            JOIN res_groups_users_rel rel ON rel.uid = ru.id
+            WHERE rel.gid = %s AND ru.active = true AND ru.share = false
+            ORDER BY ru.id LIMIT 1
+        """, (grp.id,))
+        row = self.env.cr.fetchone()
+        return self.env['res.users'].sudo().browse(row[0]) if row else False
 
-    # Assign IT manager using SQL-based lookup helper
-    @api.depends('department_id')
-    def _compute_it_manager(self):
-        """
-        Get IT Manager via SQL — safe for all Odoo 17 versions.
-        groups_id domain search is broken in this Odoo build, so we use SQL.
-        """
-        it_manager = self._find_it_manager()
-        for rec in self:
-            rec.it_manager_id = it_manager if it_manager else False
+    def _compute_access_url(self):
+        super()._compute_access_url()
+        for ticket in self:
+            ticket.access_url = '/my/tickets/%s' % ticket.id
 
-    # =========================================================
-    # CREATE (AUTO-SUBMIT FOR PORTAL USERS)
-    # =========================================================
-    # Override create to assign sequence, set workflow state, and trigger emails
+    def _notify(self, template_xmlid, email_to_user):
+        """Send notification email to a specific user. Silently skips on missing data."""
+        if not email_to_user or not email_to_user.email:
+            return
+        tmpl = self.env.ref(template_xmlid, raise_if_not_found=False)
+        if not tmpl:
+            _logger.warning('IT Ticket: template %s not found', template_xmlid)
+            return
+        try:
+            tmpl.send_mail(self.id, force_send=True, email_values={
+                'email_to': email_to_user.email,
+                'recipient_ids': [(5, 0, 0)],
+                'partner_ids': [(5, 0, 0)],
+            })
+        except Exception as e:
+            _logger.error('IT Ticket %s: notify failed for %s — %s', self.name, email_to_user.name, e)
+
+    # ─── CREATE ─────────────────────────────────────────────────────────────
+
     @api.model_create_multi
     def create(self, vals_list):
-
         for vals in vals_list:
-            _logger.info('Entered ticket creation: %s', vals)
-            # Sequence
-            if vals.get('name', _("New")) == _("New"):
-                vals['name'] = self.env['ir.sequence'].next_by_code('it.ticket') or _("New")
-                _logger.info(vals['name'])
+            if vals.get('name', _('New')) == _('New'):
+                vals['name'] = self.env['ir.sequence'].next_by_code('it.ticket') or _('New')
+
             ticket_type_id = vals.get('ticket_type_id')
-            workflow_level = self._get_workflow_level(ticket_type_id)
-            # category_manager = self._get_category_manager(ticket_type_id)
+            level = self._get_workflow_level(ticket_type_id)
+            vals['workflow_level'] = level
+            vals['submitted_date'] = fields.Date.today()
 
-            # Workflow Logic (ONLY VALUES HERE)
-            if workflow_level == '0':
-                it_team = self.env.ref('ticketing_it.group_it_team')
-                user = it_team.user_ids[:1]
+            if level == '0':
+                # Direct to IT Support
+                it_grp = self.env.ref('ticketing_it.group_it_team', raise_if_not_found=False)
+                it_user = it_grp.user_ids[:1] if it_grp else False
+                vals.update({'state': 'assigned', 'assigned_to_id': it_user.id if it_user else False})
+            else:
+                # All multi-step flows start at Line Manager
+                vals['state'] = 'manager_approval'
 
-                vals.update({
-                    'state': 'assigned',
-                    'assigned_to_id': user.id if user else False,
-                    'submitted_date': fields.Datetime.now(),
-                    'workflow_level': workflow_level,
-                })
-
-            elif workflow_level == '1':
-                vals.update({
-                    'state': 'it_approval',
-                    'submitted_date': fields.Datetime.now(),
-                    'workflow_level': workflow_level,
-                })
-
-            elif workflow_level == '2':
-                vals.update({
-                    'state': 'manager_approval',
-                    'submitted_date': fields.Datetime.now(),
-                    'workflow_level': workflow_level,
-                })
-
-            # elif workflow_level in ['3', '4']:
-            #     vals.update({
-            #         'state': 'category_manager_approval',
-            #         # 'category_manager_id': category_manager.id if category_manager else False,
-            #         'submitted_date': fields.Datetime.now(),
-            #     })
-
-        # ✅ CREATE RECORDS FIRST
         records = super().create(vals_list)
 
-        # ✅ NOW DO EMAILS + ACTIVITIES
         for rec in records:
+            level = rec.workflow_level
+            if level == '0':
+                # Notify IT support + employee
+                if rec.assigned_to_id:
+                    rec._notify('ticketing_it.email_template_it_assigned', rec.assigned_to_id)
+                if rec.employee_id and rec.employee_id.user_id:
+                    rec._notify('ticketing_it.email_template_it_assigned', rec.employee_id.user_id)
+            else:
+                # Notify line manager (levels 1, 2, 3 all start here)
+                if rec.line_manager_id:
+                    rec._notify('ticketing_it.email_template_manager_approval', rec.line_manager_id)
+                else:
+                    _logger.warning('IT Ticket %s: no line manager for %s — ticket created in pending state', rec.name, rec.employee_id.name)
 
-            workflow_level = self._get_workflow_level(rec.ticket_type_id.id)
-
-            # Workflow 0
-            if workflow_level == '0':
-                template = self.env.ref('ticketing_it.email_template_it_assigned', False)
-                if template:
-                    template.send_mail(rec.id, force_send=True, email_values={
-                            'email_to': rec.employee_id.email,
-                            'recipient_ids': [(5, 0, 0)],
-                            'partner_ids': [(5, 0, 0)],
-                        })
-
-
-            # Workflow 1 → IT Manager
-            elif workflow_level == '1':
-                template = self.env.ref('ticketing_it.email_template_it_approval', False)
-                if template:
-                    template.send_mail(rec.id, force_send=True, email_values={
-                            'email_to': rec.it_manager_id.email,
-                            'recipient_ids': [(5, 0, 0)],
-                            'partner_ids': [(5, 0, 0)],
-                        })
-
-
-
-            # Workflow 2 → Line Manager
-            elif workflow_level == '2':
-                template = self.env.ref('ticketing_it.email_template_manager_approval', False)
-                if template:
-                    template.send_mail(rec.id, force_send=True, email_values={
-                            'email_to': rec.line_manager_id.email,
-                            'recipient_ids': [(5, 0, 0)],
-                            'partner_ids': [(5, 0, 0)],
-                        })
-
-
-
-            # Workflow 3/4 → Category Manager
-            # elif workflow_level in ['3', '4']:
-            #     template = self.env.ref('ticketing_it.email_template_category_manager_approval', False)
-            #     if template:
-            #         template.send_mail(rec.id, force_send=True, email_values={
-            #                 'email_to': rec.category_manager_id.email,
-            #                 'recipient_ids': [(5, 0, 0)],
-            #                 'partner_ids': [(5, 0, 0)],
-            #             })
-
-
-                # ---------------------------
-                # Social Media Duration (FIXED)
-                # ---------------------------
             if rec.ticket_type_id.code == 'social_media':
                 duration = self.env['ir.config_parameter'].sudo().get_param(
-                    'it_ticket.social_media_duration', '3m'
-                )
+                    'it_ticket.social_media_duration', '3m')
                 rec.duration = duration
+
         return records
 
-    # Fetch workflow level configuration for a given ticket type
-    def _get_workflow_level(self, ticket_type_id):
+    # ─── WRITE ──────────────────────────────────────────────────────────────
 
-        config = self.env['it.ticket.workflow.config'].search(
-            [('ticket_type_id', '=', ticket_type_id)],
-            limit=1
-        )
+    def write(self, vals):
+        # Guard IT support assignment
+        if 'assigned_to_id' in vals:
+            if not (self.env.user.has_group('ticketing_it.group_it_manager') or
+                    self.env.context.get('bypass_assignment_check') or
+                    self.env.su):
+                raise AccessError(_('Only IT Manager can assign tickets.'))
 
-        if config:
-            return config.workflow_level
+        # Track approval dates when LEAVING a state
+        if 'state' in vals:
+            new_state = vals['state']
+            today = fields.Date.today()
+            for rec in self:
+                if rec.state == 'manager_approval' and new_state != 'manager_approval':
+                    if not rec.manager_approval_date:
+                        vals['manager_approval_date'] = today
+                if rec.state == 'hr_approval' and new_state != 'hr_approval':
+                    if not rec.hr_approval_date:
+                        vals['hr_approval_date'] = today
+                if rec.state == 'it_approval' and new_state != 'it_approval':
+                    if not rec.it_approval_date:
+                        vals['it_approval_date'] = today
 
-        return '0'
+        return super().write(vals)
 
-    # def _get_category_manager(self, ticket_type_id):
-    #
-    #     config = self.env['it.ticket.workflow.config'].search(
-    #         [('ticket_type_id', '=', ticket_type_id)],
-    #         limit=1
-    #     )
-    #
-    #     if config:
-    #         return config.category_manager_id
-    #
-    #     return 'null'
+    # ─── WORKFLOW ACTIONS ────────────────────────────────────────────────────
 
-
-
-
-    # =========================================================
-    # WORKFLOW METHODS - APPROVE/REJECT
-    # =========================================================
-    # Submit ticket and route it based on configured workflow
     def action_submit(self):
-        _logger.info("Submitting IT Ticket")
-
+        """Called by portal auto-submit automation or manual submit."""
         for rec in self:
+            level = self._get_workflow_level(rec.ticket_type_id.id)
+            if level == '0':
+                it_grp = self.env.ref('ticketing_it.group_it_team', raise_if_not_found=False)
+                it_user = it_grp.user_ids[:1] if it_grp else False
+                rec.write({'state': 'assigned',
+                           'assigned_to_id': it_user.id if it_user else False,
+                           'submitted_date': fields.Date.today()})
+                if it_user:
+                    rec._notify('ticketing_it.email_template_it_assigned', it_user)
+            else:
+                rec.write({'state': 'manager_approval', 'submitted_date': fields.Date.today()})
+                if rec.line_manager_id:
+                    rec._notify('ticketing_it.email_template_manager_approval', rec.line_manager_id)
+                else:
+                    _logger.warning('IT Ticket %s: no line manager for %s', rec.name, rec.employee_id.name)
 
-            config = self.env['it.ticket.workflow.config'].search(
-                [('ticket_type_id', '=', rec.ticket_type_id.id)],
-                limit=1
-            )
-
-            workflow = config.workflow_level if config else '2'
-
-            # Workflow 0 → Direct to IT team
-            if workflow == '0':
-
-                it_team = self.env.ref('ticketing_it.group_it_team')
-
-                first_user = False
-                if it_team and it_team.user_ids:
-                    first_user = it_team.user_ids[0]
-
-                rec.write({
-                    'state': 'assigned',
-                    'assigned_to_id': first_user.id if first_user else False,
-                    'submitted_date': fields.Datetime.now()
-                })
-                template = self.env.ref(
-                    'ticketing_it.email_template_it_assigned',
-                    raise_if_not_found=False
-                )
-                if template:
-                    template.send_mail(rec.id, force_send=True, email_values={
-                            'email_to': rec.employee_id.user_id.email,
-                            'recipient_ids': [(5, 0, 0)],
-                            'partner_ids': [(5, 0, 0)],
-                        })
-                return
-
-            # Workflow 1 → IT Manager
-            elif workflow == '1':
-
-                if not rec.it_manager_id:
-                    raise ValidationError(_("No IT Manager configured"))
-
-                rec.write({
-                    'state': 'it_approval',
-                    'submitted_date': fields.Datetime.now()
-                })
-                template = self.env.ref(
-                    'ticketing_it.email_template_it_approval',
-                    raise_if_not_found=False
-                )
-                if template:
-                    template.send_mail(rec.id, force_send=True)
-                    _logger.info(
-                        "IT approval email sent to %s (%s) for ticket %s",
-                        rec.it_manager_id.name,
-                        rec.it_manager_id.email,
-                        rec.name
-                    )
-
-            # Workflow 2 → Line Manager
-            elif workflow == '2':
-
-                if not rec.line_manager_id:
-                    raise ValidationError(_("No line manager found"))
-
-                rec.write({
-                    'state': 'manager_approval',
-                    'submitted_date': fields.Datetime.now()
-                })
-                template = self.env.ref(
-                    'ticketing_it.email_template_manager_approval',
-                    raise_if_not_found=False
-                )
-                if template:
-                    template.send_mail(rec.id, force_send=True)
-
-    # Open approval wizard for line manager
     def action_manager_approve(self):
         self.ensure_one()
-        if self.env.user != self.line_manager_id:
-            _logger.info("self.line_manager_id: %s | self.env.user: %s | self.line_manager_id.user_id: %s",
-                         self.line_manager_id, self.env.user, self.line_manager_id.user_id)
-            raise UserError(
-                _("Only the line manager (%s) can approve this ticket") % self.line_manager_id.name
-            )
-        return {
-            'name': _('Approve Ticket'),
-            'type': 'ir.actions.act_window',
-            'res_model': 'it.ticket.approve.wizard',
-            'view_mode': 'form',
-            'target': 'new',
-            'context': {'default_ticket_id': self.id}
-        }
+        rec = self.sudo()
+        if self.env.user != rec.line_manager_id:
+            raise UserError(_('Only the line manager (%s) can approve this ticket.') % rec.line_manager_id.name)
+        return self._open_approve_wizard()
 
-    # def action_category_manager_approve(self):
-    #     self.ensure_one()
-    #     if self.env.user != self.category_manager_id:
-    #         _logger.info("self.category_manager_id: %s | self.env.user: %s | self.category_manager_id.user_id: %s",
-    #                      self.category_manager_id, self.env.user, self.category_manager_id.user_id)
-    #         raise UserError(
-    #             _("Only the Category manager (%s) can approve this ticket") % self.category_manager_id.name
-    #         )
-    #     return {
-    #         'name': _('Approve Ticket'),
-    #         'type': 'ir.actions.act_window',
-    #         'res_model': 'it.ticket.approve.wizard',
-    #         'view_mode': 'form',
-    #         'target': 'new',
-    #         'context': {'default_ticket_id': self.id}
-    #     }
-
-    # Open approval wizard for IT manager
     def action_it_approve(self):
         self.ensure_one()
         if not self.env.user.has_group('ticketing_it.group_it_manager'):
-            raise UserError(_("Only IT managers can approve this ticket"))
+            raise UserError(_('Only IT managers can approve this ticket.'))
+        return self.sudo()._open_approve_wizard()
+
+    def action_hr_approve(self):
+        self.ensure_one()
+        if not self.env.user.has_group('hr.group_hr_manager'):
+            raise UserError(_('Only HR Managers can approve this ticket.'))
+        return self.sudo()._open_approve_wizard()
+
+    def _open_approve_wizard(self):
         return {
             'name': _('Approve Ticket'),
             'type': 'ir.actions.act_window',
             'res_model': 'it.ticket.approve.wizard',
             'view_mode': 'form',
             'target': 'new',
-            'context': {'default_ticket_id': self.id}
+            'context': {'default_ticket_id': self.id},
         }
 
-    # Open rejection wizard with reason input
     def action_reject(self):
-        """Open wizard to reject ticket with reason."""
         self.ensure_one()
         self._check_reject_access()
-
         return {
             'name': _('Reject Ticket'),
             'type': 'ir.actions.act_window',
             'res_model': 'it.ticket.reject.wizard',
             'view_mode': 'form',
             'target': 'new',
-            'context': {'default_ticket_id': self.id}
+            'context': {'default_ticket_id': self.id},
         }
 
-    # Validate if current user has permission to reject ticket
     def _check_reject_access(self):
-        """Verify the current user is allowed to reject this ticket."""
         self.ensure_one()
+        rec = self.sudo()
         user = self.env.user
+        if rec.state == 'manager_approval' and user != rec.line_manager_id:
+            raise UserError(_('Only the line manager can reject this ticket.'))
+        elif self.state == 'hr_approval' and not user.has_group('hr.group_hr_manager'):
+            raise UserError(_('Only HR Managers can reject this ticket.'))
+        elif self.state == 'it_approval' and not user.has_group('ticketing_it.group_it_manager'):
+            raise UserError(_('Only IT managers can reject this ticket.'))
+        elif self.state not in ['manager_approval', 'hr_approval', 'it_approval']:
+            raise UserError(_('This ticket cannot be rejected in its current state.'))
 
-        if self.state == 'manager_approval':
-            if user != self.line_manager_id:
-                raise UserError(
-                    _("Only the line manager (%s) can reject this ticket.")
-                    % (self.line_manager_id.name or _('unassigned'))
-                )
-        elif self.state == 'it_approval':
-            if not user.has_group('ticketing_it.group_it_manager'):
-                raise UserError(_("Only IT managers can reject this ticket."))
-        else:
-            raise UserError(
-                _("This ticket cannot be rejected in its current state (%s).")
-                % dict(self._fields['state'].selection).get(self.state, self.state)
-            )
-
-    # Apply rejection state and notify user with reason
     def do_reject(self, reason):
-        """Actually reject the ticket (called from wizard)."""
         for rec in self:
-            rec._check_reject_access()
-
+            rec.sudo()._check_reject_access()
             rec.sudo().write({
                 'state': 'rejected',
                 'rejection_reason': reason,
                 'rejected_by_id': self.env.user.id,
                 'rejected_date': fields.Datetime.now(),
             })
-
             rec.activity_unlink(['mail.mail_activity_data_todo'])
+            if rec.employee_id and rec.employee_id.user_id:
+                rec._notify('ticketing_it.email_template_rejection', rec.employee_id.user_id)
+            rec.message_post(body=_('Rejected by %s. Reason: %s') % (self.env.user.name, reason))
 
-            template = self.env.ref(
-                'ticketing_it.email_template_rejection',
-                raise_if_not_found=False
-            )
-            if template:
-                template.send_mail(rec.id, force_send=True, email_values={
-                            'email_to': rec.employee_id.user_id.email,
-                            'recipient_ids': [(5, 0, 0)],
-                            'partner_ids': [(5, 0, 0)],
-                        })
-
-            rec.message_post(
-                body=_("Ticket rejected by %s<br/>Reason: %s") % (self.env.user.name, reason)
-            )
-
-    # =========================================================
-    # IT TEAM WORKFLOW
-    # =========================================================
-    # Mark ticket as in progress by assigned user
     def action_start_work(self):
-        for rec in self:
-            if rec.assigned_to_id != self.env.user:
-                raise UserError(_("This ticket is not assigned to you."))
-
+        for rec in self.sudo():
+            if rec.assigned_to_id.id != self.env.uid:
+                raise UserError(_('This ticket is not assigned to you.'))
             rec.state = 'in_progress'
-            rec.sudo().message_post(
-                body=_("Work started by %s") % self.env.user.name
-            )
+            rec.message_post(body=_('Work started by %s') % self.env.user.name)
 
-    # Mark ticket as completed and trigger completion logic and emails
     def action_done(self):
-        """Mark ticket as done"""
-        _logger.info("Entered into done action")
-        for rec in self:
+        for rec in self.sudo():
             rec.state = 'done'
-            rec.done_date = fields.Datetime.now()
-            _logger.info("rec.done_date: %s", rec.done_date)
-            # ✅ Start access duration for social media tickets
+            rec.done_date = fields.Date.today()
             if rec.ticket_type_id.code == 'social_media' and rec.duration:
+                start = rec.done_date
+                rec.access_start_date = start
+                deltas = {'3m': relativedelta(months=3), '6m': relativedelta(months=6),
+                          '12m': relativedelta(years=1)}
+                rec.access_finish_date = (start + deltas[rec.duration]
+                                          if rec.duration in deltas else rec.custom_expiry_date)
+            if rec.employee_id and rec.employee_id.user_id:
+                rec._notify('ticketing_it.email_template_done', rec.employee_id.user_id)
+            rec.message_post(body=_('Completed by %s') % self.env.user.name)
 
-                start_date = rec.done_date
-                rec.access_start_date = start_date
+    # ─── REMINDERS (CRON) ────────────────────────────────────────────────────
 
-                _logger.info("start_date: %s", start_date)
-
-                # FIXED: months instead of minutes
-                if rec.duration == '3m':
-                    rec.access_finish_date = start_date + relativedelta(months=3)
-
-                elif rec.duration == '6m':
-                    rec.access_finish_date = start_date + relativedelta(months=6)
-
-                elif rec.duration == '12m':
-                    rec.access_finish_date = start_date + relativedelta(years=1)
-
-                elif rec.duration == 'custom':
-                    # IMPORTANT: use actual field user filled
-                    rec.access_finish_date = rec.custom_expiry_date
-
-            _logger.info("rec.access_finish_date: %s", rec.access_finish_date)
-            template = self.env.ref(
-                'ticketing_it.email_template_done',
-                raise_if_not_found=False
-            )
-
-            if template:
-                template.send_mail(rec.id, force_send=True, email_values={
-                            'email_to': rec.employee_id.user_id.email,
-                            'recipient_ids': [(5, 0, 0)],
-                            'partner_ids': [(5, 0, 0)],
-                        })
-
-            rec.message_post(
-                body=_("Ticket completed by %s and employee notified") % self.env.user.name
-            )
-        _logger.info("Ending into done action")
-
-    # =========================================================
-    # PORTAL ACCESS URL
-    # =========================================================
-    # Generate portal URL for ticket access
-    def _compute_access_url(self):
-        """Portal URL for employees to view their tickets"""
-        super()._compute_access_url()
-        for ticket in self:
-            ticket.access_url = '/my/tickets/%s' % ticket.id
-
-
-    # Compute month-year label when ticket is completed
-    @api.depends('done_date')
-    def _compute_month_solved(self):
-        for rec in self:
-            if rec.done_date:
-                rec.month_solved = rec.done_date.strftime('%B %Y')
-            else:
-                rec.month_solved = 'N/A'
-
-    # Override write to enforce assignment security and track state change dates
-    # ===== HARD SECURITY =====
-    def write(self, vals):
-
-        # ----------------------------
-        # ASSIGNMENT SECURITY
-        # ----------------------------
-        if 'assigned_to_id' in vals:
-            # if not (
-            #         self.env.user.has_group('ticketing_it.group_it_manager') or
-            #         self.env.user.has_group('ticketing_it.group_category_manager')
-            # ):
-            if not (
-                    self.env.user.has_group('ticketing_it.group_it_manager')
-            ):
-
-                raise AccessError("Only IT Manager can assign tickets.")
-
-        # ----------------------------
-        # STATE CHANGE DATE TRACKING
-        # ----------------------------
-        if 'state' in vals:
-            new_state = vals.get('state')
-            now = fields.Datetime.now()
-
-            for record in self:
-                # If moving to manager approval
-                if new_state == 'manager_approval' and record.state != 'manager_approval':
-                    vals['manager_approval_date'] = now
-                    _logger.info(vals['manager_approval_date'])
-
-                # If moving to IT approval
-                if new_state == 'it_approval' and record.state != 'it_approval':
-                    vals['it_approval_date'] = now
-                    _logger.info(vals['it_approval_date'])
-
-        return super().write(vals)
-
-    # Open configuration wizard for reminder settings
     def open_reminder_wizard(self):
-        return {
-            'type': 'ir.actions.act_window',
-            'res_model': 'it.reminder.config.wizard',
-            'view_mode': 'form',
-            'target': 'new',
-        }
+        return {'type': 'ir.actions.act_window', 'res_model': 'it.reminder.config.wizard',
+                'view_mode': 'form', 'target': 'new'}
 
-    # Cron job to send approval reminders based on ticket state and delay
     def action_send_dynamic_reminder(self):
-        _logger.info("===== CRON STARTED: IT Ticket Reminder =====")
-
+        _logger.info('===== CRON: IT Ticket Reminder =====')
         ICP = self.env['ir.config_parameter'].sudo()
         reminder_days = int(ICP.get_param('ticketing_it.reminder_days', 1))
-        _logger.info("Reminder days: %s", reminder_days)
+        today = fields.Date.today()
 
-        now = fields.Date.today()
-        _logger.info("Current datetime: %s", now)
+        tickets = self.search([('state', 'in', ['manager_approval', 'hr_approval', 'it_approval'])])
+        user_map = defaultdict(list)
 
-        # tickets = self.search([
-        #     ('state', 'in', ['manager_approval', 'it_approval', 'category_manager_approval'])
-        # ])
-        tickets = self.search([
-            ('state', 'in', ['manager_approval', 'it_approval'])
-        ])
-        _logger.info("Total tickets fetched: %s", len(tickets))
-
-        user_ticket_map = defaultdict(list)
-
-        # -----------------------------
-        # GROUP TICKETS PER USER
-        # -----------------------------
         for ticket in tickets:
-            _logger.info("---- Checking Ticket: %s ----", ticket.name)
-            _logger.info("State: %s", ticket.state)
+            level = ticket.workflow_level
+            state_date, user = False, False
 
-            workflow_level = ticket.workflow_level
-            _logger.info("Workflow level: %s", workflow_level)
-
-            state_date = False
-            user = False
-
-            # -----------------------------
-            # WORKFLOW LOGIC
-            # -----------------------------
-            if workflow_level == '1':
-                if ticket.state == 'it_approval':
-                    state_date = ticket.submitted_date
-                    user = ticket.it_manager_id
-
-            elif workflow_level == '2':
+            if level == '1':
                 if ticket.state == 'manager_approval':
-                    state_date = ticket.submitted_date
-                    user = ticket.line_manager_id
-
+                    state_date, user = ticket.submitted_date, ticket.line_manager_id
+            elif level == '2':
+                if ticket.state == 'manager_approval':
+                    state_date, user = ticket.submitted_date, ticket.line_manager_id
                 elif ticket.state == 'it_approval':
-                    state_date = ticket.manager_approval_date
-                    user = ticket.it_manager_id
+                    state_date, user = ticket.manager_approval_date, ticket.it_manager_id
+            elif level == '3':
+                if ticket.state == 'manager_approval':
+                    state_date, user = ticket.submitted_date, ticket.line_manager_id
+                elif ticket.state == 'hr_approval':
+                    state_date, user = ticket.manager_approval_date, ticket.hr_approver_id
 
-            # elif workflow_level == '3':
-            #     if ticket.state == 'category_manager_approval':
-            #         state_date = ticket.submitted_date
-            #         user = ticket.category_manager_id
-            #
-            # elif workflow_level == '4':
-            #     if ticket.state == 'category_manager_approval':
-            #         state_date = ticket.submitted_date
-            #         user = ticket.category_manager_id
-            #
-            #     elif ticket.state == 'it_approval':
-            #         state_date = ticket.category_manager_approval_date
-            #         user = ticket.it_manager_id
-
-            else:
-                _logger.warning("Skipping: Unknown workflow level")
+            if not state_date or not user:
                 continue
-
-            # -----------------------------
-            # VALIDATION
-            # -----------------------------
-            if not state_date:
-                _logger.warning("Skipping: No state_date")
+            if (today - state_date).days < reminder_days:
                 continue
-
-            if not user:
-                _logger.warning("Skipping: No user assigned")
+            if ticket.last_reminder_sent and (today - ticket.last_reminder_sent).days < reminder_days:
                 continue
+            user_map[user].append(ticket)
 
-            _logger.info("State date: %s | User: %s", state_date, user.name)
-
-            # -----------------------------
-            # CALCULATE DAYS
-            # -----------------------------
-            days_in_state = (now - state_date).days
-            _logger.info("Days in current state: %s", days_in_state)
-
-            if days_in_state < reminder_days:
-                _logger.info("Skipping: Not enough days passed")
-                continue
-
-            # -----------------------------
-            # CHECK LAST REMINDER
-            # -----------------------------
-            if ticket.last_reminder_sent:
-                _logger.info("now: %s ticket.last_reminder_sent:%s", now, ticket.last_reminder_sent)
-                days_since_last = (now - ticket.last_reminder_sent).days
-                _logger.info("Days since last reminder: %s", days_since_last)
-
-                if days_since_last < reminder_days:
-                    _logger.info("Skipping: Reminder already sent recently")
-                    continue
-            if ticket.submitted_date:
-                days_since_last = (now - ticket.submitted_date).days
-                _logger.info("Days since submitted date: %s", days_since_last)
-
-                if days_since_last < reminder_days:
-                    _logger.info("Skipping: Reminder already sent recently")
-                    continue
-            _logger.info("Adding ticket to user: %s", user.name)
-
-            user_ticket_map[user].append(ticket)
-
-        _logger.info("Total users to notify: %s", len(user_ticket_map))
-
-        # -----------------------------
-        # SEND EMAIL USING TEMPLATE
-        # -----------------------------
-        template = self.env.ref('ticketing_it.email_template_approval_reminder', False)
-
-        if not template:
-            _logger.error("Reminder template not found!")
+        tmpl = self.env.ref('ticketing_it.email_template_approval_reminder', raise_if_not_found=False)
+        if not tmpl:
+            _logger.error('Reminder template not found!')
             return
 
-        for user, user_tickets_list in user_ticket_map.items():
-            user_tickets = self.browse([t.id for t in user_tickets_list])  # FIX
-
-            _logger.info("Sending email to: %s (%s tickets)", user.name, len(user_tickets))
-
+        for user, tlist in user_map.items():
+            tickets_rs = self.browse([t.id for t in tlist])
             try:
-                template.with_context(
-                    approver_name=user.name,
-                    tickets=user_tickets,
-                    ticket_ids=user_tickets.ids
-                ).send_mail(
-                    user_tickets[0].id,
-                    force_send=True,
-                    email_values={
-                        'email_to': user.partner_id.email,
-                        'recipient_ids': [(5, 0, 0)],
-                        'partner_ids': [(5, 0, 0)],
-                    }
-                )
-
-                _logger.info("Email sent successfully to %s", user.name)
-
+                tmpl.with_context(approver_name=user.name, tickets=tickets_rs).send_mail(
+                    tickets_rs[0].id, force_send=True,
+                    email_values={'email_to': user.email,
+                                  'recipient_ids': [(5, 0, 0)], 'partner_ids': [(5, 0, 0)]})
             except Exception as e:
-                _logger.error("Failed to send email to %s: %s", user.name, str(e))
+                _logger.error('Reminder failed for %s: %s', user.name, e)
                 continue
+            for t in tickets_rs:
+                t.sudo().write({'last_reminder_sent': today})
+                t.message_post(body=_('Reminder sent to %s') % user.name)
 
-            # -----------------------------
-            # UPDATE TRACKING
-            # -----------------------------
-            for ticket in user_tickets:
-                ticket.sudo().write({
-                    'last_reminder_sent': now
-                })
+        _logger.info('===== CRON DONE =====')
 
-                ticket.message_post(
-                    body=_("Consolidated reminder sent to %s") % user.name
-                )
-
-        _logger.info("===== CRON FINISHED =====")
-
-    # Cron job to notify users when social media access expires
     def check_social_media_expiry(self):
-        _logger.info("===== CRON STARTED: Social Media Expiry Reminder =====")
-        now = fields.Date.today()
-
-        # Find tickets whose access just expired
-        tickets = self.search([
-            ('access_finish_date', '=', now)
-        ])
-        _logger.info("Total tickets expiring in last day: %s", len(tickets))
-
-        for ticket in tickets:
+        today = fields.Date.today()
+        for ticket in self.search([('access_finish_date', '=', today)]):
             try:
-                _logger.info("Processing Ticket: %s", ticket.name)
-
-                # Assignee email
                 if ticket.assigned_to_id and ticket.assigned_to_id.email:
-                    template = self.env.ref('ticketing_it.email_template_access_end_assignee', False)
-                    if template:
-                        template.send_mail(ticket.id, force_send=True, email_values={
-                            'email_to': ticket.assigned_to_id.email,
-                            'recipient_ids': [(5, 0, 0)],
-                            'partner_ids': [(5, 0, 0)],
-                        })
-
-                # Employee email
-                if ticket.employee_id and ticket.employee_id.user_id and ticket.employee_id.email:
-                    template = self.env.ref('ticketing_it.email_template_access_end_employee', False)
-                    if template:
-                        template.send_mail(ticket.id, force_send=True, email_values={
-                            'email_to': ticket.employee_id.email,
-                            'recipient_ids': [(5, 0, 0)],
-                            'partner_ids': [(5, 0, 0)],
-                        })
-
+                    ticket._notify('ticketing_it.email_template_access_end_assignee', ticket.assigned_to_id)
+                if ticket.employee_id and ticket.employee_id.user_id:
+                    ticket._notify('ticketing_it.email_template_access_end_employee', ticket.employee_id.user_id)
             except Exception as e:
-                _logger.error("Error processing ticket %s: %s", ticket.id, str(e))
-
-        _logger.info("===== CRON FINISHED =====")
+                _logger.error('Expiry check error ticket %s: %s', ticket.id, e)
 
 
 class ITTicketWorkflowConfig(models.Model):
-    # Model to configure workflow levels for each ticket type
     _name = 'it.ticket.workflow.config'
     _description = 'Ticket Workflow Configuration'
     _rec_name = 'ticket_type_id'
 
-    ticket_type_id = fields.Many2one(
-        'it.ticket.type',
-        string='Ticket Type Id',
-        required=True,
-        domain="[('id', 'not in', existing_ticket_type_ids)]"
-    )
-
+    ticket_type_id = fields.Many2one('it.ticket.type', string='Ticket Type',
+                                     required=True,
+                                     domain="[('id', 'not in', existing_ticket_type_ids)]")
     workflow_level = fields.Selection([
         ('0', '0 - Direct to IT Support'),
-        ('1', '1 - IT Manager → IT Support'),
+        ('1', '1 - Line Manager → IT Support'),
         ('2', '2 - Line Manager → IT Manager → IT Support'),
-        # ('3', '3 - Category Manager → IT Support'),
-        # ('4', '4 - Category Manager → IT Manager → IT Support')
-    ], default='2', required=True)
-    existing_ticket_type_ids = fields.Many2many(
-        'it.ticket.type',
-        compute='_compute_existing_ticket_types'
-    )
-    # category_manager_id = fields.Many2one(
-    #     'res.users',
-    #     string="Category Manager"
-    # )
-    # allowed_category_managers = fields.Many2many(
-    #     "res.users", compute="_compute_allowed_category_managers"
-    # )
+        ('3', '3 - Line Manager → HR → IT Support'),
+    ], default='1', required=True)
+    existing_ticket_type_ids = fields.Many2many('it.ticket.type',
+                                                compute='_compute_existing_ticket_types')
+
     _sql_constraints = [
-        ('unique_ticket_type_id', 'unique(ticket_type_id)', 'Workflow already defined for this ticket type!')
+        ('unique_ticket_type', 'unique(ticket_type_id)', 'Workflow already defined for this ticket type!')
     ]
 
-    # @api.depends()
-    # def _compute_allowed_category_managers(self):
-    #     it_category_manager_group = self.env.ref("ticketing_it.group_category_manager")
-    #     for ticket in self:
-    #         ticket.allowed_category_managers = it_category_manager_group.user_ids
-
-    # Ensure only one workflow configuration exists per ticket type
     @api.constrains('ticket_type_id')
-    def _check_unique_ticket_type(self):
+    def _check_unique(self):
         for rec in self:
-            existing = self.search([
-                ('ticket_type_id', '=', rec.ticket_type_id.id),
-                ('id', '!=', rec.id)
-            ])
-            if existing:
-                raise ValidationError(
-                    "Workflow already exists for this ticket type!"
-                )
+            if self.search([('ticket_type_id', '=', rec.ticket_type_id.id), ('id', '!=', rec.id)]):
+                raise ValidationError(_('Workflow already exists for this ticket type!'))
 
-    # Compute list of ticket types already configured to prevent duplicates
     @api.depends()
     def _compute_existing_ticket_types(self):
-        all_configs = self.search([]).mapped('ticket_type_id')
-
+        all_configured = self.search([]).mapped('ticket_type_id')
         for rec in self:
-            rec.existing_ticket_type_ids = all_configs
+            rec.existing_ticket_type_ids = all_configured
